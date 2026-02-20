@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Финансовый консультант (Vue.js)</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Vue.js - сам фреймворк! -->
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    
+    <style>
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .message-bot {
+            @apply bg-gray-100 text-gray-800 rounded-lg rounded-tl-none p-3 self-start max-w-[80%];
+        }
+        
+        .message-user {
+            @apply gradient-bg text-white rounded-lg rounded-tr-none p-3 self-end max-w-[80%];
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <!-- Приложение Vue.js -->
+    <div id="app">
+        <!-- Навигация -->
+        <nav class="gradient-bg text-white shadow-lg">
+            <div class="container mx-auto px-4 py-4">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-2">
+                        <i class="fas fa-wallet text-2xl"></i>
+                        <span class="text-xl font-bold">Финансовый консультант (Vue.js)</span>
+                    </div>
+                    <button @click="exportData" class="bg-white text-purple-600 px-4 py-2 rounded-lg font-semibold hover:bg-gray-100">
+                        <i class="fas fa-download mr-2"></i>Экспорт
+                    </button>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Сообщения -->
+        <div v-if="message.show" :class="['fixed top-20 right-4 z-50 p-4 rounded-lg shadow-lg text-white', 
+            message.type === 'success' ? 'bg-green-500' : 'bg-red-500']">
+            {{ message.text }}
+        </div>
+
+        <!-- Основной контейнер -->
+        <div class="container mx-auto px-4 py-8">
+            <!-- Табы -->
+            <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+                <div class="flex flex-wrap border-b">
+                    <button v-for="tab in tabs" :key="tab.id" 
+                            @click="currentTab = tab.id"
+                            :class="['flex items-center px-6 py-3 text-sm font-medium',
+                                     currentTab === tab.id 
+                                         ? 'text-purple-600 border-b-2 border-purple-600' 
+                                         : 'text-gray-500 hover:text-gray-700']">
+                        <i :class="['mr-2', tab.icon]"></i>
+                        {{ tab.name }}
+                    </button>
+                </div>
+
+                <!-- Вкладка регистрации -->
+                <div v-show="currentTab === 'register'" class="p-6">
+                    <h2 class="text-2xl font-bold mb-6">Регистрация</h2>
+                    <div class="grid md:grid-cols-2 gap-6">
+                        <!-- Форма -->
+                        <div class="bg-gray-50 rounded-xl p-6">
+                            <div class="mb-4">
+                                <label class="block text-gray-700 font-medium mb-2">Имя</label>
+                                <input v-model="registerForm.name" type="text" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-purple-500">
+                            </div>
+                            <div class="mb-4">
+                                <label class="block text-gray-700 font-medium mb-2">Доход (в месяц)</label>
+                                <input v-model="registerForm.income" type="number" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-purple-500">
+                            </div>
+                            <div class="mb-4">
+                                <label class="block text-gray-700 font-medium mb-2">Финансовая цель</label>
+                                <input v-model="registerForm.goal" type="text" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-purple-500" placeholder="Например: накопить 100000 на ноутбук">
+                            </div>
+                            <button @click="registerUser" class="gradient-bg text-white px-6 py-3 rounded-lg font-semibold hover:shadow-lg w-full">
+                                <i class="fas fa-user-check mr-2"></i>Зарегистрироваться
+                            </button>
+                        </div>
+                        
+                        <!-- Статистика -->
+                        <div class="bg-gray-50 rounded-xl p-6">
+                            <h3 class="text-lg font-semibold mb-4">Личная статистика</h3>
+                            <div class="space-y-3">
+                                <div class="flex justify-between pb-2 border-b">
+                                    <span class="text-gray-600">Имя:</span>
+                                    <span class="font-semibold">{{ user.name || '-' }}</span>
+                                </div>
+                                <div class="flex justify-between pb-2 border-b">
+                                    <span class="text-gray-600">Доход:</span>
+                                    <span class="font-semibold">{{ user.income ? user.income + ' ₽' : '-' }}</span>
+                                </div>
+                                <div class="flex justify-between pb-2 border-b">
+                                    <span class="text-gray-600">Цель:</span>
+                                    <span class="font-semibold">{{ user.goal || '-' }}</span>
+                                </div>
+                                <div class="flex justify-between pb-2 border-b">
+                                    <span class="text-gray-600">КФГ:</span>
+                                    <span class="font-semibold text-purple-600">{{ kfg }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Вкладка расходов -->
+                <div v-show="currentTab === 'expenses'" class="p-6">
+                    <h2 class="text-2xl font-bold mb-6">Расходы по категориям</h2>
+                    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                        <div v-for="(value, category) in expenseCategories" :key="category" class="bg-gray-50 rounded-lg p-4">
+                            <label class="block text-gray-700 font-medium mb-2">
+                                <i :class="['mr-1', categoryIcons[category]]"></i>
+                                {{ categoryNames[category] }}
+                            </label>
+                            <input v-model.number="expenses[category]" type="number" min="0" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-purple-500">
+                        </div>
+                    </div>
+                    <button @click="saveExpenses" class="mt-6 gradient-bg text-white px-8 py-3 rounded-lg font-semibold hover:shadow-lg">
+                        <i class="fas fa-save mr-2"></i>Сохранить расходы
+                    </button>
+                </div>
+
+                <!-- Вкладка аналитики -->
+                <div v-show="currentTab === 'analytics'" class="p-6">
+                    <h2 class="text-2xl font-bold mb-6">Аналитика</h2>
+                    
+                    <!-- Статистика -->
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                        <div class="gradient-bg text-white rounded-lg p-4">
+                            <p class="text-sm opacity-90">Общий доход</p>
+                            <p class="text-2xl font-bold">{{ totalIncome }} ₽</p>
+                        </div>
+                        <div class="gradient-bg text-white rounded-lg p-4">
+                            <p class="text-sm opacity-90">Общие расходы</p>
+                            <p class="text-2xl font-bold">{{ totalExpenses }} ₽</p>
+                        </div>
+                        <div class="gradient-bg text-white rounded-lg p-4">
+                            <p class="text-sm opacity-90">Остаток</p>
+                            <p class="text-2xl font-bold">{{ balance }} ₽</p>
+                        </div>
+                        <div class="gradient-bg text-white rounded-lg p-4">
+                            <p class="text-sm opacity-90">КФГ</p>
+                            <p class="text-2xl font-bold">{{ kfg }}</p>
+                        </div>
+                    </div>
+
+                    <!-- График -->
+                    <div class="bg-gray-50 rounded-lg p-4 mb-6">
+                        <canvas id="expenseChart" style="height: 300px;"></canvas>
+                    </div>
+
+                    <!-- Рекомендации -->
+                    <div class="bg-gray-50 rounded-lg p-4">
+                        <h3 class="text-lg font-semibold mb-3">Рекомендации</h3>
+                        <div class="space-y-2">
+                            <div v-for="rec in recommendations" :key="rec" class="bg-white p-3 rounded-lg shadow-sm">
+                                {{ rec }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Вкладка чат-бота -->
+                <div v-show="currentTab === 'chat'" class="p-6">
+                    <h2 class="text-2xl font-bold mb-6">Чат с финансовым советником</h2>
+                    <div class="bg-gray-50 rounded-lg p-4">
+                        <div class="h-96 overflow-y-auto flex flex-col space-y-2 mb-4" ref="chatContainer">
+                            <div v-for="(msg, index) in chatMessages" :key="index" 
+                                 :class="msg.sender === 'bot' ? 'message-bot' : 'message-user'">
+                                {{ msg.text }}
+                            </div>
+                        </div>
+                        <div class="flex space-x-2">
+                            <textarea v-model="chatInput" @keyup.enter="sendMessage" rows="2" class="flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:border-purple-500" placeholder="Введите ваш вопрос..."></textarea>
+                            <button @click="sendMessage" class="gradient-bg text-white px-6 rounded-lg font-semibold hover:shadow-lg">
+                                <i class="fas fa-paper-plane"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Вкладка друзей -->
+                <div v-show="currentTab === 'friends'" class="p-6">
+                    <h2 class="text-2xl font-bold mb-6">Друзья</h2>
+                    <div class="bg-gray-50 rounded-lg p-4 mb-6">
+                        <div class="flex space-x-2">
+                            <input v-model="newFriendName" type="text" class="flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:border-purple-500" placeholder="Имя друга">
+                            <button @click="addFriend" class="gradient-bg text-white px-6 py-2 rounded-lg font-semibold hover:shadow-lg">
+                                <i class="fas fa-user-plus mr-2"></i>Добавить
+                            </button>
+                        </div>
+                    </div>
+                    <ul class="space-y-2">
+                        <li v-for="friend in friends" :key="friend.id" class="bg-gray-50 rounded-lg p-4 flex justify-between items-center">
+                            <span class="font-medium">{{ friend.name }}</span>
+                            <span class="gradient-bg text-white px-3 py-1 rounded-full text-sm">КФГ: {{ friend.kfg }}</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Вкладка наград -->
+                <div v-show="currentTab === 'rewards'" class="p-6">
+                    <h2 class="text-2xl font-bold mb-6">Система наград и наказаний</h2>
+                    
+                    <div class="bg-gray-50 rounded-lg p-4 mb-6">
+                        <h3 class="text-lg font-semibold mb-2">Ваш КФГ: <span class="text-purple-600">{{ kfg }}</span></h3>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                        <div v-for="reward in rewards" :key="reward.id" 
+                             @click="claimReward(reward)"
+                             :class="['rounded-lg p-4 text-center cursor-pointer transition-transform hover:scale-105',
+                                      reward.kfgRequired <= kfg 
+                                          ? 'bg-gradient-to-br from-yellow-400 to-orange-400' 
+                                          : 'bg-gradient-to-br from-gray-300 to-gray-400 opacity-75']">
+                            <i :class="['fas', reward.icon, 'text-3xl mb-2 text-white']"></i>
+                            <h4 class="font-bold text-white mb-1">{{ reward.name }}</h4>
+                            <p class="text-xs text-white opacity-90 mb-2">{{ reward.description }}</p>
+                            <span class="inline-block bg-white bg-opacity-20 text-white px-2 py-1 rounded-full text-xs">
+                                КФГ: {{ reward.kfgRequired }}
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="bg-gray-50 rounded-lg p-4">
+                        <h3 class="text-lg font-semibold mb-3">Наказания</h3>
+                        <div v-for="penalty in penalties" :key="penalty" class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-2">
+                            {{ penalty }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const { createApp, ref, reactive, computed, watch, onMounted } = Vue;
+
+        const app = createApp({
+            setup() {
+                // Состояние приложения
+                const currentTab = ref('register');
+                const message = reactive({ show: false, text: '', type: 'success' });
+                
+                // Данные пользователя
+                const user = reactive({
+                    name: '',
+                    income: 0,
+                    goal: ''
+                });
+                
+                // Форма регистрации
+                const registerForm = reactive({
+                    name: '',
+                    income: 0,
+                    goal: ''
+                });
+                
+                // Расходы
+                const expenses = reactive({
+                    food: 0, transport: 0, hobby: 0, selfcare: 0,
+                    health: 0, housing: 0, entertainment: 0,
+                    subscriptions: 0, education: 0, travel: 0
+                });
+                
+                // Друзья
+                const friends = ref([]);
+                const newFriendName = ref('');
+                
+                // Чат
+                const chatMessages = ref([
+                    { text: 'Привет! Я ваш финансовый советник. Задайте мне вопрос о финансах или попросите совет по экономии.', sender: 'bot' }
+                ]);
+                const chatInput = ref('');
+                const chatContainer = ref(null);
+                
+                // Награды
+                const rewards = [
+                    { id: 1, name: 'Бесплатный кофе', kfgRequired: 50, description: 'Скидка 50% на кофе', icon: 'fa-coffee' },
+                    { id: 2, name: 'Кино онлайн', kfgRequired: 100, description: 'Месяц подписки на кинотеатр', icon: 'fa-film' },
+                    { id: 3, name: 'Книга', kfgRequired: 150, description: 'Электронная книга в подарок', icon: 'fa-book' },
+                    { id: 4, name: 'Спортзал', kfgRequired: 200, description: 'Месяц в спортзал бесплатно', icon: 'fa-dumbbell' },
+                    { id: 5, name: 'Путешествие', kfgRequired: 300, description: 'Скидка на билеты 20%', icon: 'fa-plane' }
+                ];
+                
+                // Константы для отображения
+                const tabs = [
+                    { id: 'register', name: 'Регистрация', icon: 'fas fa-user-plus' },
+                    { id: 'expenses', name: 'Расходы', icon: 'fas fa-chart-line' },
+                    { id: 'analytics', name: 'Аналитика', icon: 'fas fa-chart-pie' },
+                    { id: 'chat', name: 'Чат-бот', icon: 'fas fa-robot' },
+                    { id: 'friends', name: 'Друзья', icon: 'fas fa-users' },
+                    { id: 'rewards', name: 'Награды', icon: 'fas fa-gift' }
+                ];
+                
+                const categoryNames = {
+                    food: 'Еда', transport: 'Транспорт', hobby: 'Хобби',
+                    selfcare: 'Уход', health: 'Здоровье', housing: 'Жилье',
+                    entertainment: 'Развлечения', subscriptions: 'Подписки',
+                    education: 'Учеба', travel: 'Путешествия'
+                };
+                
+                const categoryIcons = {
+                    food: 'fas fa-utensils', transport: 'fas fa-bus',
+                    hobby: 'fas fa-palette', selfcare: 'fas fa-spa',
+                    health: 'fas fa-heartbeat', housing: 'fas fa-home',
+                    entertainment: 'fas fa-gamepad', subscriptions: 'fas fa-tv',
+                    education: 'fas fa-book', travel: 'fas fa-plane'
+                };
+                
+                // Вычисляемые свойства
+                const totalExpenses = computed(() => {
+                    return Object.values(expenses).reduce((a, b) => a + b, 0);
+                });
+                
+                const totalIncome = computed(() => user.income || 0);
+                
+                const balance = computed(() => totalIncome.value - totalExpenses.value);
+                
+                const kfg = computed(() => {
+                    if (!user.income || user.income === 0) return 0;
+                    
+                    let value = 100 - (totalExpenses.value / user.income * 100);
+                    
+                    if (expenses.education > 0) value += 10;
+                    if (expenses.entertainment > user.income * 0.3) value -= 20;
+                    if (expenses.food > user.income * 0.5) value -= 15;
+                    
+                    return Math.max(0, Math.min(100, Math.round(value)));
+                });
+                
+                const recommendations = computed(() => {
+                    const recs = [];
+                    
+                    if (totalExpenses.value > user.income) {
+                        recs.push('⚠️ Ваши расходы превышают доход! Срочно сократите траты.');
+                    }
+                    
+                    if (expenses.entertainment > user.income * 0.2) {
+                        recs.push('🎯 Попробуйте сократить расходы на развлечения до 20% от дохода.');
+                    }
+                    
+                    if (expenses.food > user.income * 0.3) {
+                        recs.push('🍎 Готовьте дома чаще - это сэкономит до 50% на еде.');
+                    }
+                    
+                    if (expenses.subscriptions > 1000) {
+                        recs.push('📱 Проверьте подписки - возможно, вы платите за ненужные сервисы.');
+                    }
+                    
+                    if (expenses.education === 0) {
+                        recs.push('📚 Инвестируйте в образование - это повысит ваш будущий доход.');
+                    }
+                    
+                    if (balance.value > 0) {
+                        recs.push(`💪 Отличная работа! Вы откладываете ${balance.value} ₽ в месяц.`);
+                    }
+                    
+                    return recs;
+                });
+                
+                const penalties = computed(() => {
+                    const pens = [];
+                    
+                    if (kfg.value < 30) {
+                        pens.push('⚠️ Ваш КФГ критически низкий! Увеличьте финансовую грамотность.');
+                    }
+                    
+                    if (totalExpenses.value > user.income * 0.9) {
+                        pens.push('📉 Вы тратите почти весь доход - срочно сократите расходы!');
+                    }
+                    
+                    return pens;
+                });
+                
+                // Методы
+                let chart = null;
+                
+                function showMessage(text, type) {
+                    message.text = text;
+                    message.type = type;
+                    message.show = true;
+                    
+                    setTimeout(() => {
+                        message.show = false;
+                    }, 3000);
+                }
+                
+                function registerUser() {
+                    if (!registerForm.name || !registerForm.income || !registerForm.goal) {
+                        showMessage('Пожалуйста, заполните все поля', 'error');
+                        return;
+                    }
+                    
+                    user.name = registerForm.name;
+                    user.income = registerForm.income;
+                    user.goal = registerForm.goal;
+                    
+                    showMessage('Регистрация успешна!', 'success');
+                    saveToStorage();
+                }
+                
+                function saveExpenses() {
+                    saveToStorage();
+                    showMessage('Расходы сохранены!', 'success');
+                    updateChart();
+                }
+                
+                function saveToStorage() {
+                    const data = {
+                        user: { ...user },
+                        expenses: { ...expenses },
+                        friends: friends.value
+                    };
+                    localStorage.setItem('vueFinancialData', JSON.stringify(data));
+                }
+                
+                function loadFromStorage() {
+                    const saved = localStorage.getItem('vueFinancialData');
+                    if (saved) {
+                        try {
+                            const data = JSON.parse(saved);
+                            Object.assign(user, data.user);
+                            Object.assign(expenses, data.expenses);
+                            friends.value = data.friends || [];
+                        } catch (e) {
+                            console.error('Ошибка загрузки', e);
+                        }
+                    }
+                }
+                
+                function initChart() {
+                    const ctx = document.getElementById('expenseChart').getContext('2d');
+                    chart = new Chart(ctx, {
+                        type: 'doughnut',
+                        data: {
+                            labels: Object.values(categoryNames),
+                            datasets: [{
+                                data: Object.values(expenses),
+                                backgroundColor: [
+                                    '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0',
+                                    '#9966FF', '#FF9F40', '#FF6384', '#36A2EB',
+                                    '#FFCE56', '#4BC0C0'
+                                ]
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: { position: 'bottom' }
+                            }
+                        }
+                    });
+                }
+                
+                function updateChart() {
+                    if (chart) {
+                        chart.data.datasets[0].data = Object.values(expenses);
+                        chart.update();
+                    }
+                }
+                
+                async function sendMessage() {
+                    if (!chatInput.value.trim()) return;
+                    
+                    chatMessages.value.push({
+                        text: chatInput.value,
+                        sender: 'user'
+                    });
+                    
+                    const question = chatInput.value;
+                    chatInput.value = '';
+                    
+                    setTimeout(() => {
+                        if (chatContainer.value) {
+                            chatContainer.value.scrollTop = chatContainer.value.scrollHeight;
+                        }
+                    }, 100);
+                    
+                    // Имитация ответа бота
+                    setTimeout(() => {
+                        const responses = [
+                            "Отличный вопрос! Для экономии рекомендую вести учет всех расходов.",
+                            "Попробуйте правило 50/30/20: 50% на нужное, 30% на желания, 20% в копилку.",
+                            "Самый простой способ экономии - готовить дома и брать еду с собой.",
+                            "Используйте кэшбэк-сервисы и следите за акциями в магазинах.",
+                            "Отложите 10% дохода сразу после получения - так вы не потратите их.",
+                            "Проверьте, не платите ли вы за ненужные подписки."
+                        ];
+                        
+                        chatMessages.value.push({
+                            text: responses[Math.floor(Math.random() * responses.length)],
+                            sender: 'bot'
+                        });
+                        
+                        if (chatContainer.value) {
+                            chatContainer.value.scrollTop = chatContainer.value.scrollHeight;
+                        }
+                    }, 1000);
+                }
+                
+                function addFriend() {
+                    if (!newFriendName.value.trim()) return;
+                    
+                    friends.value.push({
+                        id: Date.now(),
+                        name: newFriendName.value,
+                        kfg: Math.floor(Math.random() * 100)
+                    });
+                    
+                    newFriendName.value = '';
+                    saveToStorage();
+                }
+                
+                function claimReward(reward) {
+                    if (reward.kfgRequired <= kfg.value) {
+                        showMessage(`Поздравляем! Вы получили: ${reward.name}`, 'success');
+                    } else {
+                        showMessage('У вас недостаточно КФГ для этой награды', 'error');
+                    }
+                }
+                
+                function exportData() {
+                    const data = {
+                        user: { ...user },
+                        expenses: { ...expenses },
+                        friends: friends.value,
+                        exportDate: new Date().toISOString()
+                    };
+                    
+                    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `financial_data_${new Date().toISOString().split('T')[0]}.json`;
+                    a.click();
+                    
+                    showMessage('Данные экспортированы!', 'success');
+                }
+                
+                // Жизненный цикл
+                onMounted(() => {
+                    loadFromStorage();
+                    initChart();
+                });
+                
+                // Следим за изменениями для автосохранения
+                watch([user, expenses, friends], () => {
+                    saveToStorage();
+                }, { deep: true });
+                
+                return {
+                    currentTab,
+                    message,
+                    user,
+                    registerForm,
+                    expenses,
+                    friends,
+                    newFriendName,
+                    chatMessages,
+                    chatInput,
+                    chatContainer,
+                    rewards,
+                    tabs,
+                    categoryNames,
+                    categoryIcons,
+                    totalExpenses,
+                    totalIncome,
+                    balance,
+                    kfg,
+                    recommendations,
+                    penalties,
+                    registerUser,
+                    saveExpenses,
+                    sendMessage,
+                    addFriend,
+                    claimReward,
+                    exportData
+                };
+            }
+        });
+        
+        app.mount('#app');
+    </script>
+</body>
+</html>
