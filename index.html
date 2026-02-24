@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Финансовый консультант </title>
+    <title>Финансовый консультант</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -29,6 +29,19 @@
         .message-user {
             @apply gradient-bg text-white rounded-lg rounded-tr-none p-3 self-end max-w-[80%];
         }
+        
+        .avatar-selected {
+            @apply ring-4 ring-purple-500;
+        }
+
+        .avatar-locked {
+            filter: grayscale(100%);
+            opacity: 0.5;
+        }
+
+        .goal-progress {
+            transition: width 0.3s ease;
+        }
     </style>
 </head>
 <body class="bg-gray-100">
@@ -42,9 +55,12 @@
                         <span class="text-xl font-bold">Финансовый консультант (Vue.js)</span>
                     </div>
                     <div class="flex items-center space-x-4">
-                        <span v-if="currentUser" class="text-sm">
-                            <i class="fas fa-user mr-1"></i>{{ currentUser.nickname }}
-                        </span>
+                        <div v-if="currentUser" class="flex items-center space-x-2">
+                            <div class="w-8 h-8 rounded-full overflow-hidden border-2 border-white">
+                                <img :src="getAvatarUrl(currentUser.avatar)" :alt="currentUser.name" class="w-full h-full object-cover">
+                            </div>
+                            <span class="text-sm">{{ currentUser.nickname }}</span>
+                        </div>
                         <button v-if="currentUser" @click="logout" class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600">
                             <i class="fas fa-sign-out-alt mr-2"></i>Выйти
                         </button>
@@ -104,10 +120,35 @@
                                     <p class="text-xs text-gray-500 mt-1">Должен быть уникальным</p>
                                 </div>
                                 
-                                <div class="mb-6">
+                                <div class="mb-4">
                                     <label class="block text-gray-700 font-medium mb-2">Пароль</label>
                                     <input v-model="registerForm.password" type="password" 
                                            class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-purple-500">
+                                </div>
+
+                                <div class="mb-6">
+                                    <label class="block text-gray-700 font-medium mb-2">Выберите аватар</label>
+                                    <div class="grid grid-cols-5 gap-2">
+                                        <div v-for="avatar in avatars" :key="avatar.id" 
+                                             @click="selectRegisterAvatar(avatar)"
+                                             class="relative cursor-pointer rounded-lg overflow-hidden border-2"
+                                             :class="[
+                                                 registerForm.avatar === avatar.id ? 'border-purple-500' : 'border-transparent',
+                                                 !isAvatarAvailableForRegister(avatar) ? 'cursor-not-allowed' : ''
+                                             ]">
+                                            <img :src="getAvatarUrl(avatar.id)" 
+                                                 :class="['w-full h-auto', !isAvatarAvailableForRegister(avatar) ? 'avatar-locked' : '']">
+                                            <!-- Замок для заблокированных аватаров -->
+                                            <div v-if="!isAvatarAvailableForRegister(avatar)" 
+                                                 class="absolute inset-0 bg-black bg-opacity-30 flex items-center justify-center">
+                                                <i class="fas fa-lock text-white text-xl"></i>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <p class="text-xs text-gray-500 mt-2">
+                                        <i class="fas fa-info-circle mr-1"></i>
+                                        При регистрации доступен только аватар "Новичок". Остальные открываются при повышении КФГ.
+                                    </p>
                                 </div>
                                 
                                 <button @click="handleRegister" 
@@ -166,6 +207,15 @@
                         <div class="bg-gray-50 rounded-xl p-6">
                             <h3 class="text-lg font-semibold mb-4">Личная информация</h3>
                             <div class="space-y-3">
+                                <div class="flex items-center space-x-4 pb-2 border-b">
+                                    <div class="w-16 h-16 rounded-full overflow-hidden">
+                                        <img :src="getAvatarUrl(currentUser.avatar)" :alt="currentUser.name" class="w-full h-full object-cover">
+                                    </div>
+                                    <div>
+                                        <span class="text-gray-600">Аватар:</span>
+                                        <span class="font-semibold block">{{ getAvatarName(currentUser.avatar) }}</span>
+                                    </div>
+                                </div>
                                 <div class="flex justify-between pb-2 border-b">
                                     <span class="text-gray-600">Имя:</span>
                                     <span class="font-semibold">{{ currentUser.name }} {{ currentUser.surname }}</span>
@@ -185,6 +235,10 @@
                                 <div class="flex justify-between pb-2 border-b">
                                     <span class="text-gray-600">КФГ:</span>
                                     <span class="font-semibold text-purple-600">{{ kfg }}</span>
+                                </div>
+                                <div class="flex justify-between pb-2 border-b">
+                                    <span class="text-gray-600">Разблокированные аватары:</span>
+                                    <span class="font-semibold">{{ unlockedAvatars.join(', ') }}</span>
                                 </div>
                             </div>
                         </div>
@@ -224,6 +278,128 @@
                     <button @click="saveExpenses" class="mt-6 gradient-bg text-white px-8 py-3 rounded-lg font-semibold hover:shadow-lg">
                         <i class="fas fa-save mr-2"></i>Сохранить расходы
                     </button>
+                </div>
+
+                <!-- Вкладка финансовых целей (НОВАЯ) -->
+                <div v-show="currentTab === 'goals'" class="p-6">
+                    <h2 class="text-2xl font-bold mb-6">Финансовые цели</h2>
+                    
+                    <!-- Форма создания новой цели -->
+                    <div class="bg-gray-50 rounded-lg p-6 mb-6">
+                        <h3 class="text-lg font-semibold mb-4">Новая цель</h3>
+                        <div class="grid md:grid-cols-3 gap-4">
+                            <div>
+                                <label class="block text-gray-700 font-medium mb-2">Название цели</label>
+                                <input v-model="newGoal.name" type="text" 
+                                       class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-purple-500"
+                                       placeholder="Например: Купить машину">
+                            </div>
+                            <div>
+                                <label class="block text-gray-700 font-medium mb-2">Необходимая сумма (₽)</label>
+                                <input v-model.number="newGoal.targetAmount" type="number" min="1" 
+                                       class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-purple-500"
+                                       placeholder="100000">
+                            </div>
+                            <div class="flex items-end">
+                                <button @click="addGoal" 
+                                        class="gradient-bg text-white px-6 py-2 rounded-lg font-semibold hover:shadow-lg">
+                                    <i class="fas fa-plus-circle mr-2"></i>Добавить цель
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Список целей -->
+                    <h3 class="text-lg font-semibold mb-3">Мои цели ({{ goals.length }})</h3>
+                    
+                    <div v-if="goals.length === 0" class="bg-gray-50 rounded-lg p-8 text-center text-gray-500">
+                        <i class="fas fa-bullseye text-4xl mb-3 opacity-50"></i>
+                        <p>У вас пока нет финансовых целей</p>
+                        <p class="text-sm">Создайте цель, чтобы начать копить</p>
+                    </div>
+                    
+                    <div v-else class="space-y-4">
+                        <div v-for="(goal, index) in goals" :key="index" 
+                             class="bg-gray-50 rounded-lg p-4 hover:shadow-md transition">
+                            
+                            <div class="flex justify-between items-start mb-3">
+                                <div>
+                                    <h4 class="font-semibold text-lg">{{ goal.name }}</h4>
+                                    <p class="text-sm text-gray-600">
+                                        Нужно: {{ goal.targetAmount }} ₽ • Накоплено: {{ goal.currentAmount }} ₽
+                                    </p>
+                                </div>
+                                <div class="flex space-x-2">
+                                    <button @click="addToGoal(index)" 
+                                            class="text-green-600 hover:text-green-800">
+                                        <i class="fas fa-plus-circle text-xl"></i>
+                                    </button>
+                                    <button @click="removeGoal(index)" 
+                                            class="text-red-500 hover:text-red-700">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <!-- Прогресс бар -->
+                            <div class="relative pt-1">
+                                <div class="flex mb-2 items-center justify-between">
+                                    <div>
+                                        <span class="text-xs font-semibold inline-block text-purple-600">
+                                            Прогресс
+                                        </span>
+                                    </div>
+                                    <div class="text-right">
+                                        <span class="text-xs font-semibold inline-block text-purple-600">
+                                            {{ Math.min(100, Math.round((goal.currentAmount / goal.targetAmount) * 100)) }}%
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="overflow-hidden h-2 mb-4 text-xs flex rounded bg-purple-200">
+                                    <div :style="{ width: Math.min(100, (goal.currentAmount / goal.targetAmount) * 100) + '%' }"
+                                         class="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-purple-600 goal-progress">
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Кнопки быстрого пополнения -->
+                            <div class="flex space-x-2 mt-2">
+                                <button @click="quickAddToGoal(index, 1000)" 
+                                        class="text-xs bg-gray-200 hover:bg-gray-300 px-2 py-1 rounded">
+                                    +1000 ₽
+                                </button>
+                                <button @click="quickAddToGoal(index, 5000)" 
+                                        class="text-xs bg-gray-200 hover:bg-gray-300 px-2 py-1 rounded">
+                                    +5000 ₽
+                                </button>
+                                <button @click="quickAddToGoal(index, 10000)" 
+                                        class="text-xs bg-gray-200 hover:bg-gray-300 px-2 py-1 rounded">
+                                    +10000 ₽
+                                </button>
+                                <span v-if="goal.currentAmount >= goal.targetAmount" 
+                                      class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded ml-auto">
+                                    <i class="fas fa-check-circle mr-1"></i>Цель достигнута!
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Советы по достижению целей -->
+                    <div class="bg-blue-50 rounded-lg p-4 mt-6">
+                        <h4 class="font-semibold text-blue-700 mb-2">
+                            <i class="fas fa-lightbulb mr-2"></i>Совет по достижению целей
+                        </h4>
+                        <p class="text-sm text-blue-600">
+                            Чтобы быстрее достичь цели, откладывайте часть дохода сразу после его получения.
+                            Рекомендуется откладывать не менее 10-20% от месячного дохода.
+                        </p>
+                        <p class="text-sm text-blue-600 mt-2">
+                            📊 Ежемесячный остаток: {{ balance }} ₽
+                        </p>
+                        <p v-if="goals.length > 0" class="text-sm text-blue-600 mt-2">
+                            🎯 Общая сумма целей: {{ totalGoalsAmount }} ₽
+                        </p>
+                    </div>
                 </div>
 
                 <!-- Вкладка аналитики -->
@@ -302,9 +478,14 @@
                             <div class="space-y-2">
                                 <div v-for="user in searchResults" :key="user.login" 
                                      class="bg-white p-3 rounded-lg flex justify-between items-center border">
-                                    <div>
-                                        <span class="font-medium">{{ user.name }} {{ user.surname }}</span>
-                                        <span class="text-sm text-gray-500 ml-2">{{ user.nickname }}</span>
+                                    <div class="flex items-center space-x-3">
+                                        <div class="w-8 h-8 rounded-full overflow-hidden">
+                                            <img :src="getAvatarUrl(user.avatar)" class="w-full h-full object-cover">
+                                        </div>
+                                        <div>
+                                            <span class="font-medium">{{ user.name }} {{ user.surname }}</span>
+                                            <span class="text-sm text-gray-500 ml-2">{{ user.nickname }}</span>
+                                        </div>
                                     </div>
                                     <button @click="addFriend(user)" 
                                             class="bg-green-500 text-white px-3 py-1 rounded-lg text-sm hover:bg-green-600">
@@ -330,8 +511,8 @@
                         <li v-for="friend in friends" :key="friend.login" 
                             class="bg-gray-50 rounded-lg p-4 flex justify-between items-center hover:shadow-md transition">
                             <div class="flex items-center space-x-3">
-                                <div class="w-10 h-10 gradient-bg rounded-full flex items-center justify-center text-white font-bold">
-                                    {{ friend.name.charAt(0) }}{{ friend.surname ? friend.surname.charAt(0) : '' }}
+                                <div class="w-10 h-10 rounded-full overflow-hidden">
+                                    <img :src="getAvatarUrl(friend.avatar)" :alt="friend.name" class="w-full h-full object-cover">
                                 </div>
                                 <div>
                                     <span class="font-medium block">{{ friend.name }} {{ friend.surname }}</span>
@@ -348,10 +529,45 @@
 
                 <!-- Вкладка наград -->
                 <div v-show="currentTab === 'rewards'" class="p-6">
-                    <h2 class="text-2xl font-bold mb-6">Система наград и наказаний</h2>
+                    <h2 class="text-2xl font-bold mb-6">Система наград и аватаров</h2>
                     
                     <div class="bg-gray-50 rounded-lg p-4 mb-6">
                         <h3 class="text-lg font-semibold mb-2">Ваш КФГ: <span class="text-purple-600">{{ kfg }}</span></h3>
+                        <h3 class="text-lg font-semibold mb-2">Разблокированные аватары: <span class="text-purple-600">{{ unlockedAvatars.join(', ') }}</span></h3>
+                    </div>
+
+                    <!-- Доступные аватары -->
+                    <div class="bg-gray-50 rounded-lg p-4 mb-6">
+                        <h3 class="text-lg font-semibold mb-4">Аватары</h3>
+                        <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+                            <div v-for="avatar in avatars" :key="avatar.id" 
+                                 @click="changeAvatar(avatar)"
+                                 class="relative cursor-pointer rounded-lg overflow-hidden border-2 p-2"
+                                 :class="[
+                                     isAvatarUnlocked(avatar) ? 'opacity-100 hover:border-purple-500' : 'opacity-50 cursor-not-allowed',
+                                     currentUser.avatar === avatar.id ? 'border-purple-500' : 'border-gray-200'
+                                 ]">
+                                <img :src="getAvatarUrl(avatar.id)" 
+                                     :class="['w-full h-auto mb-2', !isAvatarUnlocked(avatar) ? 'avatar-locked' : '']">
+                                <div class="text-center">
+                                    <p class="text-sm font-medium">{{ avatar.name }}</p>
+                                    <p class="text-xs" :class="isAvatarUnlocked(avatar) ? 'text-green-600' : 'text-gray-500'">
+                                        {{ getAvatarStatus(avatar) }}
+                                    </p>
+                                </div>
+                                <div v-if="!isAvatarUnlocked(avatar)" 
+                                     class="absolute inset-0 bg-black bg-opacity-20 flex items-center justify-center">
+                                    <i class="fas fa-lock text-gray-600 text-2xl"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-4 p-3 bg-blue-50 rounded-lg">
+                            <p class="text-sm text-blue-700">
+                                <i class="fas fa-info-circle mr-1"></i>
+                                Все аватары, кроме "Новичок", становятся недоступны при падении КФГ ниже требуемого порога.
+                                Новичок (КФГ 0), Эконом (КФГ 40), Инвестор (КФГ 70), Эксперт (КФГ 90), Гуру (КФГ 100).
+                            </p>
+                        </div>
                     </div>
 
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
@@ -406,7 +622,8 @@
                     nickname: '',
                     login: '',
                     password: '',
-                    income: 0
+                    income: 0,
+                    avatar: 1 // аватар по умолчанию
                 });
                 
                 // Расходы
@@ -414,6 +631,13 @@
                     food: 0, transport: 0, hobby: 0, selfcare: 0,
                     health: 0, housing: 0, entertainment: 0,
                     subscriptions: 0, education: 0, travel: 0
+                });
+
+                // Финансовые цели (НОВОЕ)
+                const goals = ref([]);
+                const newGoal = reactive({
+                    name: '',
+                    targetAmount: 0
                 });
                 
                 // Друзья
@@ -437,11 +661,21 @@
                     { id: 4, name: 'Спортзал', kfgRequired: 200, description: 'Месяц в спортзал бесплатно', icon: 'fa-dumbbell' },
                     { id: 5, name: 'Путешествие', kfgRequired: 300, description: 'Скидка на билеты 20%', icon: 'fa-plane' }
                 ];
+
+                // Аватары
+                const avatars = [
+                    { id: 1, name: 'Новичок', kfgRequired: 0, isPermanent: true, icon: 'fa-user' },
+                    { id: 2, name: 'Эконом', kfgRequired: 40, isPermanent: false, icon: 'fa-piggy-bank' },
+                    { id: 3, name: 'Инвестор', kfgRequired: 70, isPermanent: false, icon: 'fa-chart-line' },
+                    { id: 4, name: 'Эксперт', kfgRequired: 90, isPermanent: false, icon: 'fa-crown' },
+                    { id: 5, name: 'Гуру', kfgRequired: 100, isPermanent: false, icon: 'fa-gem' }
+                ];
                 
-                // Константы
+                // Константы (добавлена вкладка goals)
                 const tabs = [
                     { id: 'profile', name: 'Профиль', icon: 'fas fa-user' },
                     { id: 'expenses', name: 'Расходы', icon: 'fas fa-chart-line' },
+                    { id: 'goals', name: 'Цели', icon: 'fas fa-bullseye' }, // Новая вкладка
                     { id: 'analytics', name: 'Аналитика', icon: 'fas fa-chart-pie' },
                     { id: 'chat', name: 'Чат-бот', icon: 'fas fa-robot' },
                     { id: 'friends', name: 'Друзья', icon: 'fas fa-users' },
@@ -475,18 +709,145 @@
                 const totalIncome = computed(() => currentUser.value?.income || 0);
                 
                 const balance = computed(() => totalIncome.value - totalExpenses.value);
+
+                // Общая сумма всех целей (НОВОЕ)
+                const totalGoalsAmount = computed(() => {
+                    return goals.value.reduce((sum, goal) => sum + goal.targetAmount, 0);
+                });
                 
+                // Формула КФГ
                 const kfg = computed(() => {
                     if (!currentUser.value?.income || currentUser.value.income === 0) return 0;
                     
+                    // Проверяем, ввел ли пользователь расходы
+                    const hasAnyExpenses = Object.values(expenses).some(val => val > 0);
+                    if (!hasAnyExpenses) {
+                        return 0; // Пока не ввел расходы - КФГ = 0
+                    }
+                    
                     let value = 100 - (totalExpenses.value / currentUser.value.income * 100);
                     
-                    if (expenses.education > 0) value += 10;
+                    // Штрафы
                     if (expenses.entertainment > currentUser.value.income * 0.3) value -= 20;
                     if (expenses.food > currentUser.value.income * 0.5) value -= 15;
+                    if (expenses.subscriptions > currentUser.value.income * 0.1) value -= 10;
+                    
+                    // Бонусы
+                    if (expenses.education > 0) value += 5;
+                    if (balance.value > currentUser.value.income * 0.2) value += 10;
                     
                     return Math.max(0, Math.min(100, Math.round(value)));
                 });
+
+                // Разблокированные аватары
+                const unlockedAvatars = computed(() => {
+                    if (!currentUser.value) return [];
+                    
+                    const unlocked = [];
+                    
+                    avatars.forEach(avatar => {
+                        if (avatar.id === 1) {
+                            unlocked.push(avatar.name);
+                        } else if (kfg.value >= avatar.kfgRequired) {
+                            unlocked.push(avatar.name);
+                        }
+                    });
+                    
+                    return unlocked;
+                });
+
+                // Проверка, разблокирован ли аватар
+                function isAvatarUnlocked(avatar) {
+                    if (!currentUser.value) return false;
+                    
+                    if (avatar.id === 1) {
+                        return true;
+                    } else {
+                        return kfg.value >= avatar.kfgRequired;
+                    }
+                }
+
+                // Проверка доступности аватара при регистрации
+                function isAvatarAvailableForRegister(avatar) {
+                    return avatar.id === 1;
+                }
+
+                function selectRegisterAvatar(avatar) {
+                    if (isAvatarAvailableForRegister(avatar)) {
+                        registerForm.avatar = avatar.id;
+                    } else {
+                        showMessage('Этот аватар недоступен при регистрации', 'error');
+                    }
+                }
+
+                function getAvatarStatus(avatar) {
+                    if (!currentUser.value) return '';
+                    
+                    if (avatar.id === 1) {
+                        return 'Всегда доступен';
+                    } else {
+                        if (kfg.value >= avatar.kfgRequired) {
+                            return 'Доступен';
+                        } else {
+                            return `Требуется КФГ ${avatar.kfgRequired}`;
+                        }
+                    }
+                }
+
+                // Методы для работы с целями (НОВЫЕ)
+                function addGoal() {
+                    if (!newGoal.name.trim()) {
+                        showMessage('Введите название цели', 'error');
+                        return;
+                    }
+                    
+                    if (newGoal.targetAmount <= 0) {
+                        showMessage('Введите корректную сумму цели', 'error');
+                        return;
+                    }
+                    
+                    goals.value.push({
+                        name: newGoal.name,
+                        targetAmount: newGoal.targetAmount,
+                        currentAmount: 0
+                    });
+                    
+                    // Очищаем форму
+                    newGoal.name = '';
+                    newGoal.targetAmount = 0;
+                    
+                    saveToStorage();
+                    showMessage('Цель добавлена!', 'success');
+                }
+
+                function addToGoal(index) {
+                    const amount = prompt('Введите сумму для добавления к цели:', '1000');
+                    if (amount === null) return;
+                    
+                    const numAmount = Number(amount);
+                    if (isNaN(numAmount) || numAmount <= 0) {
+                        showMessage('Введите корректную сумму', 'error');
+                        return;
+                    }
+                    
+                    goals.value[index].currentAmount += numAmount;
+                    saveToStorage();
+                    showMessage(`Добавлено ${numAmount} ₽ к цели!`, 'success');
+                }
+
+                function quickAddToGoal(index, amount) {
+                    goals.value[index].currentAmount += amount;
+                    saveToStorage();
+                    showMessage(`Добавлено ${amount} ₽ к цели!`, 'success');
+                }
+
+                function removeGoal(index) {
+                    if (confirm('Вы уверены, что хотите удалить эту цель?')) {
+                        goals.value.splice(index, 1);
+                        saveToStorage();
+                        showMessage('Цель удалена', 'success');
+                    }
+                }
                 
                 const recommendations = computed(() => {
                     if (!currentUser.value) return [];
@@ -515,6 +876,16 @@
                     
                     if (balance.value > 0) {
                         recs.push(`💪 Отличная работа! Вы откладываете ${balance.value} ₽ в месяц.`);
+                    }
+
+                    // Добавляем рекомендации по целям
+                    if (goals.value.length > 0) {
+                        const totalNeeded = totalGoalsAmount.value;
+                        const totalSaved = goals.value.reduce((sum, g) => sum + g.currentAmount, 0);
+                        if (totalSaved < totalNeeded) {
+                            const remaining = totalNeeded - totalSaved;
+                            recs.push(`🎯 Для достижения всех целей осталось накопить ${remaining} ₽`);
+                        }
                     }
                     
                     return recs;
@@ -554,6 +925,13 @@
                         return;
                     }
                     
+                    // Проверяем, что выбран доступный аватар
+                    if (registerForm.avatar !== 1) {
+                        showMessage('При регистрации доступен только аватар "Новичок"', 'error');
+                        registerForm.avatar = 1;
+                        return;
+                    }
+                    
                     const newUser = {
                         name: registerForm.name,
                         surname: registerForm.surname,
@@ -561,7 +939,9 @@
                         login: registerForm.login,
                         password: registerForm.password,
                         income: Number(registerForm.income),
+                        avatar: registerForm.avatar,
                         expenses: { ...expenses },
+                        goals: [], // Добавляем цели для нового пользователя
                         friends: []
                     };
                     
@@ -577,6 +957,7 @@
                     registerForm.login = '';
                     registerForm.password = '';
                     registerForm.income = 0;
+                    registerForm.avatar = 1;
                     
                     saveToStorage();
                 }
@@ -607,6 +988,7 @@
                     currentUser.value = null;
                     
                     Object.keys(expenses).forEach(key => expenses[key] = 0);
+                    goals.value = []; // Очищаем цели при выходе
                     friends.value = [];
                     
                     showMessage('Вы вышли из системы', 'success');
@@ -615,6 +997,10 @@
                 function loadUserData(user) {
                     if (user.expenses) {
                         Object.assign(expenses, user.expenses);
+                    }
+                    
+                    if (user.goals) {
+                        goals.value = user.goals;
                     }
                     
                     if (user.friends) {
@@ -647,7 +1033,8 @@
                         name: user.name,
                         surname: user.surname,
                         nickname: user.nickname,
-                        login: user.login
+                        login: user.login,
+                        avatar: user.avatar
                     };
                     
                     friends.value.push(newFriend);
@@ -706,6 +1093,20 @@
                 }
                 
                 function saveToStorage() {
+                    if (!currentUser.value) return;
+                    
+                    // Обновляем данные текущего пользователя в общем списке
+                    const userIndex = users.value.findIndex(u => u.login === currentUser.value?.login);
+                    if (userIndex !== -1) {
+                        users.value[userIndex] = { 
+                            ...users.value[userIndex], 
+                            ...currentUser.value,
+                            expenses: { ...expenses },
+                            goals: [...goals.value],
+                            friends: [...friends.value]
+                        };
+                    }
+                    
                     const data = {
                         users: users.value,
                         currentUser: currentUser.value,
@@ -817,11 +1218,42 @@
                         showMessage('У вас недостаточно КФГ для этой награды', 'error');
                     }
                 }
+
+                function getAvatarUrl(avatarId) {
+                    const avatars = {
+                        1: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Novice&backgroundColor=b6e3f4',
+                        2: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Econom&backgroundColor=ffd5dc',
+                        3: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Investor&backgroundColor=c0aede',
+                        4: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Expert&backgroundColor=ffb347',
+                        5: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Guru&backgroundColor=7ed4ad'
+                    };
+                    return avatars[avatarId] || avatars[1];
+                }
+
+                function getAvatarName(avatarId) {
+                    const avatar = avatars.find(a => a.id === avatarId);
+                    return avatar ? avatar.name : 'Новичок';
+                }
+
+                function changeAvatar(avatar) {
+                    if (isAvatarUnlocked(avatar)) {
+                        const userIndex = users.value.findIndex(u => u.login === currentUser.value?.login);
+                        if (userIndex !== -1) {
+                            users.value[userIndex].avatar = avatar.id;
+                            currentUser.value.avatar = avatar.id;
+                            saveToStorage();
+                            showMessage(`Аватар изменен на ${avatar.name}!`, 'success');
+                        }
+                    } else {
+                        showMessage(`Этот аватар недоступен`, 'error');
+                    }
+                }
                 
                 function exportData() {
                     const data = {
                         user: currentUser.value,
                         expenses: { ...expenses },
+                        goals: [...goals.value],
                         friends: friends.value,
                         exportDate: new Date().toISOString()
                     };
@@ -844,11 +1276,22 @@
                     }, 100);
                 });
                 
-                watch([expenses, friends], () => {
+                watch([expenses, goals, friends], () => {
                     if (currentUser.value) {
                         saveToStorage();
                     }
                 }, { deep: true });
+
+                watch(kfg, () => {
+                    if (currentUser.value) {
+                        // Проверяем, не потерял ли пользователь доступ к текущему аватару
+                        const currentAvatar = avatars.find(a => a.id === currentUser.value.avatar);
+                        if (currentAvatar && !isAvatarUnlocked(currentAvatar)) {
+                            changeAvatar(avatars[0]);
+                            showMessage(`Ваш аватар изменен на Новичок, так как предыдущий стал недоступен`, 'info');
+                        }
+                    }
+                });
                 
                 return {
                     currentTab,
@@ -857,6 +1300,8 @@
                     loginForm,
                     registerForm,
                     expenses,
+                    goals, // Добавляем цели
+                    newGoal, // Добавляем новую цель
                     friends,
                     friendSearchQuery,
                     searchResults,
@@ -865,6 +1310,7 @@
                     chatInput,
                     chatContainer,
                     rewards,
+                    avatars,
                     tabs,
                     categoryNames,
                     categoryIcons,
@@ -872,9 +1318,11 @@
                     totalExpenses,
                     totalIncome,
                     balance,
+                    totalGoalsAmount, // Добавляем общую сумму целей
                     kfg,
                     recommendations,
                     penalties,
+                    unlockedAvatars,
                     handleRegister,
                     handleLogin,
                     logout,
@@ -882,9 +1330,20 @@
                     addFriend,
                     removeFriend,
                     saveExpenses,
+                    addGoal, // Добавляем метод
+                    addToGoal, // Добавляем метод
+                    quickAddToGoal, // Добавляем метод
+                    removeGoal, // Добавляем метод
                     sendMessage,
                     claimReward,
-                    exportData
+                    exportData,
+                    getAvatarUrl,
+                    getAvatarName,
+                    changeAvatar,
+                    isAvatarUnlocked,
+                    isAvatarAvailableForRegister,
+                    selectRegisterAvatar,
+                    getAvatarStatus
                 };
             }
         });
