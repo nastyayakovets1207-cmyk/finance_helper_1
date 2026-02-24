@@ -29,18 +29,9 @@
         .message-user {
             @apply gradient-bg text-white rounded-lg rounded-tr-none p-3 self-end max-w-[80%];
         }
-        
-        .auth-tab-active {
-            @apply bg-purple-600 text-white;
-        }
-        
-        .auth-tab-inactive {
-            @apply bg-gray-200 text-gray-700 hover:bg-gray-300;
-        }
     </style>
 </head>
 <body class="bg-gray-100">
-    <!-- Приложение Vue.js -->
     <div id="app">
         <!-- Навигация -->
         <nav class="gradient-bg text-white shadow-lg">
@@ -51,11 +42,11 @@
                         <span class="text-xl font-bold">Финансовый консультант (Vue.js)</span>
                     </div>
                     <div class="flex items-center space-x-4">
-                        <span v-if="isAuthenticated" class="text-sm">
+                        <span v-if="currentUser" class="text-sm">
                             <i class="fas fa-user mr-1"></i>{{ currentUser.nickname }}
                         </span>
-                        <button @click="exportData" class="bg-white text-purple-600 px-4 py-2 rounded-lg font-semibold hover:bg-gray-100">
-                            <i class="fas fa-download mr-2"></i>Экспорт
+                        <button v-if="currentUser" @click="logout" class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600">
+                            <i class="fas fa-sign-out-alt mr-2"></i>Выйти
                         </button>
                     </div>
                 </div>
@@ -68,104 +59,92 @@
             {{ message.text }}
         </div>
 
-        <!-- Модальное окно авторизации (показывается если не авторизован) -->
-        <div v-if="!isAuthenticated" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div class="bg-white rounded-xl shadow-2xl w-full max-w-md p-6">
-                <div class="flex items-center space-x-2 mb-6">
-                    <i class="fas fa-wallet text-3xl gradient-bg text-white p-2 rounded-lg"></i>
-                    <h2 class="text-2xl font-bold">Финансовый консультант</h2>
-                </div>
-                
-                <!-- Переключатель Вход/Регистрация -->
-                <div class="flex mb-6">
-                    <button @click="authMode = 'login'" 
-                            :class="['flex-1 py-2 px-4 rounded-l-lg font-medium transition', 
-                                     authMode === 'login' ? 'auth-tab-active' : 'auth-tab-inactive']">
-                        <i class="fas fa-sign-in-alt mr-2"></i>Вход
-                    </button>
-                    <button @click="authMode = 'register'" 
-                            :class="['flex-1 py-2 px-4 rounded-r-lg font-medium transition',
-                                     authMode === 'register' ? 'auth-tab-active' : 'auth-tab-inactive']">
-                        <i class="fas fa-user-plus mr-2"></i>Регистрация
-                    </button>
-                </div>
-                
-                <!-- Форма входа -->
-                <div v-if="authMode === 'login'">
-                    <div class="mb-4">
-                        <label class="block text-gray-700 font-medium mb-2">
-                            <i class="fas fa-user mr-1"></i>Логин
-                        </label>
-                        <input v-model="loginForm.login" type="text" 
-                               class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-purple-500">
+        <!-- Формы авторизации (показываются если не авторизован) -->
+        <div v-if="!currentUser" class="container mx-auto px-4 py-8">
+            <div class="max-w-4xl mx-auto">
+                <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+                    <div class="p-6">
+                        <h1 class="text-3xl font-bold text-center mb-8">Добро пожаловать в Финансовый консультант</h1>
+                        
+                        <div class="grid md:grid-cols-2 gap-8">
+                            <!-- Форма регистрации -->
+                            <div class="bg-gray-50 rounded-xl p-6">
+                                <h2 class="text-2xl font-bold mb-6 text-purple-600">Регистрация</h2>
+                                
+                                <div class="mb-4">
+                                    <label class="block text-gray-700 font-medium mb-2">Имя</label>
+                                    <input v-model="registerForm.name" type="text" 
+                                           class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-purple-500">
+                                </div>
+                                
+                                <div class="mb-4">
+                                    <label class="block text-gray-700 font-medium mb-2">Фамилия</label>
+                                    <input v-model="registerForm.surname" type="text" 
+                                           class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-purple-500">
+                                </div>
+                                
+                                <div class="mb-4">
+                                    <label class="block text-gray-700 font-medium mb-2">Доход в месяц</label>
+                                    <input v-model="registerForm.income" type="number" 
+                                           class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-purple-500">
+                                </div>
+                                
+                                <div class="mb-4">
+                                    <label class="block text-gray-700 font-medium mb-2">Никнейм (для поиска друзей)</label>
+                                    <input v-model="registerForm.nickname" type="text" 
+                                           class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-purple-500"
+                                           placeholder="@username">
+                                    <p class="text-xs text-gray-500 mt-1">Должен быть уникальным</p>
+                                </div>
+                                
+                                <div class="mb-4">
+                                    <label class="block text-gray-700 font-medium mb-2">Логин (для входа)</label>
+                                    <input v-model="registerForm.login" type="text" 
+                                           class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-purple-500">
+                                    <p class="text-xs text-gray-500 mt-1">Должен быть уникальным</p>
+                                </div>
+                                
+                                <div class="mb-6">
+                                    <label class="block text-gray-700 font-medium mb-2">Пароль</label>
+                                    <input v-model="registerForm.password" type="password" 
+                                           class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-purple-500">
+                                </div>
+                                
+                                <button @click="handleRegister" 
+                                        class="w-full gradient-bg text-white py-3 rounded-lg font-semibold hover:shadow-lg">
+                                    <i class="fas fa-user-plus mr-2"></i>Зарегистрироваться
+                                </button>
+                            </div>
+                            
+                            <!-- Форма входа -->
+                            <div class="bg-gray-50 rounded-xl p-6">
+                                <h2 class="text-2xl font-bold mb-6 text-purple-600">Вход</h2>
+                                
+                                <div class="mb-4">
+                                    <label class="block text-gray-700 font-medium mb-2">Логин</label>
+                                    <input v-model="loginForm.login" type="text" 
+                                           class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-purple-500">
+                                </div>
+                                
+                                <div class="mb-6">
+                                    <label class="block text-gray-700 font-medium mb-2">Пароль</label>
+                                    <input v-model="loginForm.password" type="password" 
+                                           class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-purple-500">
+                                </div>
+                                
+                                <button @click="handleLogin" 
+                                        class="w-full gradient-bg text-white py-3 rounded-lg font-semibold hover:shadow-lg">
+                                    <i class="fas fa-sign-in-alt mr-2"></i>Войти
+                                </button>
+                            </div>
+                        </div>
                     </div>
-                    <div class="mb-6">
-                        <label class="block text-gray-700 font-medium mb-2">
-                            <i class="fas fa-lock mr-1"></i>Пароль
-                        </label>
-                        <input v-model="loginForm.password" type="password" 
-                               class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-purple-500">
-                    </div>
-                    <button @click="handleLogin" 
-                            class="w-full gradient-bg text-white py-3 rounded-lg font-semibold hover:shadow-lg">
-                        <i class="fas fa-sign-in-alt mr-2"></i>Войти
-                    </button>
-                </div>
-                
-                <!-- Форма регистрации -->
-                <div v-if="authMode === 'register'">
-                    <div class="mb-4">
-                        <label class="block text-gray-700 font-medium mb-2">
-                            <i class="fas fa-user mr-1"></i>Имя
-                        </label>
-                        <input v-model="registerForm.name" type="text" 
-                               class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-purple-500">
-                    </div>
-                    <div class="mb-4">
-                        <label class="block text-gray-700 font-medium mb-2">
-                            <i class="fas fa-at mr-1"></i>Никнейм (для поиска друзей)
-                        </label>
-                        <input v-model="registerForm.nickname" type="text" 
-                               class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-purple-500"
-                               placeholder="Например: @финансист">
-                        <p class="text-xs text-gray-500 mt-1">Должен быть уникальным</p>
-                    </div>
-                    <div class="mb-4">
-                        <label class="block text-gray-700 font-medium mb-2">
-                            <i class="fas fa-user-circle mr-1"></i>Логин
-                        </label>
-                        <input v-model="registerForm.login" type="text" 
-                               class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-purple-500">
-                        <p class="text-xs text-gray-500 mt-1">Должен быть уникальным</p>
-                    </div>
-                    <div class="mb-4">
-                        <label class="block text-gray-700 font-medium mb-2">
-                            <i class="fas fa-lock mr-1"></i>Пароль
-                        </label>
-                        <input v-model="registerForm.password" type="password" 
-                               class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-purple-500">
-                    </div>
-                    <div class="mb-4">
-                        <label class="block text-gray-700 font-medium mb-2">Доход (в месяц)</label>
-                        <input v-model="registerForm.income" type="number" 
-                               class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-purple-500">
-                    </div>
-                    <div class="mb-6">
-                        <label class="block text-gray-700 font-medium mb-2">Финансовая цель</label>
-                        <input v-model="registerForm.goal" type="text" 
-                               class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-purple-500" 
-                               placeholder="Например: накопить 100000 на ноутбук">
-                    </div>
-                    <button @click="handleRegister" 
-                            class="w-full gradient-bg text-white py-3 rounded-lg font-semibold hover:shadow-lg">
-                        <i class="fas fa-user-check mr-2"></i>Зарегистрироваться
-                    </button>
                 </div>
             </div>
         </div>
 
-        <!-- Основной контейнер (показывается только авторизованным пользователям) -->
-        <div v-if="isAuthenticated" class="container mx-auto px-4 py-8">
+        <!-- Основной контейнер (для авторизованных пользователей) -->
+        <div v-else class="container mx-auto px-4 py-8">
             <!-- Табы -->
             <div class="bg-white rounded-xl shadow-lg overflow-hidden">
                 <div class="flex flex-wrap border-b">
@@ -184,13 +163,12 @@
                 <div v-show="currentTab === 'profile'" class="p-6">
                     <h2 class="text-2xl font-bold mb-6">Мой профиль</h2>
                     <div class="grid md:grid-cols-2 gap-6">
-                        <!-- Данные профиля -->
                         <div class="bg-gray-50 rounded-xl p-6">
                             <h3 class="text-lg font-semibold mb-4">Личная информация</h3>
                             <div class="space-y-3">
                                 <div class="flex justify-between pb-2 border-b">
                                     <span class="text-gray-600">Имя:</span>
-                                    <span class="font-semibold">{{ currentUser.name }}</span>
+                                    <span class="font-semibold">{{ currentUser.name }} {{ currentUser.surname }}</span>
                                 </div>
                                 <div class="flex justify-between pb-2 border-b">
                                     <span class="text-gray-600">Никнейм:</span>
@@ -202,24 +180,15 @@
                                 </div>
                                 <div class="flex justify-between pb-2 border-b">
                                     <span class="text-gray-600">Доход:</span>
-                                    <span class="font-semibold">{{ currentUser.income || 0 }} ₽</span>
-                                </div>
-                                <div class="flex justify-between pb-2 border-b">
-                                    <span class="text-gray-600">Цель:</span>
-                                    <span class="font-semibold">{{ currentUser.goal || '-' }}</span>
+                                    <span class="font-semibold">{{ currentUser.income }} ₽</span>
                                 </div>
                                 <div class="flex justify-between pb-2 border-b">
                                     <span class="text-gray-600">КФГ:</span>
                                     <span class="font-semibold text-purple-600">{{ kfg }}</span>
                                 </div>
                             </div>
-                            
-                            <button @click="logout" class="mt-6 bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 w-full">
-                                <i class="fas fa-sign-out-alt mr-2"></i>Выйти
-                            </button>
                         </div>
                         
-                        <!-- Статистика -->
                         <div class="bg-gray-50 rounded-xl p-6">
                             <h3 class="text-lg font-semibold mb-4">Краткая статистика</h3>
                             <div class="space-y-4">
@@ -261,7 +230,6 @@
                 <div v-show="currentTab === 'analytics'" class="p-6">
                     <h2 class="text-2xl font-bold mb-6">Аналитика</h2>
                     
-                    <!-- Статистика -->
                     <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
                         <div class="gradient-bg text-white rounded-lg p-4">
                             <p class="text-sm opacity-90">Общий доход</p>
@@ -281,12 +249,10 @@
                         </div>
                     </div>
 
-                    <!-- График -->
                     <div class="bg-gray-50 rounded-lg p-4 mb-6">
                         <canvas id="expenseChart" style="height: 300px;"></canvas>
                     </div>
 
-                    <!-- Рекомендации -->
                     <div class="bg-gray-50 rounded-lg p-4">
                         <h3 class="text-lg font-semibold mb-3">Рекомендации</h3>
                         <div class="space-y-2">
@@ -320,41 +286,38 @@
                 <div v-show="currentTab === 'friends'" class="p-6">
                     <h2 class="text-2xl font-bold mb-6">Друзья</h2>
                     
-                    <!-- Поиск друзей по никнейму -->
                     <div class="bg-gray-50 rounded-lg p-4 mb-6">
-                        <h3 class="text-lg font-semibold mb-3">Найти друга</h3>
+                        <h3 class="text-lg font-semibold mb-3">Найти друга по никнейму</h3>
                         <div class="flex space-x-2">
                             <input v-model="friendSearchQuery" type="text" 
                                    class="flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:border-purple-500" 
-                                   placeholder="Введите никнейм друга (например: @финансист)">
+                                   placeholder="Введите никнейм (например: @username)">
                             <button @click="searchFriends" class="gradient-bg text-white px-6 py-2 rounded-lg font-semibold hover:shadow-lg">
                                 <i class="fas fa-search mr-2"></i>Поиск
                             </button>
                         </div>
                         
-                        <!-- Результаты поиска (только зарегистрированные пользователи) -->
                         <div v-if="searchResults.length > 0" class="mt-4">
                             <h4 class="text-sm font-medium text-gray-600 mb-2">Результаты поиска:</h4>
                             <div class="space-y-2">
                                 <div v-for="user in searchResults" :key="user.login" 
                                      class="bg-white p-3 rounded-lg flex justify-between items-center border">
                                     <div>
-                                        <span class="font-medium">{{ user.name }}</span>
+                                        <span class="font-medium">{{ user.name }} {{ user.surname }}</span>
                                         <span class="text-sm text-gray-500 ml-2">{{ user.nickname }}</span>
                                     </div>
                                     <button @click="addFriend(user)" 
                                             class="bg-green-500 text-white px-3 py-1 rounded-lg text-sm hover:bg-green-600">
-                                        <i class="fas fa-user-plus mr-1"></i>Добавить
+                                        <i class="fas fa-user-plus mr-1"></i>Добавить в друзья
                                     </button>
                                 </div>
                             </div>
                         </div>
-                        <div v-else-if="friendSearchQuery && !searchResults.length" class="mt-4 text-gray-500 text-center py-4">
+                        <div v-else-if="friendSearchQuery && searchPerformed" class="mt-4 text-gray-500 text-center py-4">
                             Пользователь с таким никнеймом не найден
                         </div>
                     </div>
 
-                    <!-- Список друзей (только зарегистрированные пользователи) -->
                     <h3 class="text-lg font-semibold mb-3">Мои друзья ({{ friends.length }})</h3>
                     
                     <div v-if="friends.length === 0" class="bg-gray-50 rounded-lg p-8 text-center text-gray-500">
@@ -368,22 +331,17 @@
                             class="bg-gray-50 rounded-lg p-4 flex justify-between items-center hover:shadow-md transition">
                             <div class="flex items-center space-x-3">
                                 <div class="w-10 h-10 gradient-bg rounded-full flex items-center justify-center text-white font-bold">
-                                    {{ friend.name.charAt(0) }}
+                                    {{ friend.name.charAt(0) }}{{ friend.surname ? friend.surname.charAt(0) : '' }}
                                 </div>
                                 <div>
-                                    <span class="font-medium block">{{ friend.name }}</span>
+                                    <span class="font-medium block">{{ friend.name }} {{ friend.surname }}</span>
                                     <span class="text-sm text-gray-500">{{ friend.nickname }}</span>
                                 </div>
                             </div>
-                            <div class="flex items-center space-x-3">
-                                <span class="gradient-bg text-white px-3 py-1 rounded-full text-sm">
-                                    КФГ: {{ friend.kfg || '??' }}
-                                </span>
-                                <button @click="removeFriend(friend)" 
-                                        class="text-red-500 hover:text-red-700">
-                                    <i class="fas fa-user-minus"></i>
-                                </button>
-                            </div>
+                            <button @click="removeFriend(friend)" 
+                                    class="text-red-500 hover:text-red-700">
+                                <i class="fas fa-user-minus"></i>
+                            </button>
                         </li>
                     </ul>
                 </div>
@@ -432,9 +390,7 @@
                 const currentTab = ref('profile');
                 const message = reactive({ show: false, text: '', type: 'success' });
                 
-                // Авторизация
-                const isAuthenticated = ref(false);
-                const authMode = ref('login');
+                // Пользователи и текущий пользователь
                 const users = ref([]);
                 const currentUser = ref(null);
                 
@@ -446,11 +402,11 @@
                 
                 const registerForm = reactive({
                     name: '',
+                    surname: '',
                     nickname: '',
                     login: '',
                     password: '',
-                    income: 0,
-                    goal: ''
+                    income: 0
                 });
                 
                 // Расходы
@@ -464,6 +420,7 @@
                 const friends = ref([]);
                 const friendSearchQuery = ref('');
                 const searchResults = ref([]);
+                const searchPerformed = ref(false);
                 
                 // Чат
                 const chatMessages = ref([
@@ -481,7 +438,7 @@
                     { id: 5, name: 'Путешествие', kfgRequired: 300, description: 'Скидка на билеты 20%', icon: 'fa-plane' }
                 ];
                 
-                // Константы для отображения
+                // Константы
                 const tabs = [
                     { id: 'profile', name: 'Профиль', icon: 'fas fa-user' },
                     { id: 'expenses', name: 'Расходы', icon: 'fas fa-chart-line' },
@@ -580,32 +537,9 @@
                 });
                 
                 // Методы авторизации
-                function handleLogin() {
-                    if (!loginForm.login || !loginForm.password) {
-                        showMessage('Заполните все поля', 'error');
-                        return;
-                    }
-                    
-                    const user = users.value.find(u => 
-                        u.login === loginForm.login && u.password === loginForm.password
-                    );
-                    
-                    if (user) {
-                        currentUser.value = { ...user };
-                        isAuthenticated.value = true;
-                        loadUserData(user);
-                        showMessage('Добро пожаловать!', 'success');
-                        
-                        loginForm.login = '';
-                        loginForm.password = '';
-                    } else {
-                        showMessage('Неверный логин или пароль', 'error');
-                    }
-                }
-                
                 function handleRegister() {
-                    if (!registerForm.name || !registerForm.nickname || !registerForm.login || 
-                        !registerForm.password || !registerForm.income || !registerForm.goal) {
+                    if (!registerForm.name || !registerForm.surname || !registerForm.nickname || 
+                        !registerForm.login || !registerForm.password || !registerForm.income) {
                         showMessage('Пожалуйста, заполните все поля', 'error');
                         return;
                     }
@@ -622,31 +556,54 @@
                     
                     const newUser = {
                         name: registerForm.name,
+                        surname: registerForm.surname,
                         nickname: registerForm.nickname,
                         login: registerForm.login,
                         password: registerForm.password,
                         income: Number(registerForm.income),
-                        goal: registerForm.goal,
                         expenses: { ...expenses },
                         friends: []
                     };
                     
                     users.value.push(newUser);
                     currentUser.value = { ...newUser };
-                    isAuthenticated.value = true;
                     
                     showMessage('Регистрация успешна!', 'success');
                     
-                    Object.keys(registerForm).forEach(key => {
-                        if (key === 'income') registerForm[key] = 0;
-                        else registerForm[key] = '';
-                    });
+                    // Очищаем форму
+                    registerForm.name = '';
+                    registerForm.surname = '';
+                    registerForm.nickname = '';
+                    registerForm.login = '';
+                    registerForm.password = '';
+                    registerForm.income = 0;
                     
                     saveToStorage();
                 }
                 
+                function handleLogin() {
+                    if (!loginForm.login || !loginForm.password) {
+                        showMessage('Заполните все поля', 'error');
+                        return;
+                    }
+                    
+                    const user = users.value.find(u => 
+                        u.login === loginForm.login && u.password === loginForm.password
+                    );
+                    
+                    if (user) {
+                        currentUser.value = { ...user };
+                        loadUserData(user);
+                        showMessage('Добро пожаловать!', 'success');
+                        
+                        loginForm.login = '';
+                        loginForm.password = '';
+                    } else {
+                        showMessage('Неверный логин или пароль', 'error');
+                    }
+                }
+                
                 function logout() {
-                    isAuthenticated.value = false;
                     currentUser.value = null;
                     
                     Object.keys(expenses).forEach(key => expenses[key] = 0);
@@ -669,6 +626,8 @@
                 
                 // Методы для работы с друзьями
                 function searchFriends() {
+                    searchPerformed.value = true;
+                    
                     if (!friendSearchQuery.value.trim()) {
                         searchResults.value = [];
                         return;
@@ -676,20 +635,19 @@
                     
                     const query = friendSearchQuery.value.toLowerCase();
                     
-                    // Ищем только среди зарегистрированных пользователей
                     searchResults.value = users.value.filter(u => 
-                        u.nickname.toLowerCase().includes(query) && 
-                        u.login !== currentUser.value?.login && // Не показываем себя
-                        !friends.value.some(f => f.login === u.login) // Не показываем уже добавленных
+                        u.nickname.toLowerCase() === query && 
+                        u.login !== currentUser.value?.login &&
+                        !friends.value.some(f => f.login === u.login)
                     );
                 }
                 
                 function addFriend(user) {
                     const newFriend = {
                         name: user.name,
+                        surname: user.surname,
                         nickname: user.nickname,
-                        login: user.login,
-                        kfg: user.kfg || Math.floor(Math.random() * 100)
+                        login: user.login
                     };
                     
                     friends.value.push(newFriend);
@@ -698,10 +656,12 @@
                     const userIndex = users.value.findIndex(u => u.login === currentUser.value?.login);
                     if (userIndex !== -1) {
                         users.value[userIndex].friends = [...friends.value];
+                        currentUser.value.friends = [...friends.value];
                     }
                     
-                    searchResults.value = searchResults.value.filter(u => u.login !== user.login);
+                    searchResults.value = [];
                     friendSearchQuery.value = '';
+                    searchPerformed.value = false;
                     
                     showMessage(`Друг ${user.name} добавлен!`, 'success');
                     saveToStorage();
@@ -713,6 +673,7 @@
                     const userIndex = users.value.findIndex(u => u.login === currentUser.value?.login);
                     if (userIndex !== -1) {
                         users.value[userIndex].friends = [...friends.value];
+                        currentUser.value.friends = [...friends.value];
                     }
                     
                     showMessage(`Друг ${friend.name} удален`, 'success');
@@ -763,7 +724,6 @@
                                 const userExists = users.value.some(u => u.login === data.currentUser.login);
                                 if (userExists) {
                                     currentUser.value = data.currentUser;
-                                    isAuthenticated.value = true;
                                     loadUserData(data.currentUser);
                                 }
                             }
@@ -821,7 +781,6 @@
                         sender: 'user'
                     });
                     
-                    const question = chatInput.value;
                     chatInput.value = '';
                     
                     setTimeout(() => {
@@ -886,7 +845,7 @@
                 });
                 
                 watch([expenses, friends], () => {
-                    if (isAuthenticated.value) {
+                    if (currentUser.value) {
                         saveToStorage();
                     }
                 }, { deep: true });
@@ -894,15 +853,14 @@
                 return {
                     currentTab,
                     message,
-                    isAuthenticated,
-                    authMode,
+                    currentUser,
                     loginForm,
                     registerForm,
-                    currentUser,
                     expenses,
                     friends,
                     friendSearchQuery,
                     searchResults,
+                    searchPerformed,
                     chatMessages,
                     chatInput,
                     chatContainer,
@@ -917,8 +875,8 @@
                     kfg,
                     recommendations,
                     penalties,
-                    handleLogin,
                     handleRegister,
+                    handleLogin,
                     logout,
                     searchFriends,
                     addFriend,
