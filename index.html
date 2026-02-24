@@ -14,7 +14,7 @@
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
-    <!-- Vue.js - сам фреймворк! -->
+    <!-- Vue.js -->
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     
     <style>
@@ -29,6 +29,14 @@
         .message-user {
             @apply gradient-bg text-white rounded-lg rounded-tr-none p-3 self-end max-w-[80%];
         }
+        
+        .auth-tab-active {
+            @apply bg-purple-600 text-white;
+        }
+        
+        .auth-tab-inactive {
+            @apply bg-gray-200 text-gray-700 hover:bg-gray-300;
+        }
     </style>
 </head>
 <body class="bg-gray-100">
@@ -42,9 +50,14 @@
                         <i class="fas fa-wallet text-2xl"></i>
                         <span class="text-xl font-bold">Финансовый консультант (Vue.js)</span>
                     </div>
-                    <button @click="exportData" class="bg-white text-purple-600 px-4 py-2 rounded-lg font-semibold hover:bg-gray-100">
-                        <i class="fas fa-download mr-2"></i>Экспорт
-                    </button>
+                    <div class="flex items-center space-x-4">
+                        <span v-if="isAuthenticated" class="text-sm">
+                            <i class="fas fa-user mr-1"></i>{{ currentUser.nickname }}
+                        </span>
+                        <button @click="exportData" class="bg-white text-purple-600 px-4 py-2 rounded-lg font-semibold hover:bg-gray-100">
+                            <i class="fas fa-download mr-2"></i>Экспорт
+                        </button>
+                    </div>
                 </div>
             </div>
         </nav>
@@ -55,8 +68,104 @@
             {{ message.text }}
         </div>
 
-        <!-- Основной контейнер -->
-        <div class="container mx-auto px-4 py-8">
+        <!-- Модальное окно авторизации (показывается если не авторизован) -->
+        <div v-if="!isAuthenticated" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div class="bg-white rounded-xl shadow-2xl w-full max-w-md p-6">
+                <div class="flex items-center space-x-2 mb-6">
+                    <i class="fas fa-wallet text-3xl gradient-bg text-white p-2 rounded-lg"></i>
+                    <h2 class="text-2xl font-bold">Финансовый консультант</h2>
+                </div>
+                
+                <!-- Переключатель Вход/Регистрация -->
+                <div class="flex mb-6">
+                    <button @click="authMode = 'login'" 
+                            :class="['flex-1 py-2 px-4 rounded-l-lg font-medium transition', 
+                                     authMode === 'login' ? 'auth-tab-active' : 'auth-tab-inactive']">
+                        <i class="fas fa-sign-in-alt mr-2"></i>Вход
+                    </button>
+                    <button @click="authMode = 'register'" 
+                            :class="['flex-1 py-2 px-4 rounded-r-lg font-medium transition',
+                                     authMode === 'register' ? 'auth-tab-active' : 'auth-tab-inactive']">
+                        <i class="fas fa-user-plus mr-2"></i>Регистрация
+                    </button>
+                </div>
+                
+                <!-- Форма входа -->
+                <div v-if="authMode === 'login'">
+                    <div class="mb-4">
+                        <label class="block text-gray-700 font-medium mb-2">
+                            <i class="fas fa-user mr-1"></i>Логин
+                        </label>
+                        <input v-model="loginForm.login" type="text" 
+                               class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-purple-500">
+                    </div>
+                    <div class="mb-6">
+                        <label class="block text-gray-700 font-medium mb-2">
+                            <i class="fas fa-lock mr-1"></i>Пароль
+                        </label>
+                        <input v-model="loginForm.password" type="password" 
+                               class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-purple-500">
+                    </div>
+                    <button @click="handleLogin" 
+                            class="w-full gradient-bg text-white py-3 rounded-lg font-semibold hover:shadow-lg">
+                        <i class="fas fa-sign-in-alt mr-2"></i>Войти
+                    </button>
+                </div>
+                
+                <!-- Форма регистрации -->
+                <div v-if="authMode === 'register'">
+                    <div class="mb-4">
+                        <label class="block text-gray-700 font-medium mb-2">
+                            <i class="fas fa-user mr-1"></i>Имя
+                        </label>
+                        <input v-model="registerForm.name" type="text" 
+                               class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-purple-500">
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-gray-700 font-medium mb-2">
+                            <i class="fas fa-at mr-1"></i>Никнейм (для поиска друзей)
+                        </label>
+                        <input v-model="registerForm.nickname" type="text" 
+                               class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-purple-500"
+                               placeholder="Например: @финансист">
+                        <p class="text-xs text-gray-500 mt-1">Должен быть уникальным</p>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-gray-700 font-medium mb-2">
+                            <i class="fas fa-user-circle mr-1"></i>Логин
+                        </label>
+                        <input v-model="registerForm.login" type="text" 
+                               class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-purple-500">
+                        <p class="text-xs text-gray-500 mt-1">Должен быть уникальным</p>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-gray-700 font-medium mb-2">
+                            <i class="fas fa-lock mr-1"></i>Пароль
+                        </label>
+                        <input v-model="registerForm.password" type="password" 
+                               class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-purple-500">
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-gray-700 font-medium mb-2">Доход (в месяц)</label>
+                        <input v-model="registerForm.income" type="number" 
+                               class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-purple-500">
+                    </div>
+                    <div class="mb-6">
+                        <label class="block text-gray-700 font-medium mb-2">Финансовая цель</label>
+                        <input v-model="registerForm.goal" type="text" 
+                               class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-purple-500" 
+                               placeholder="Например: накопить 100000 на ноутбук">
+                    </div>
+                    <button @click="handleRegister" 
+                            class="w-full gradient-bg text-white py-3 rounded-lg font-semibold hover:shadow-lg">
+                        <i class="fas fa-user-check mr-2"></i>Зарегистрироваться
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Основной контейнер (показывается только авторизованным пользователям) -->
+        <div v-if="isAuthenticated" class="container mx-auto px-4 py-8">
             <!-- Табы -->
             <div class="bg-white rounded-xl shadow-lg overflow-hidden">
                 <div class="flex flex-wrap border-b">
@@ -71,48 +180,60 @@
                     </button>
                 </div>
 
-                <!-- Вкладка регистрации -->
-                <div v-show="currentTab === 'register'" class="p-6">
-                    <h2 class="text-2xl font-bold mb-6">Регистрация</h2>
+                <!-- Вкладка профиля -->
+                <div v-show="currentTab === 'profile'" class="p-6">
+                    <h2 class="text-2xl font-bold mb-6">Мой профиль</h2>
                     <div class="grid md:grid-cols-2 gap-6">
-                        <!-- Форма -->
+                        <!-- Данные профиля -->
                         <div class="bg-gray-50 rounded-xl p-6">
-                            <div class="mb-4">
-                                <label class="block text-gray-700 font-medium mb-2">Имя</label>
-                                <input v-model="registerForm.name" type="text" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-purple-500">
+                            <h3 class="text-lg font-semibold mb-4">Личная информация</h3>
+                            <div class="space-y-3">
+                                <div class="flex justify-between pb-2 border-b">
+                                    <span class="text-gray-600">Имя:</span>
+                                    <span class="font-semibold">{{ currentUser.name }}</span>
+                                </div>
+                                <div class="flex justify-between pb-2 border-b">
+                                    <span class="text-gray-600">Никнейм:</span>
+                                    <span class="font-semibold text-purple-600">{{ currentUser.nickname }}</span>
+                                </div>
+                                <div class="flex justify-between pb-2 border-b">
+                                    <span class="text-gray-600">Логин:</span>
+                                    <span class="font-semibold">{{ currentUser.login }}</span>
+                                </div>
+                                <div class="flex justify-between pb-2 border-b">
+                                    <span class="text-gray-600">Доход:</span>
+                                    <span class="font-semibold">{{ currentUser.income || 0 }} ₽</span>
+                                </div>
+                                <div class="flex justify-between pb-2 border-b">
+                                    <span class="text-gray-600">Цель:</span>
+                                    <span class="font-semibold">{{ currentUser.goal || '-' }}</span>
+                                </div>
+                                <div class="flex justify-between pb-2 border-b">
+                                    <span class="text-gray-600">КФГ:</span>
+                                    <span class="font-semibold text-purple-600">{{ kfg }}</span>
+                                </div>
                             </div>
-                            <div class="mb-4">
-                                <label class="block text-gray-700 font-medium mb-2">Доход (в месяц)</label>
-                                <input v-model="registerForm.income" type="number" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-purple-500">
-                            </div>
-                            <div class="mb-4">
-                                <label class="block text-gray-700 font-medium mb-2">Финансовая цель</label>
-                                <input v-model="registerForm.goal" type="text" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-purple-500" placeholder="Например: накопить 100000 на ноутбук">
-                            </div>
-                            <button @click="registerUser" class="gradient-bg text-white px-6 py-3 rounded-lg font-semibold hover:shadow-lg w-full">
-                                <i class="fas fa-user-check mr-2"></i>Зарегистрироваться
+                            
+                            <button @click="logout" class="mt-6 bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 w-full">
+                                <i class="fas fa-sign-out-alt mr-2"></i>Выйти
                             </button>
                         </div>
                         
                         <!-- Статистика -->
                         <div class="bg-gray-50 rounded-xl p-6">
-                            <h3 class="text-lg font-semibold mb-4">Личная статистика</h3>
-                            <div class="space-y-3">
-                                <div class="flex justify-between pb-2 border-b">
-                                    <span class="text-gray-600">Имя:</span>
-                                    <span class="font-semibold">{{ user.name || '-' }}</span>
+                            <h3 class="text-lg font-semibold mb-4">Краткая статистика</h3>
+                            <div class="space-y-4">
+                                <div class="gradient-bg text-white rounded-lg p-4">
+                                    <p class="text-sm opacity-90">Общий доход</p>
+                                    <p class="text-2xl font-bold">{{ totalIncome }} ₽</p>
                                 </div>
-                                <div class="flex justify-between pb-2 border-b">
-                                    <span class="text-gray-600">Доход:</span>
-                                    <span class="font-semibold">{{ user.income ? user.income + ' ₽' : '-' }}</span>
+                                <div class="gradient-bg text-white rounded-lg p-4">
+                                    <p class="text-sm opacity-90">Общие расходы</p>
+                                    <p class="text-2xl font-bold">{{ totalExpenses }} ₽</p>
                                 </div>
-                                <div class="flex justify-between pb-2 border-b">
-                                    <span class="text-gray-600">Цель:</span>
-                                    <span class="font-semibold">{{ user.goal || '-' }}</span>
-                                </div>
-                                <div class="flex justify-between pb-2 border-b">
-                                    <span class="text-gray-600">КФГ:</span>
-                                    <span class="font-semibold text-purple-600">{{ kfg }}</span>
+                                <div class="gradient-bg text-white rounded-lg p-4">
+                                    <p class="text-sm opacity-90">Остаток</p>
+                                    <p class="text-2xl font-bold">{{ balance }} ₽</p>
                                 </div>
                             </div>
                         </div>
@@ -198,18 +319,71 @@
                 <!-- Вкладка друзей -->
                 <div v-show="currentTab === 'friends'" class="p-6">
                     <h2 class="text-2xl font-bold mb-6">Друзья</h2>
+                    
+                    <!-- Поиск друзей по никнейму -->
                     <div class="bg-gray-50 rounded-lg p-4 mb-6">
+                        <h3 class="text-lg font-semibold mb-3">Найти друга</h3>
                         <div class="flex space-x-2">
-                            <input v-model="newFriendName" type="text" class="flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:border-purple-500" placeholder="Имя друга">
-                            <button @click="addFriend" class="gradient-bg text-white px-6 py-2 rounded-lg font-semibold hover:shadow-lg">
-                                <i class="fas fa-user-plus mr-2"></i>Добавить
+                            <input v-model="friendSearchQuery" type="text" 
+                                   class="flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:border-purple-500" 
+                                   placeholder="Введите никнейм друга (например: @финансист)">
+                            <button @click="searchFriends" class="gradient-bg text-white px-6 py-2 rounded-lg font-semibold hover:shadow-lg">
+                                <i class="fas fa-search mr-2"></i>Поиск
                             </button>
                         </div>
+                        
+                        <!-- Результаты поиска (только зарегистрированные пользователи) -->
+                        <div v-if="searchResults.length > 0" class="mt-4">
+                            <h4 class="text-sm font-medium text-gray-600 mb-2">Результаты поиска:</h4>
+                            <div class="space-y-2">
+                                <div v-for="user in searchResults" :key="user.login" 
+                                     class="bg-white p-3 rounded-lg flex justify-between items-center border">
+                                    <div>
+                                        <span class="font-medium">{{ user.name }}</span>
+                                        <span class="text-sm text-gray-500 ml-2">{{ user.nickname }}</span>
+                                    </div>
+                                    <button @click="addFriend(user)" 
+                                            class="bg-green-500 text-white px-3 py-1 rounded-lg text-sm hover:bg-green-600">
+                                        <i class="fas fa-user-plus mr-1"></i>Добавить
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div v-else-if="friendSearchQuery && !searchResults.length" class="mt-4 text-gray-500 text-center py-4">
+                            Пользователь с таким никнеймом не найден
+                        </div>
                     </div>
-                    <ul class="space-y-2">
-                        <li v-for="friend in friends" :key="friend.id" class="bg-gray-50 rounded-lg p-4 flex justify-between items-center">
-                            <span class="font-medium">{{ friend.name }}</span>
-                            <span class="gradient-bg text-white px-3 py-1 rounded-full text-sm">КФГ: {{ friend.kfg }}</span>
+
+                    <!-- Список друзей (только зарегистрированные пользователи) -->
+                    <h3 class="text-lg font-semibold mb-3">Мои друзья ({{ friends.length }})</h3>
+                    
+                    <div v-if="friends.length === 0" class="bg-gray-50 rounded-lg p-8 text-center text-gray-500">
+                        <i class="fas fa-user-friends text-4xl mb-3 opacity-50"></i>
+                        <p>У вас пока нет друзей</p>
+                        <p class="text-sm">Найдите друзей по никнейму выше</p>
+                    </div>
+                    
+                    <ul v-else class="space-y-2">
+                        <li v-for="friend in friends" :key="friend.login" 
+                            class="bg-gray-50 rounded-lg p-4 flex justify-between items-center hover:shadow-md transition">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-10 h-10 gradient-bg rounded-full flex items-center justify-center text-white font-bold">
+                                    {{ friend.name.charAt(0) }}
+                                </div>
+                                <div>
+                                    <span class="font-medium block">{{ friend.name }}</span>
+                                    <span class="text-sm text-gray-500">{{ friend.nickname }}</span>
+                                </div>
+                            </div>
+                            <div class="flex items-center space-x-3">
+                                <span class="gradient-bg text-white px-3 py-1 rounded-full text-sm">
+                                    КФГ: {{ friend.kfg || '??' }}
+                                </span>
+                                <button @click="removeFriend(friend)" 
+                                        class="text-red-500 hover:text-red-700">
+                                    <i class="fas fa-user-minus"></i>
+                                </button>
+                            </div>
                         </li>
                     </ul>
                 </div>
@@ -255,19 +429,26 @@
         const app = createApp({
             setup() {
                 // Состояние приложения
-                const currentTab = ref('register');
+                const currentTab = ref('profile');
                 const message = reactive({ show: false, text: '', type: 'success' });
                 
-                // Данные пользователя
-                const user = reactive({
-                    name: '',
-                    income: 0,
-                    goal: ''
+                // Авторизация
+                const isAuthenticated = ref(false);
+                const authMode = ref('login');
+                const users = ref([]);
+                const currentUser = ref(null);
+                
+                // Формы авторизации
+                const loginForm = reactive({
+                    login: '',
+                    password: ''
                 });
                 
-                // Форма регистрации
                 const registerForm = reactive({
                     name: '',
+                    nickname: '',
+                    login: '',
+                    password: '',
                     income: 0,
                     goal: ''
                 });
@@ -281,7 +462,8 @@
                 
                 // Друзья
                 const friends = ref([]);
-                const newFriendName = ref('');
+                const friendSearchQuery = ref('');
+                const searchResults = ref([]);
                 
                 // Чат
                 const chatMessages = ref([
@@ -301,7 +483,7 @@
                 
                 // Константы для отображения
                 const tabs = [
-                    { id: 'register', name: 'Регистрация', icon: 'fas fa-user-plus' },
+                    { id: 'profile', name: 'Профиль', icon: 'fas fa-user' },
                     { id: 'expenses', name: 'Расходы', icon: 'fas fa-chart-line' },
                     { id: 'analytics', name: 'Аналитика', icon: 'fas fa-chart-pie' },
                     { id: 'chat', name: 'Чат-бот', icon: 'fas fa-robot' },
@@ -324,39 +506,45 @@
                     education: 'fas fa-book', travel: 'fas fa-plane'
                 };
                 
+                const expenseCategories = computed(() => {
+                    return Object.keys(expenses);
+                });
+                
                 // Вычисляемые свойства
                 const totalExpenses = computed(() => {
                     return Object.values(expenses).reduce((a, b) => a + b, 0);
                 });
                 
-                const totalIncome = computed(() => user.income || 0);
+                const totalIncome = computed(() => currentUser.value?.income || 0);
                 
                 const balance = computed(() => totalIncome.value - totalExpenses.value);
                 
                 const kfg = computed(() => {
-                    if (!user.income || user.income === 0) return 0;
+                    if (!currentUser.value?.income || currentUser.value.income === 0) return 0;
                     
-                    let value = 100 - (totalExpenses.value / user.income * 100);
+                    let value = 100 - (totalExpenses.value / currentUser.value.income * 100);
                     
                     if (expenses.education > 0) value += 10;
-                    if (expenses.entertainment > user.income * 0.3) value -= 20;
-                    if (expenses.food > user.income * 0.5) value -= 15;
+                    if (expenses.entertainment > currentUser.value.income * 0.3) value -= 20;
+                    if (expenses.food > currentUser.value.income * 0.5) value -= 15;
                     
                     return Math.max(0, Math.min(100, Math.round(value)));
                 });
                 
                 const recommendations = computed(() => {
+                    if (!currentUser.value) return [];
+                    
                     const recs = [];
                     
-                    if (totalExpenses.value > user.income) {
+                    if (totalExpenses.value > currentUser.value.income) {
                         recs.push('⚠️ Ваши расходы превышают доход! Срочно сократите траты.');
                     }
                     
-                    if (expenses.entertainment > user.income * 0.2) {
+                    if (expenses.entertainment > currentUser.value.income * 0.2) {
                         recs.push('🎯 Попробуйте сократить расходы на развлечения до 20% от дохода.');
                     }
                     
-                    if (expenses.food > user.income * 0.3) {
+                    if (expenses.food > currentUser.value.income * 0.3) {
                         recs.push('🍎 Готовьте дома чаще - это сэкономит до 50% на еде.');
                     }
                     
@@ -376,20 +564,162 @@
                 });
                 
                 const penalties = computed(() => {
+                    if (!currentUser.value) return [];
+                    
                     const pens = [];
                     
                     if (kfg.value < 30) {
                         pens.push('⚠️ Ваш КФГ критически низкий! Увеличьте финансовую грамотность.');
                     }
                     
-                    if (totalExpenses.value > user.income * 0.9) {
+                    if (totalExpenses.value > currentUser.value.income * 0.9) {
                         pens.push('📉 Вы тратите почти весь доход - срочно сократите расходы!');
                     }
                     
                     return pens;
                 });
                 
-                // Методы
+                // Методы авторизации
+                function handleLogin() {
+                    if (!loginForm.login || !loginForm.password) {
+                        showMessage('Заполните все поля', 'error');
+                        return;
+                    }
+                    
+                    const user = users.value.find(u => 
+                        u.login === loginForm.login && u.password === loginForm.password
+                    );
+                    
+                    if (user) {
+                        currentUser.value = { ...user };
+                        isAuthenticated.value = true;
+                        loadUserData(user);
+                        showMessage('Добро пожаловать!', 'success');
+                        
+                        loginForm.login = '';
+                        loginForm.password = '';
+                    } else {
+                        showMessage('Неверный логин или пароль', 'error');
+                    }
+                }
+                
+                function handleRegister() {
+                    if (!registerForm.name || !registerForm.nickname || !registerForm.login || 
+                        !registerForm.password || !registerForm.income || !registerForm.goal) {
+                        showMessage('Пожалуйста, заполните все поля', 'error');
+                        return;
+                    }
+                    
+                    if (users.value.some(u => u.login === registerForm.login)) {
+                        showMessage('Пользователь с таким логином уже существует', 'error');
+                        return;
+                    }
+                    
+                    if (users.value.some(u => u.nickname === registerForm.nickname)) {
+                        showMessage('Пользователь с таким никнеймом уже существует', 'error');
+                        return;
+                    }
+                    
+                    const newUser = {
+                        name: registerForm.name,
+                        nickname: registerForm.nickname,
+                        login: registerForm.login,
+                        password: registerForm.password,
+                        income: Number(registerForm.income),
+                        goal: registerForm.goal,
+                        expenses: { ...expenses },
+                        friends: []
+                    };
+                    
+                    users.value.push(newUser);
+                    currentUser.value = { ...newUser };
+                    isAuthenticated.value = true;
+                    
+                    showMessage('Регистрация успешна!', 'success');
+                    
+                    Object.keys(registerForm).forEach(key => {
+                        if (key === 'income') registerForm[key] = 0;
+                        else registerForm[key] = '';
+                    });
+                    
+                    saveToStorage();
+                }
+                
+                function logout() {
+                    isAuthenticated.value = false;
+                    currentUser.value = null;
+                    
+                    Object.keys(expenses).forEach(key => expenses[key] = 0);
+                    friends.value = [];
+                    
+                    showMessage('Вы вышли из системы', 'success');
+                }
+                
+                function loadUserData(user) {
+                    if (user.expenses) {
+                        Object.assign(expenses, user.expenses);
+                    }
+                    
+                    if (user.friends) {
+                        friends.value = user.friends;
+                    }
+                    
+                    updateChart();
+                }
+                
+                // Методы для работы с друзьями
+                function searchFriends() {
+                    if (!friendSearchQuery.value.trim()) {
+                        searchResults.value = [];
+                        return;
+                    }
+                    
+                    const query = friendSearchQuery.value.toLowerCase();
+                    
+                    // Ищем только среди зарегистрированных пользователей
+                    searchResults.value = users.value.filter(u => 
+                        u.nickname.toLowerCase().includes(query) && 
+                        u.login !== currentUser.value?.login && // Не показываем себя
+                        !friends.value.some(f => f.login === u.login) // Не показываем уже добавленных
+                    );
+                }
+                
+                function addFriend(user) {
+                    const newFriend = {
+                        name: user.name,
+                        nickname: user.nickname,
+                        login: user.login,
+                        kfg: user.kfg || Math.floor(Math.random() * 100)
+                    };
+                    
+                    friends.value.push(newFriend);
+                    
+                    // Обновляем друзей в данных пользователя
+                    const userIndex = users.value.findIndex(u => u.login === currentUser.value?.login);
+                    if (userIndex !== -1) {
+                        users.value[userIndex].friends = [...friends.value];
+                    }
+                    
+                    searchResults.value = searchResults.value.filter(u => u.login !== user.login);
+                    friendSearchQuery.value = '';
+                    
+                    showMessage(`Друг ${user.name} добавлен!`, 'success');
+                    saveToStorage();
+                }
+                
+                function removeFriend(friend) {
+                    friends.value = friends.value.filter(f => f.login !== friend.login);
+                    
+                    const userIndex = users.value.findIndex(u => u.login === currentUser.value?.login);
+                    if (userIndex !== -1) {
+                        users.value[userIndex].friends = [...friends.value];
+                    }
+                    
+                    showMessage(`Друг ${friend.name} удален`, 'success');
+                    saveToStorage();
+                }
+                
+                // Остальные методы
                 let chart = null;
                 
                 function showMessage(text, type) {
@@ -402,21 +732,13 @@
                     }, 3000);
                 }
                 
-                function registerUser() {
-                    if (!registerForm.name || !registerForm.income || !registerForm.goal) {
-                        showMessage('Пожалуйста, заполните все поля', 'error');
-                        return;
+                function saveExpenses() {
+                    const userIndex = users.value.findIndex(u => u.login === currentUser.value?.login);
+                    if (userIndex !== -1) {
+                        users.value[userIndex].expenses = { ...expenses };
+                        currentUser.value.expenses = { ...expenses };
                     }
                     
-                    user.name = registerForm.name;
-                    user.income = registerForm.income;
-                    user.goal = registerForm.goal;
-                    
-                    showMessage('Регистрация успешна!', 'success');
-                    saveToStorage();
-                }
-                
-                function saveExpenses() {
                     saveToStorage();
                     showMessage('Расходы сохранены!', 'success');
                     updateChart();
@@ -424,9 +746,8 @@
                 
                 function saveToStorage() {
                     const data = {
-                        user: { ...user },
-                        expenses: { ...expenses },
-                        friends: friends.value
+                        users: users.value,
+                        currentUser: currentUser.value,
                     };
                     localStorage.setItem('vueFinancialData', JSON.stringify(data));
                 }
@@ -436,9 +757,16 @@
                     if (saved) {
                         try {
                             const data = JSON.parse(saved);
-                            Object.assign(user, data.user);
-                            Object.assign(expenses, data.expenses);
-                            friends.value = data.friends || [];
+                            users.value = data.users || [];
+                            
+                            if (data.currentUser) {
+                                const userExists = users.value.some(u => u.login === data.currentUser.login);
+                                if (userExists) {
+                                    currentUser.value = data.currentUser;
+                                    isAuthenticated.value = true;
+                                    loadUserData(data.currentUser);
+                                }
+                            }
                         } catch (e) {
                             console.error('Ошибка загрузки', e);
                         }
@@ -446,8 +774,14 @@
                 }
                 
                 function initChart() {
-                    const ctx = document.getElementById('expenseChart').getContext('2d');
-                    chart = new Chart(ctx, {
+                    const ctx = document.getElementById('expenseChart');
+                    if (!ctx) return;
+                    
+                    if (chart) {
+                        chart.destroy();
+                    }
+                    
+                    chart = new Chart(ctx.getContext('2d'), {
                         type: 'doughnut',
                         data: {
                             labels: Object.values(categoryNames),
@@ -474,6 +808,8 @@
                     if (chart) {
                         chart.data.datasets[0].data = Object.values(expenses);
                         chart.update();
+                    } else {
+                        initChart();
                     }
                 }
                 
@@ -494,7 +830,6 @@
                         }
                     }, 100);
                     
-                    // Имитация ответа бота
                     setTimeout(() => {
                         const responses = [
                             "Отличный вопрос! Для экономии рекомендую вести учет всех расходов.",
@@ -516,19 +851,6 @@
                     }, 1000);
                 }
                 
-                function addFriend() {
-                    if (!newFriendName.value.trim()) return;
-                    
-                    friends.value.push({
-                        id: Date.now(),
-                        name: newFriendName.value,
-                        kfg: Math.floor(Math.random() * 100)
-                    });
-                    
-                    newFriendName.value = '';
-                    saveToStorage();
-                }
-                
                 function claimReward(reward) {
                     if (reward.kfgRequired <= kfg.value) {
                         showMessage(`Поздравляем! Вы получили: ${reward.name}`, 'success');
@@ -539,7 +861,7 @@
                 
                 function exportData() {
                     const data = {
-                        user: { ...user },
+                        user: currentUser.value,
                         expenses: { ...expenses },
                         friends: friends.value,
                         exportDate: new Date().toISOString()
@@ -555,25 +877,32 @@
                     showMessage('Данные экспортированы!', 'success');
                 }
                 
-                // Жизненный цикл
                 onMounted(() => {
                     loadFromStorage();
-                    initChart();
+                    
+                    setTimeout(() => {
+                        initChart();
+                    }, 100);
                 });
                 
-                // Следим за изменениями для автосохранения
-                watch([user, expenses, friends], () => {
-                    saveToStorage();
+                watch([expenses, friends], () => {
+                    if (isAuthenticated.value) {
+                        saveToStorage();
+                    }
                 }, { deep: true });
                 
                 return {
                     currentTab,
                     message,
-                    user,
+                    isAuthenticated,
+                    authMode,
+                    loginForm,
                     registerForm,
+                    currentUser,
                     expenses,
                     friends,
-                    newFriendName,
+                    friendSearchQuery,
+                    searchResults,
                     chatMessages,
                     chatInput,
                     chatContainer,
@@ -581,16 +910,21 @@
                     tabs,
                     categoryNames,
                     categoryIcons,
+                    expenseCategories,
                     totalExpenses,
                     totalIncome,
                     balance,
                     kfg,
                     recommendations,
                     penalties,
-                    registerUser,
+                    handleLogin,
+                    handleRegister,
+                    logout,
+                    searchFriends,
+                    addFriend,
+                    removeFriend,
                     saveExpenses,
                     sendMessage,
-                    addFriend,
                     claimReward,
                     exportData
                 };
