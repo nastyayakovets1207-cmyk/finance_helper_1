@@ -52,7 +52,7 @@
                 <div class="flex items-center justify-between">
                     <div class="flex items-center space-x-2">
                         <i class="fas fa-wallet text-2xl"></i>
-                        <span class="text-xl font-bold">Финансовый консультант (Vue.js)</span>
+                        <span class="text-xl font-bold">Финансовый консультант</span>
                     </div>
                     <div class="flex items-center space-x-4">
                         <div v-if="currentUser" class="flex items-center space-x-2">
@@ -124,6 +124,22 @@
                                     <label class="block text-gray-700 font-medium mb-2">Пароль</label>
                                     <input v-model="registerForm.password" type="password" 
                                            class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-purple-500">
+                                </div>
+
+                                <div class="mb-4">
+                                    <label class="block text-gray-700 font-medium mb-2">Расходы по категориям</label>
+                                    <p class="text-xs text-gray-500 mb-2">Заполните хотя бы одну категорию (КФГ будет рассчитан)</p>
+                                    
+                                    <div class="grid grid-cols-2 gap-3">
+                                        <div v-for="(value, category) in registerForm.expenses" :key="category" class="mb-2">
+                                            <label class="block text-xs text-gray-600 mb-1">
+                                                <i :class="['mr-1', categoryIcons[category]]"></i>
+                                                {{ categoryNames[category] }}
+                                            </label>
+                                            <input v-model.number="registerForm.expenses[category]" type="number" min="0" 
+                                                   class="w-full px-2 py-1 text-sm border rounded-lg focus:outline-none focus:border-purple-500">
+                                        </div>
+                                    </div>
                                 </div>
 
                                 <div class="mb-6">
@@ -267,7 +283,7 @@
                 <div v-show="currentTab === 'expenses'" class="p-6">
                     <h2 class="text-2xl font-bold mb-6">Расходы по категориям</h2>
                     <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-                        <div v-for="(value, category) in expenseCategories" :key="category" class="bg-gray-50 rounded-lg p-4">
+                        <div v-for="(value, category) in expenses" :key="category" class="bg-gray-50 rounded-lg p-4">
                             <label class="block text-gray-700 font-medium mb-2">
                                 <i :class="['mr-1', categoryIcons[category]]"></i>
                                 {{ categoryNames[category] }}
@@ -280,7 +296,7 @@
                     </button>
                 </div>
 
-                <!-- Вкладка финансовых целей (НОВАЯ) -->
+                <!-- Вкладка финансовых целей -->
                 <div v-show="currentTab === 'goals'" class="p-6">
                     <h2 class="text-2xl font-bold mb-6">Финансовые цели</h2>
                     
@@ -616,6 +632,23 @@
                     password: ''
                 });
                 
+                // Начальные значения расходов для формы регистрации (13 категорий)
+                const initialExpenses = {
+                    food: 0, 
+                    transport: 0, 
+                    cafe: 0,
+                    hobby: 0, 
+                    selfcare: 0,
+                    health: 0, 
+                    housing: 0, 
+                    entertainment: 0,
+                    subscriptions: 0, 
+                    education: 0, 
+                    travel: 0,
+                    clothing: 0,    // Новая категория: Одежда
+                    sport: 0        // Новая категория: Спорт
+                };
+                
                 const registerForm = reactive({
                     name: '',
                     surname: '',
@@ -623,17 +656,14 @@
                     login: '',
                     password: '',
                     income: 0,
-                    avatar: 1 // аватар по умолчанию
+                    avatar: 1,
+                    expenses: { ...initialExpenses }
                 });
                 
-                // Расходы
-                const expenses = reactive({
-                    food: 0, transport: 0, hobby: 0, selfcare: 0,
-                    health: 0, housing: 0, entertainment: 0,
-                    subscriptions: 0, education: 0, travel: 0
-                });
+                // Расходы (для текущего пользователя) - 13 категорий
+                const expenses = reactive({ ...initialExpenses });
 
-                // Финансовые цели (НОВОЕ)
+                // Финансовые цели
                 const goals = ref([]);
                 const newGoal = reactive({
                     name: '',
@@ -671,35 +701,49 @@
                     { id: 5, name: 'Гуру', kfgRequired: 100, isPermanent: false, icon: 'fa-gem' }
                 ];
                 
-                // Константы (добавлена вкладка goals)
+                // Константы
                 const tabs = [
                     { id: 'profile', name: 'Профиль', icon: 'fas fa-user' },
                     { id: 'expenses', name: 'Расходы', icon: 'fas fa-chart-line' },
-                    { id: 'goals', name: 'Цели', icon: 'fas fa-bullseye' }, // Новая вкладка
+                    { id: 'goals', name: 'Цели', icon: 'fas fa-bullseye' },
                     { id: 'analytics', name: 'Аналитика', icon: 'fas fa-chart-pie' },
                     { id: 'chat', name: 'Чат-бот', icon: 'fas fa-robot' },
                     { id: 'friends', name: 'Друзья', icon: 'fas fa-users' },
                     { id: 'rewards', name: 'Награды', icon: 'fas fa-gift' }
                 ];
                 
+                // Категории расходов (теперь 13 категорий)
                 const categoryNames = {
-                    food: 'Еда', transport: 'Транспорт', hobby: 'Хобби',
-                    selfcare: 'Уход', health: 'Здоровье', housing: 'Жилье',
-                    entertainment: 'Развлечения', subscriptions: 'Подписки',
-                    education: 'Учеба', travel: 'Путешествия'
+                    food: 'Еда',
+                    transport: 'Транспорт',
+                    cafe: 'Кафе и рестораны',
+                    hobby: 'Хобби',
+                    selfcare: 'Уход',
+                    health: 'Здоровье',
+                    housing: 'Жилье',
+                    entertainment: 'Развлечения',
+                    subscriptions: 'Подписки',
+                    education: 'Учеба',
+                    travel: 'Путешествия',
+                    clothing: 'Одежда',     // Новая категория
+                    sport: 'Спорт'           // Новая категория
                 };
                 
                 const categoryIcons = {
-                    food: 'fas fa-utensils', transport: 'fas fa-bus',
-                    hobby: 'fas fa-palette', selfcare: 'fas fa-spa',
-                    health: 'fas fa-heartbeat', housing: 'fas fa-home',
-                    entertainment: 'fas fa-gamepad', subscriptions: 'fas fa-tv',
-                    education: 'fas fa-book', travel: 'fas fa-plane'
+                    food: 'fas fa-utensils',
+                    transport: 'fas fa-bus',
+                    cafe: 'fas fa-coffee',
+                    hobby: 'fas fa-palette',
+                    selfcare: 'fas fa-spa',
+                    health: 'fas fa-heartbeat',
+                    housing: 'fas fa-home',
+                    entertainment: 'fas fa-gamepad',
+                    subscriptions: 'fas fa-tv',
+                    education: 'fas fa-book',
+                    travel: 'fas fa-plane',
+                    clothing: 'fas fa-tshirt',   // Иконка для одежды
+                    sport: 'fas fa-futbol'        // Иконка для спорта
                 };
-                
-                const expenseCategories = computed(() => {
-                    return Object.keys(expenses);
-                });
                 
                 // Вычисляемые свойства
                 const totalExpenses = computed(() => {
@@ -710,7 +754,7 @@
                 
                 const balance = computed(() => totalIncome.value - totalExpenses.value);
 
-                // Общая сумма всех целей (НОВОЕ)
+                // Общая сумма всех целей
                 const totalGoalsAmount = computed(() => {
                     return goals.value.reduce((sum, goal) => sum + goal.targetAmount, 0);
                 });
@@ -722,14 +766,15 @@
                     // Проверяем, ввел ли пользователь расходы
                     const hasAnyExpenses = Object.values(expenses).some(val => val > 0);
                     if (!hasAnyExpenses) {
-                        return 0; // Пока не ввел расходы - КФГ = 0
+                        return 0;
                     }
                     
                     let value = 100 - (totalExpenses.value / currentUser.value.income * 100);
                     
                     // Штрафы
+                    const totalFood = (expenses.food || 0) + (expenses.cafe || 0);
                     if (expenses.entertainment > currentUser.value.income * 0.3) value -= 20;
-                    if (expenses.food > currentUser.value.income * 0.5) value -= 15;
+                    if (totalFood > currentUser.value.income * 0.5) value -= 15;
                     if (expenses.subscriptions > currentUser.value.income * 0.1) value -= 10;
                     
                     // Бонусы
@@ -794,7 +839,7 @@
                     }
                 }
 
-                // Методы для работы с целями (НОВЫЕ)
+                // Методы для работы с целями
                 function addGoal() {
                     if (!newGoal.name.trim()) {
                         showMessage('Введите название цели', 'error');
@@ -812,7 +857,6 @@
                         currentAmount: 0
                     });
                     
-                    // Очищаем форму
                     newGoal.name = '';
                     newGoal.targetAmount = 0;
                     
@@ -862,8 +906,9 @@
                         recs.push('🎯 Попробуйте сократить расходы на развлечения до 20% от дохода.');
                     }
                     
-                    if (expenses.food > currentUser.value.income * 0.3) {
-                        recs.push('🍎 Готовьте дома чаще - это сэкономит до 50% на еде.');
+                    const totalFood = (expenses.food || 0) + (expenses.cafe || 0);
+                    if (totalFood > currentUser.value.income * 0.3) {
+                        recs.push('🍎 Готовьте дома чаще - это сэкономит до 50% на еде и кафе.');
                     }
                     
                     if (expenses.subscriptions > 1000) {
@@ -878,7 +923,6 @@
                         recs.push(`💪 Отличная работа! Вы откладываете ${balance.value} ₽ в месяц.`);
                     }
 
-                    // Добавляем рекомендации по целям
                     if (goals.value.length > 0) {
                         const totalNeeded = totalGoalsAmount.value;
                         const totalSaved = goals.value.reduce((sum, g) => sum + g.currentAmount, 0);
@@ -925,10 +969,15 @@
                         return;
                     }
                     
-                    // Проверяем, что выбран доступный аватар
                     if (registerForm.avatar !== 1) {
                         showMessage('При регистрации доступен только аватар "Новичок"', 'error');
                         registerForm.avatar = 1;
+                        return;
+                    }
+                    
+                    const hasExpenses = Object.values(registerForm.expenses).some(val => val > 0);
+                    if (!hasExpenses) {
+                        showMessage('Заполните хотя бы одну категорию расходов', 'error');
                         return;
                     }
                     
@@ -940,17 +989,18 @@
                         password: registerForm.password,
                         income: Number(registerForm.income),
                         avatar: registerForm.avatar,
-                        expenses: { ...expenses },
-                        goals: [], // Добавляем цели для нового пользователя
+                        expenses: { ...registerForm.expenses },
+                        goals: [],
                         friends: []
                     };
                     
                     users.value.push(newUser);
                     currentUser.value = { ...newUser };
                     
+                    Object.assign(expenses, registerForm.expenses);
+                    
                     showMessage('Регистрация успешна!', 'success');
                     
-                    // Очищаем форму
                     registerForm.name = '';
                     registerForm.surname = '';
                     registerForm.nickname = '';
@@ -958,6 +1008,7 @@
                     registerForm.password = '';
                     registerForm.income = 0;
                     registerForm.avatar = 1;
+                    Object.assign(registerForm.expenses, initialExpenses);
                     
                     saveToStorage();
                 }
@@ -987,8 +1038,8 @@
                 function logout() {
                     currentUser.value = null;
                     
-                    Object.keys(expenses).forEach(key => expenses[key] = 0);
-                    goals.value = []; // Очищаем цели при выходе
+                    Object.assign(expenses, initialExpenses);
+                    goals.value = [];
                     friends.value = [];
                     
                     showMessage('Вы вышли из системы', 'success');
@@ -1039,7 +1090,6 @@
                     
                     friends.value.push(newFriend);
                     
-                    // Обновляем друзей в данных пользователя
                     const userIndex = users.value.findIndex(u => u.login === currentUser.value?.login);
                     if (userIndex !== -1) {
                         users.value[userIndex].friends = [...friends.value];
@@ -1095,7 +1145,6 @@
                 function saveToStorage() {
                     if (!currentUser.value) return;
                     
-                    // Обновляем данные текущего пользователя в общем списке
                     const userIndex = users.value.findIndex(u => u.login === currentUser.value?.login);
                     if (userIndex !== -1) {
                         users.value[userIndex] = { 
@@ -1151,7 +1200,7 @@
                                 backgroundColor: [
                                     '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0',
                                     '#9966FF', '#FF9F40', '#FF6384', '#36A2EB',
-                                    '#FFCE56', '#4BC0C0'
+                                    '#FFCE56', '#4BC0C0', '#FF8C42', '#9C27B0', '#FF5722'  // Добавлены цвета для 13 категорий
                                 ]
                             }]
                         },
@@ -1284,7 +1333,6 @@
 
                 watch(kfg, () => {
                     if (currentUser.value) {
-                        // Проверяем, не потерял ли пользователь доступ к текущему аватару
                         const currentAvatar = avatars.find(a => a.id === currentUser.value.avatar);
                         if (currentAvatar && !isAvatarUnlocked(currentAvatar)) {
                             changeAvatar(avatars[0]);
@@ -1300,8 +1348,8 @@
                     loginForm,
                     registerForm,
                     expenses,
-                    goals, // Добавляем цели
-                    newGoal, // Добавляем новую цель
+                    goals,
+                    newGoal,
                     friends,
                     friendSearchQuery,
                     searchResults,
@@ -1314,11 +1362,10 @@
                     tabs,
                     categoryNames,
                     categoryIcons,
-                    expenseCategories,
                     totalExpenses,
                     totalIncome,
                     balance,
-                    totalGoalsAmount, // Добавляем общую сумму целей
+                    totalGoalsAmount,
                     kfg,
                     recommendations,
                     penalties,
@@ -1330,10 +1377,10 @@
                     addFriend,
                     removeFriend,
                     saveExpenses,
-                    addGoal, // Добавляем метод
-                    addToGoal, // Добавляем метод
-                    quickAddToGoal, // Добавляем метод
-                    removeGoal, // Добавляем метод
+                    addGoal,
+                    addToGoal,
+                    quickAddToGoal,
+                    removeGoal,
                     sendMessage,
                     claimReward,
                     exportData,
