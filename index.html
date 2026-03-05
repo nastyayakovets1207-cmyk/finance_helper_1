@@ -1606,13 +1606,15 @@
                         return;
                     }
                     
+                    // Ищем пользователя с таким логином и паролем
                     const user = users.value.find(u => 
                         u.login === loginForm.login && u.password === loginForm.password
                     );
                     
                     if (user) {
-                        currentUser.value = { ...user };
-                        loadUserData(user);
+                        // Создаем копию пользователя, чтобы не изменять исходный объект напрямую
+                        currentUser.value = JSON.parse(JSON.stringify(user));
+                        loadUserData(currentUser.value);
                         showMessage('Добро пожаловать!', 'success');
                         
                         loginForm.login = '';
@@ -1763,8 +1765,12 @@
                             if (data.currentUser) {
                                 const userExists = users.value.some(u => u.login === data.currentUser.login);
                                 if (userExists) {
-                                    currentUser.value = data.currentUser;
-                                    loadUserData(data.currentUser);
+                                    // Находим полные данные пользователя из массива users
+                                    const fullUser = users.value.find(u => u.login === data.currentUser.login);
+                                    if (fullUser) {
+                                        currentUser.value = JSON.parse(JSON.stringify(fullUser));
+                                        loadUserData(currentUser.value);
+                                    }
                                 }
                             }
                         } catch (e) {
