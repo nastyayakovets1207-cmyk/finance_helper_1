@@ -65,6 +65,22 @@
         .penalty-step {
             @apply border-l-4 border-red-500 bg-red-50 p-3 rounded-lg;
         }
+
+        .friend-request-badge {
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.05);
+            }
+            100% {
+                transform: scale(1);
+            }
+        }
     </style>
 </head>
 <body class="bg-gray-100">
@@ -79,8 +95,15 @@
                     </div>
                     <div class="flex items-center space-x-4">
                         <div v-if="currentUser" class="flex items-center space-x-2">
-                            <div class="w-8 h-8 rounded-full overflow-hidden border-2 border-white">
-                                <img :src="getAvatarUrl(currentUser.avatar)" :alt="currentUser.name" class="w-full h-full object-cover">
+                            <div class="relative">
+                                <div class="w-8 h-8 rounded-full overflow-hidden border-2 border-white">
+                                    <img :src="getAvatarUrl(currentUser.avatar)" :alt="currentUser.name" class="w-full h-full object-cover">
+                                </div>
+                                <!-- Индикатор новых заявок в друзья -->
+                                <div v-if="pendingFriendRequests.length > 0" 
+                                     class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center friend-request-badge">
+                                    {{ pendingFriendRequests.length }}
+                                </div>
                             </div>
                             <span class="text-sm">{{ currentUser.nickname }}</span>
                             <span class="text-xs bg-white text-purple-600 px-2 py-1 rounded-full">{{ getUserRating(currentUser) }}</span>
@@ -238,6 +261,11 @@
                                          : 'text-gray-500 hover:text-gray-700']">
                         <i :class="['mr-2', tab.icon]"></i>
                         {{ tab.name }}
+                        <!-- Бейдж с количеством новых заявок для вкладки друзья -->
+                        <span v-if="tab.id === 'friends' && pendingFriendRequests.length > 0" 
+                              class="ml-2 bg-red-500 text-white text-xs rounded-full px-2 py-0.5">
+                            {{ pendingFriendRequests.length }}
+                        </span>
                     </button>
                 </div>
 
@@ -458,7 +486,7 @@
                     </div>
                 </div>
 
-                <!-- Вкладка аналитики (с демонстрацией расчета КФГ на основе данных пользователя) -->
+                <!-- Вкладка аналитики -->
                 <div v-show="currentTab === 'analytics'" class="p-6">
                     <h2 class="text-2xl font-bold mb-6">Аналитика</h2>
                     
@@ -664,7 +692,7 @@
                     </div>
                 </div>
 
-                <!-- Вкладка ИИ-Ассистент (переименовано) -->
+                <!-- Вкладка ИИ-Ассистент -->
                 <div v-show="currentTab === 'chat'" class="p-6">
                     <h2 class="text-2xl font-bold mb-6">ИИ-Ассистент</h2>
                     <div class="bg-gray-50 rounded-lg p-4">
@@ -683,7 +711,7 @@
                     </div>
                 </div>
 
-                <!-- Вкладка друзей -->
+                <!-- Вкладка друзей (обновленная) -->
                 <div v-show="currentTab === 'friends'" class="p-6">
                     <h2 class="text-2xl font-bold mb-6">Друзья и рейтинги</h2>
                     
@@ -719,6 +747,40 @@
                         </div>
                     </div>
 
+                    <!-- Новая секция: Заявки в друзья -->
+                    <div v-if="pendingFriendRequests.length > 0" class="bg-yellow-50 rounded-lg p-4 mb-6 border-2 border-yellow-200">
+                        <div class="flex items-center justify-between mb-3">
+                            <h3 class="text-lg font-semibold text-yellow-700">
+                                <i class="fas fa-user-plus mr-2"></i>
+                                Новые заявки в друзья ({{ pendingFriendRequests.length }})
+                            </h3>
+                        </div>
+                        <div class="space-y-3">
+                            <div v-for="request in pendingFriendRequests" :key="request.login" 
+                                 class="bg-white p-3 rounded-lg flex justify-between items-center border border-yellow-200">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-10 h-10 rounded-full overflow-hidden">
+                                        <img :src="getAvatarUrl(request.avatar)" class="w-full h-full object-cover">
+                                    </div>
+                                    <div>
+                                        <span class="font-medium">{{ request.name }} {{ request.surname }}</span>
+                                        <span class="text-sm text-gray-500 ml-2">{{ request.nickname }}</span>
+                                    </div>
+                                </div>
+                                <div class="flex space-x-2">
+                                    <button @click="acceptFriendRequest(request)" 
+                                            class="bg-green-500 text-white px-3 py-1 rounded-lg text-sm hover:bg-green-600">
+                                        <i class="fas fa-check mr-1"></i>Принять
+                                    </button>
+                                    <button @click="rejectFriendRequest(request)" 
+                                            class="bg-red-500 text-white px-3 py-1 rounded-lg text-sm hover:bg-red-600">
+                                        <i class="fas fa-times mr-1"></i>Отклонить
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Поиск друзей -->
                     <div class="bg-gray-50 rounded-lg p-4 mb-6">
                         <h3 class="text-lg font-semibold mb-3">Найти друга по никнейму</h3>
@@ -745,8 +807,8 @@
                                             <span class="text-sm text-gray-500 ml-2">{{ user.nickname }}</span>
                                         </div>
                                     </div>
-                                    <button @click="addFriend(user)" 
-                                            class="bg-green-500 text-white px-3 py-1 rounded-lg text-sm hover:bg-green-600">
+                                    <button @click="sendFriendRequest(user)" 
+                                            class="bg-purple-500 text-white px-3 py-1 rounded-lg text-sm hover:bg-purple-600">
                                         <i class="fas fa-user-plus mr-1"></i>Добавить
                                     </button>
                                 </div>
@@ -822,7 +884,7 @@
                     </div>
                 </div>
 
-                <!-- Вкладка наград (без раздела "Наказания") -->
+                <!-- Вкладка наград -->
                 <div v-show="currentTab === 'rewards'" class="p-6">
                     <h2 class="text-2xl font-bold mb-6">Система наград и аватаров</h2>
                     
@@ -1014,8 +1076,11 @@
                     targetAmount: 0
                 });
                 
-                // Друзья
+                // Друзья и заявки
                 const friends = ref([]);
+                const friendRequests = ref([]); // Исходящие заявки
+                const pendingRequests = ref([]); // Входящие заявки
+                
                 const friendSearchQuery = ref('');
                 const searchResults = ref([]);
                 const searchPerformed = ref(false);
@@ -1120,6 +1185,22 @@
                 const entertainmentPercent = computed(() => totalIncome.value > 0 ? Math.round((expenses.entertainment || 0) / totalIncome.value * 100) : 0);
                 const subscriptionsPercent = computed(() => totalIncome.value > 0 ? Math.round((expenses.subscriptions || 0) / totalIncome.value * 100) : 0);
                 const balancePercent = computed(() => totalIncome.value > 0 ? Math.round(balance.value / totalIncome.value * 100) : 0);
+
+                // Входящие заявки в друзья (для текущего пользователя)
+                const pendingFriendRequests = computed(() => {
+                    if (!currentUser.value) return [];
+                    
+                    return pendingRequests.value.map(requestLogin => {
+                        const user = users.value.find(u => u.login === requestLogin);
+                        return user ? {
+                            login: user.login,
+                            name: user.name,
+                            surname: user.surname,
+                            nickname: user.nickname,
+                            avatar: user.avatar
+                        } : null;
+                    }).filter(req => req !== null);
+                });
 
                 // Детальный расчет КФГ
                 const kfgCalculation = computed(() => {
@@ -1285,15 +1366,29 @@
                 }
 
                 // Друзья с их КФГ и деталями
-                const friendsWithKFG = computed(() => {
+                const friendsWithDetails = computed(() => {
                     return friends.value.map(friend => {
                         const fullUser = users.value.find(u => u.login === friend.login);
+                        if (!fullUser) return friend;
+                        
+                        // Получаем друзей друга
+                        const friendFriends = (fullUser.friends || []).map(f => {
+                            const friendUser = users.value.find(u => u.login === f.login);
+                            return {
+                                ...f,
+                                avatar: friendUser?.avatar || f.avatar
+                            };
+                        });
+                        
                         return {
                             ...friend,
-                            kfg: fullUser ? calculateKFG(fullUser) : 0,
-                            avatar: fullUser?.avatar || friend.avatar
+                            kfg: calculateKFG(fullUser),
+                            ratingName: getUserRating(fullUser),
+                            ratingLevel: getUserRatingLevel(fullUser),
+                            avatar: fullUser.avatar,
+                            friends: friendFriends
                         };
-                    }).sort((a, b) => b.kfg - a.kfg);
+                    });
                 });
 
                 // Участники рейтинга (текущий пользователь + друзья)
@@ -1328,31 +1423,6 @@
                     
                     // Сортируем по КФГ (по убыванию)
                     return participants.sort((a, b) => b.kfg - a.kfg);
-                });
-
-                const friendsWithDetails = computed(() => {
-                    return friends.value.map(friend => {
-                        const fullUser = users.value.find(u => u.login === friend.login);
-                        if (!fullUser) return friend;
-                        
-                        // Получаем друзей друга
-                        const friendFriends = (fullUser.friends || []).map(f => {
-                            const friendUser = users.value.find(u => u.login === f.login);
-                            return {
-                                ...f,
-                                avatar: friendUser?.avatar || f.avatar
-                            };
-                        });
-                        
-                        return {
-                            ...friend,
-                            kfg: calculateKFG(fullUser),
-                            ratingName: getUserRating(fullUser),
-                            ratingLevel: getUserRatingLevel(fullUser),
-                            avatar: fullUser.avatar,
-                            friends: friendFriends
-                        };
-                    });
                 });
 
                 // Проверка, разблокирован ли аватар
@@ -1600,7 +1670,9 @@
                         avatar: registerForm.avatar,
                         expenses: { ...registerForm.expenses },
                         goals: [],
-                        friends: []
+                        friends: [],
+                        friendRequests: [], // Исходящие заявки
+                        pendingRequests: [] // Входящие заявки
                     };
                     
                     users.value.push(newUser);
@@ -1652,6 +1724,8 @@
                     Object.assign(expenses, initialExpenses);
                     goals.value = [];
                     friends.value = [];
+                    friendRequests.value = [];
+                    pendingRequests.value = [];
                     
                     showMessage('Вы вышли из системы', 'success');
                 }
@@ -1667,6 +1741,14 @@
                     
                     if (user.friends) {
                         friends.value = user.friends;
+                    }
+                    
+                    if (user.friendRequests) {
+                        friendRequests.value = user.friendRequests;
+                    }
+                    
+                    if (user.pendingRequests) {
+                        pendingRequests.value = user.pendingRequests;
                     }
                     
                     // Обновляем диаграмму после загрузки данных
@@ -1689,45 +1771,129 @@
                     searchResults.value = users.value.filter(u => 
                         u.nickname.toLowerCase() === query && 
                         u.login !== currentUser.value?.login &&
-                        !friends.value.some(f => f.login === u.login)
+                        !friends.value.some(f => f.login === u.login) &&
+                        !friendRequests.value.includes(u.login) && // Не отправляли заявку
+                        !pendingRequests.value.includes(u.login) // Нет входящей заявки
                     ).map(u => ({
                         ...u,
                         kfg: calculateKFG(u)
                     }));
                 }
                 
-                function addFriend(user) {
-                    const newFriend = {
-                        name: user.name,
-                        surname: user.surname,
-                        nickname: user.nickname,
-                        login: user.login,
-                        avatar: user.avatar
-                    };
+                function sendFriendRequest(user) {
+                    // Добавляем в исходящие заявки текущего пользователя
+                    if (!friendRequests.value.includes(user.login)) {
+                        friendRequests.value.push(user.login);
+                    }
                     
-                    friends.value.push(newFriend);
+                    // Добавляем во входящие заявки целевого пользователя
+                    const targetUserIndex = users.value.findIndex(u => u.login === user.login);
+                    if (targetUserIndex !== -1) {
+                        if (!users.value[targetUserIndex].pendingRequests) {
+                            users.value[targetUserIndex].pendingRequests = [];
+                        }
+                        if (!users.value[targetUserIndex].pendingRequests.includes(currentUser.value.login)) {
+                            users.value[targetUserIndex].pendingRequests.push(currentUser.value.login);
+                        }
+                    }
                     
-                    const userIndex = users.value.findIndex(u => u.login === currentUser.value?.login);
-                    if (userIndex !== -1) {
-                        users.value[userIndex].friends = [...friends.value];
-                        currentUser.value.friends = [...friends.value];
+                    // Обновляем данные текущего пользователя
+                    const currentUserIndex = users.value.findIndex(u => u.login === currentUser.value?.login);
+                    if (currentUserIndex !== -1) {
+                        users.value[currentUserIndex].friendRequests = [...friendRequests.value];
                     }
                     
                     searchResults.value = [];
                     friendSearchQuery.value = '';
                     searchPerformed.value = false;
                     
-                    showMessage(`Друг ${user.name} добавлен!`, 'success');
                     saveToStorage();
+                    showMessage(`Заявка в друзья отправлена пользователю ${user.name}`, 'success');
+                }
+                
+                function acceptFriendRequest(request) {
+                    // Добавляем друга текущему пользователю
+                    const newFriend = {
+                        name: request.name,
+                        surname: request.surname,
+                        nickname: request.nickname,
+                        login: request.login,
+                        avatar: request.avatar
+                    };
+                    
+                    friends.value.push(newFriend);
+                    
+                    // Удаляем из входящих заявок
+                    pendingRequests.value = pendingRequests.value.filter(login => login !== request.login);
+                    
+                    // Добавляем текущего пользователя в друзья к отправителю
+                    const senderIndex = users.value.findIndex(u => u.login === request.login);
+                    if (senderIndex !== -1) {
+                        if (!users.value[senderIndex].friends) {
+                            users.value[senderIndex].friends = [];
+                        }
+                        users.value[senderIndex].friends.push({
+                            name: currentUser.value.name,
+                            surname: currentUser.value.surname,
+                            nickname: currentUser.value.nickname,
+                            login: currentUser.value.login,
+                            avatar: currentUser.value.avatar
+                        });
+                        
+                        // Удаляем из исходящих заявок отправителя
+                        if (users.value[senderIndex].friendRequests) {
+                            users.value[senderIndex].friendRequests = 
+                                users.value[senderIndex].friendRequests.filter(login => login !== currentUser.value.login);
+                        }
+                    }
+                    
+                    // Обновляем данные текущего пользователя
+                    const currentUserIndex = users.value.findIndex(u => u.login === currentUser.value?.login);
+                    if (currentUserIndex !== -1) {
+                        users.value[currentUserIndex].friends = [...friends.value];
+                        users.value[currentUserIndex].pendingRequests = [...pendingRequests.value];
+                    }
+                    
+                    saveToStorage();
+                    showMessage(`Вы приняли заявку в друзья от ${request.name}`, 'success');
+                }
+                
+                function rejectFriendRequest(request) {
+                    // Удаляем из входящих заявок
+                    pendingRequests.value = pendingRequests.value.filter(login => login !== request.login);
+                    
+                    // Удаляем из исходящих заявок отправителя
+                    const senderIndex = users.value.findIndex(u => u.login === request.login);
+                    if (senderIndex !== -1 && users.value[senderIndex].friendRequests) {
+                        users.value[senderIndex].friendRequests = 
+                            users.value[senderIndex].friendRequests.filter(login => login !== currentUser.value.login);
+                    }
+                    
+                    // Обновляем данные текущего пользователя
+                    const currentUserIndex = users.value.findIndex(u => u.login === currentUser.value?.login);
+                    if (currentUserIndex !== -1) {
+                        users.value[currentUserIndex].pendingRequests = [...pendingRequests.value];
+                    }
+                    
+                    saveToStorage();
+                    showMessage(`Заявка от ${request.name} отклонена`, 'info');
                 }
                 
                 function removeFriend(friend) {
+                    // Удаляем друга у текущего пользователя
                     friends.value = friends.value.filter(f => f.login !== friend.login);
                     
-                    const userIndex = users.value.findIndex(u => u.login === currentUser.value?.login);
-                    if (userIndex !== -1) {
-                        users.value[userIndex].friends = [...friends.value];
-                        currentUser.value.friends = [...friends.value];
+                    // Удаляем текущего пользователя из друзей у друга
+                    const friendIndex = users.value.findIndex(u => u.login === friend.login);
+                    if (friendIndex !== -1 && users.value[friendIndex].friends) {
+                        users.value[friendIndex].friends = 
+                            users.value[friendIndex].friends.filter(f => f.login !== currentUser.value.login);
+                    }
+                    
+                    // Обновляем данные текущего пользователя
+                    const currentUserIndex = users.value.findIndex(u => u.login === currentUser.value?.login);
+                    if (currentUserIndex !== -1) {
+                        users.value[currentUserIndex].friends = [...friends.value];
                     }
                     
                     showMessage(`Друг ${friend.name} удален`, 'success');
@@ -1778,7 +1944,9 @@
                             ...currentUser.value,
                             expenses: { ...expenses },
                             goals: [...goals.value],
-                            friends: [...friends.value]
+                            friends: [...friends.value],
+                            friendRequests: [...friendRequests.value],
+                            pendingRequests: [...pendingRequests.value]
                         };
                     }
                     
@@ -1843,7 +2011,9 @@
                                 travel: 5000
                             },
                             goals: [],
-                            friends: []
+                            friends: [],
+                            friendRequests: [],
+                            pendingRequests: []
                         },
                         {
                             name: 'Мария',
@@ -1867,7 +2037,9 @@
                                 travel: 3000
                             },
                             goals: [],
-                            friends: []
+                            friends: [],
+                            friendRequests: [],
+                            pendingRequests: []
                         },
                         {
                             name: 'Петр',
@@ -1891,7 +2063,9 @@
                                 travel: 8000
                             },
                             goals: [],
-                            friends: []
+                            friends: [],
+                            friendRequests: [],
+                            pendingRequests: []
                         },
                         {
                             name: 'Анна',
@@ -1915,7 +2089,9 @@
                                 travel: 4000
                             },
                             goals: [],
-                            friends: []
+                            friends: [],
+                            friendRequests: [],
+                            pendingRequests: []
                         }
                     ];
                     
@@ -2115,7 +2291,7 @@
                     }, 100);
                 });
                 
-                watch([expenses, goals, friends], () => {
+                watch([expenses, goals, friends, friendRequests, pendingRequests], () => {
                     if (currentUser.value) {
                         saveToStorage();
                     } else {
@@ -2157,6 +2333,9 @@
                     goals,
                     newGoal,
                     friends,
+                    friendRequests,
+                    pendingRequests,
+                    pendingFriendRequests,
                     friendSearchQuery,
                     searchResults,
                     searchPerformed,
@@ -2183,7 +2362,6 @@
                     kfg,
                     recommendations,
                     unlockedAvatars,
-                    friendsWithKFG,
                     friendsWithDetails,
                     ratingParticipants,
                     showIncomeModal,
@@ -2198,7 +2376,9 @@
                     handleLogin,
                     logout,
                     searchFriends,
-                    addFriend,
+                    sendFriendRequest,
+                    acceptFriendRequest,
+                    rejectFriendRequest,
                     removeFriend,
                     saveExpenses,
                     addGoal,
