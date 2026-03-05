@@ -458,7 +458,7 @@
                     </div>
                 </div>
 
-                <!-- Вкладка аналитики (с демо-расчетом КФГ и круговой диаграммой) -->
+                <!-- Вкладка аналитики (с демонстрацией расчета КФГ на основе данных пользователя) -->
                 <div v-show="currentTab === 'analytics'" class="p-6">
                     <h2 class="text-2xl font-bold mb-6">Аналитика</h2>
                     
@@ -482,162 +482,147 @@
                         </div>
                     </div>
 
-                    <!-- Демонстрация расчета КФГ -->
+                    <!-- Детальный расчет КФГ на основе данных пользователя -->
                     <div class="bg-gray-50 rounded-xl p-6 mb-6">
-                        <h3 class="text-lg font-semibold mb-4">Демонстрация расчета КФГ</h3>
+                        <h3 class="text-lg font-semibold mb-4">Детальный расчет вашего КФГ</h3>
                         
-                        <div class="grid lg:grid-cols-3 gap-6">
-                            <!-- Левая колонка: ввод данных -->
-                            <div class="lg:col-span-1">
+                        <div class="grid lg:grid-cols-2 gap-6">
+                            <!-- Левая колонка: исходные данные -->
+                            <div>
                                 <div class="bg-white rounded-lg p-4">
-                                    <h4 class="font-medium mb-3">Введите данные для расчета</h4>
+                                    <h4 class="font-medium mb-3 text-purple-600">Исходные данные</h4>
                                     
-                                    <div class="mb-3">
-                                        <label class="block text-sm text-gray-600 mb-1">
-                                            <i class="fas fa-wallet mr-1 text-purple-600"></i>
-                                            Месячный доход (₽)
-                                        </label>
-                                        <input v-model.number="kfgDemo.income" type="number" min="0" 
-                                               class="w-full px-3 py-2 text-sm border rounded-lg focus:outline-none focus:border-purple-500"
-                                               placeholder="Например: 100000">
-                                    </div>
-                                    
-                                    <div class="mb-3">
-                                        <label class="block text-sm text-gray-600 mb-1">
-                                            <i class="fas fa-utensils mr-1 text-purple-600"></i>
-                                            Расходы на еду + кафе (₽)
-                                        </label>
-                                        <input v-model.number="kfgDemo.foodExpenses" type="number" min="0" 
-                                               class="w-full px-3 py-2 text-sm border rounded-lg focus:outline-none focus:border-purple-500"
-                                               placeholder="Продукты + кафе">
-                                    </div>
-                                    
-                                    <div class="mb-3">
-                                        <label class="block text-sm text-gray-600 mb-1">
-                                            <i class="fas fa-gamepad mr-1 text-purple-600"></i>
-                                            Расходы на развлечения (₽)
-                                        </label>
-                                        <input v-model.number="kfgDemo.entertainment" type="number" min="0" 
-                                               class="w-full px-3 py-2 text-sm border rounded-lg focus:outline-none focus:border-purple-500"
-                                               placeholder="Кино, игры и т.д.">
-                                    </div>
-                                    
-                                    <div class="mb-3">
-                                        <label class="block text-sm text-gray-600 mb-1">
-                                            <i class="fas fa-tv mr-1 text-purple-600"></i>
-                                            Расходы на подписки (₽)
-                                        </label>
-                                        <input v-model.number="kfgDemo.subscriptions" type="number" min="0" 
-                                               class="w-full px-3 py-2 text-sm border rounded-lg focus:outline-none focus:border-purple-500"
-                                               placeholder="Стриминг, софт и т.д.">
-                                    </div>
-                                    
-                                    <div class="mb-3">
-                                        <label class="block text-sm text-gray-600 mb-1">
-                                            <i class="fas fa-book mr-1 text-purple-600"></i>
-                                            Расходы на образование (₽)
-                                        </label>
-                                        <input v-model.number="kfgDemo.education" type="number" min="0" 
-                                               class="w-full px-3 py-2 text-sm border rounded-lg focus:outline-none focus:border-purple-500"
-                                               placeholder="Курсы, книги">
-                                    </div>
-                                    
-                                    <div class="mb-4">
-                                        <label class="block text-sm text-gray-600 mb-1">
-                                            <i class="fas fa-chart-pie mr-1 text-purple-600"></i>
-                                            Прочие расходы (₽)
-                                        </label>
-                                        <input v-model.number="kfgDemo.otherExpenses" type="number" min="0" 
-                                               class="w-full px-3 py-2 text-sm border rounded-lg focus:outline-none focus:border-purple-500"
-                                               placeholder="Остальные траты">
-                                    </div>
-                                    
-                                    <div class="flex space-x-2">
-                                        <button @click="calculateKFG_Demo" 
-                                                class="flex-1 gradient-bg text-white py-2 rounded-lg text-sm font-semibold hover:shadow-lg">
-                                            <i class="fas fa-calculator mr-1"></i>Рассчитать
-                                        </button>
-                                        <button @click="resetDemo" 
-                                                class="px-3 bg-gray-200 text-gray-700 py-2 rounded-lg text-sm font-semibold hover:bg-gray-300">
-                                            <i class="fas fa-undo"></i>
-                                        </button>
+                                    <div class="space-y-2 text-sm">
+                                        <div class="flex justify-between py-1 border-b">
+                                            <span class="text-gray-600">Доход:</span>
+                                            <span class="font-semibold">{{ formatMoney(currentUser.income) }} ₽</span>
+                                        </div>
+                                        <div class="flex justify-between py-1 border-b">
+                                            <span class="text-gray-600">Общие расходы:</span>
+                                            <span class="font-semibold">{{ formatMoney(totalExpenses) }} ₽</span>
+                                        </div>
+                                        
+                                        <div class="mt-3 pt-2">
+                                            <p class="font-medium text-sm mb-2">Расходы по категориям:</p>
+                                            <div v-for="(value, category) in filteredExpenses" :key="category" 
+                                                 class="flex justify-between py-1 text-xs">
+                                                <span class="text-gray-600">
+                                                    <i :class="[categoryIcons[category], 'mr-1']"></i>
+                                                    {{ categoryNames[category] }}:
+                                                </span>
+                                                <span>{{ formatMoney(value) }} ₽</span>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="flex justify-between py-1 border-t border-b mt-2 pt-2 font-medium">
+                                            <span>Еда + кафе:</span>
+                                            <span>{{ formatMoney(foodTotal) }} ₽ ({{ foodPercent }}%)</span>
+                                        </div>
+                                        <div class="flex justify-between py-1">
+                                            <span>Развлечения:</span>
+                                            <span>{{ formatMoney(expenses.entertainment) }} ₽ ({{ entertainmentPercent }}%)</span>
+                                        </div>
+                                        <div class="flex justify-between py-1">
+                                            <span>Подписки:</span>
+                                            <span>{{ formatMoney(expenses.subscriptions) }} ₽ ({{ subscriptionsPercent }}%)</span>
+                                        </div>
+                                        <div class="flex justify-between py-1">
+                                            <span>Образование:</span>
+                                            <span>{{ formatMoney(expenses.education) }} ₽</span>
+                                        </div>
+                                        <div class="flex justify-between py-1 border-b pb-2">
+                                            <span>Остаток (сбережения):</span>
+                                            <span :class="balance >= 0 ? 'text-green-600' : 'text-red-600'">
+                                                {{ formatMoney(balance) }} ₽ ({{ balancePercent }}%)
+                                            </span>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                             
-                            <!-- Правая колонка: результат и пошаговый расчет -->
-                            <div class="lg:col-span-2">
-                                <!-- Результат -->
-                                <div class="bg-gradient-to-r from-purple-600 to-indigo-600 rounded-lg p-4 text-white mb-4">
-                                    <div class="flex justify-between items-center">
-                                        <div>
-                                            <p class="text-sm opacity-90">Рассчитанный КФГ</p>
-                                            <p class="text-4xl font-bold">{{ kfgDemoResult.value }}</p>
-                                            <p class="text-xs opacity-90 mt-1">
-                                                Рейтинг: <span class="font-semibold">{{ kfgDemoResult.rating }}</span>
-                                            </p>
-                                        </div>
-                                        <div class="text-right">
-                                            <p class="text-xs opacity-90">Общие расходы</p>
-                                            <p class="text-xl font-bold">{{ formatMoney(kfgDemoResult.totalExpenses) }} ₽</p>
-                                            <p class="text-xs opacity-90 mt-1">Остаток: {{ formatMoney(kfgDemoResult.balance) }} ₽</p>
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <!-- Пошаговый расчет -->
+                            <!-- Правая колонка: пошаговый расчет -->
+                            <div>
                                 <div class="bg-white rounded-lg p-4">
-                                    <h4 class="font-medium mb-3">Пошаговый расчет КФГ</h4>
+                                    <h4 class="font-medium mb-3 text-purple-600">Пошаговый расчет</h4>
                                     
-                                    <div v-if="!kfgDemoResult.calculated" class="text-center py-4 text-gray-500 text-sm">
-                                        <i class="fas fa-calculator text-3xl mb-2 opacity-30"></i>
-                                        <p>Введите данные слева и нажмите "Рассчитать"</p>
-                                    </div>
-                                    
-                                    <div v-else class="space-y-3 text-sm">
+                                    <div class="space-y-3 text-sm">
                                         <!-- Шаг 1: База -->
                                         <div class="calculation-step">
                                             <div class="flex justify-between items-center mb-1">
-                                                <span class="font-semibold">Базовая формула</span>
+                                                <span class="font-semibold">1. Базовая формула</span>
                                                 <span class="text-xs font-mono bg-purple-200 px-2 py-0.5 rounded">
                                                     100 - (расходы/доход × 100)
                                                 </span>
                                             </div>
                                             <p class="text-gray-600">
-                                                100 - ({{ kfgDemoResult.totalExpenses }} / {{ kfgDemo.income }} × 100) = 
-                                                <span class="font-semibold">{{ kfgDemoResult.baseValue }}</span>
+                                                100 - ({{ totalExpenses }} / {{ currentUser.income }} × 100) = 
+                                                <span class="font-semibold">{{ kfgCalculation.baseValue }}</span>
                                             </p>
                                         </div>
                                         
                                         <!-- Штрафы -->
-                                        <div v-if="kfgDemoResult.penalties.length > 0" class="space-y-2">
+                                        <div v-if="kfgCalculation.penalties.length > 0" class="space-y-2">
                                             <h5 class="font-semibold text-red-600 text-xs">Штрафы:</h5>
-                                            <div v-for="penalty in kfgDemoResult.penalties" :key="penalty.text" 
+                                            <div v-for="penalty in kfgCalculation.penalties" :key="penalty.text" 
                                                  class="penalty-step flex justify-between items-center text-sm">
                                                 <span>{{ penalty.text }}</span>
                                                 <span class="font-semibold text-red-600">-{{ penalty.value }}</span>
                                             </div>
                                         </div>
+                                        <div v-else class="text-sm text-gray-500 italic">
+                                            Штрафы не применены
+                                        </div>
                                         
                                         <!-- Бонусы -->
-                                        <div v-if="kfgDemoResult.bonuses.length > 0" class="space-y-2">
+                                        <div v-if="kfgCalculation.bonuses.length > 0" class="space-y-2">
                                             <h5 class="font-semibold text-green-600 text-xs">Бонусы:</h5>
-                                            <div v-for="bonus in kfgDemoResult.bonuses" :key="bonus.text" 
+                                            <div v-for="bonus in kfgCalculation.bonuses" :key="bonus.text" 
                                                  class="bonus-step flex justify-between items-center text-sm">
                                                 <span>{{ bonus.text }}</span>
                                                 <span class="font-semibold text-green-600">+{{ bonus.value }}</span>
                                             </div>
+                                        </div>
+                                        <div v-else class="text-sm text-gray-500 italic">
+                                            Бонусы не применены
                                         </div>
                                         
                                         <!-- Итог -->
                                         <div class="bg-purple-100 rounded-lg p-3 mt-2">
                                             <div class="flex justify-between items-center">
                                                 <span class="font-semibold">Итоговый КФГ:</span>
-                                                <span class="text-xl font-bold text-purple-600">{{ kfgDemoResult.value }}</span>
+                                                <span class="text-xl font-bold text-purple-600">{{ kfg }}</span>
+                                            </div>
+                                            <div class="flex justify-between items-center mt-1">
+                                                <span class="text-xs text-gray-600">Ваш рейтинг:</span>
+                                                <span class="px-2 py-0.5 rounded-full text-white text-xs" 
+                                                      :class="'rating-' + getUserRatingLevel(currentUser)">
+                                                    {{ getUserRating(currentUser) }}
+                                                </span>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Подсказки -->
+                        <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <div v-if="kfg < 50" class="bg-yellow-50 border-l-4 border-yellow-400 p-3 text-sm">
+                                <i class="fas fa-lightbulb text-yellow-600 mr-2"></i>
+                                <span class="text-yellow-700">Ваш КФГ ниже среднего. Рекомендуется сократить расходы на развлечения и кафе.</span>
+                            </div>
+                            <div v-else-if="kfg < 70" class="bg-blue-50 border-l-4 border-blue-400 p-3 text-sm">
+                                <i class="fas fa-lightbulb text-blue-600 mr-2"></i>
+                                <span class="text-blue-700">Хороший КФГ! Есть потенциал для улучшения за счет сокращения ненужных трат.</span>
+                            </div>
+                            <div v-else class="bg-green-50 border-l-4 border-green-400 p-3 text-sm">
+                                <i class="fas fa-lightbulb text-green-600 mr-2"></i>
+                                <span class="text-green-700">Отличный КФГ! Вы финансово грамотный человек.</span>
+                            </div>
+                            
+                            <div v-if="expenses.education === 0" class="bg-purple-50 border-l-4 border-purple-400 p-3 text-sm">
+                                <i class="fas fa-graduation-cap text-purple-600 mr-2"></i>
+                                <span class="text-purple-700">Инвестиции в образование могли бы повысить ваш КФГ на 5 пунктов.</span>
                             </div>
                         </div>
                     </div>
@@ -652,10 +637,15 @@
                         <!-- Легенда с суммами -->
                         <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 mt-4">
                             <div v-for="(value, category) in filteredExpenses" :key="category" 
+                                 v-if="value > 0"
                                  class="flex items-center space-x-2 text-sm">
                                 <div class="w-3 h-3 rounded-full" :style="{ backgroundColor: getCategoryColor(category) }"></div>
                                 <span class="text-gray-600">{{ categoryNames[category] }}:</span>
                                 <span class="font-medium">{{ formatMoney(value) }} ₽</span>
+                            </div>
+                            <div v-if="Object.values(filteredExpenses).filter(v => v > 0).length === 0" 
+                                 class="col-span-full text-center text-gray-500 py-4">
+                                Нет расходов для отображения
                             </div>
                         </div>
                     </div>
@@ -1030,28 +1020,6 @@
                 const chatInput = ref('');
                 const chatContainer = ref(null);
                 
-                // Демо КФГ
-                const kfgDemo = reactive({
-                    income: 100000,
-                    foodExpenses: 30000,
-                    entertainment: 10000,
-                    subscriptions: 2000,
-                    education: 5000,
-                    otherExpenses: 15000
-                });
-                
-                const kfgDemoResult = reactive({
-                    value: 0,
-                    rating: 'Новичок',
-                    ratingLevel: 1,
-                    totalExpenses: 0,
-                    balance: 0,
-                    baseValue: 0,
-                    penalties: [],
-                    bonuses: [],
-                    calculated: false
-                });
-                
                 // Награды
                 const rewards = [
                     { id: 1, name: 'Бесплатный кофе', kfgRequired: 50, description: 'Скидка 50% на кофе', icon: 'fa-coffee' },
@@ -1133,6 +1101,66 @@
                 const totalIncome = computed(() => currentUser.value?.income || 0);
                 
                 const balance = computed(() => totalIncome.value - totalExpenses.value);
+
+                // Проценты от дохода
+                const foodTotal = computed(() => (expenses.food || 0) + (expenses.cafe || 0));
+                const foodPercent = computed(() => totalIncome.value > 0 ? Math.round(foodTotal.value / totalIncome.value * 100) : 0);
+                const entertainmentPercent = computed(() => totalIncome.value > 0 ? Math.round((expenses.entertainment || 0) / totalIncome.value * 100) : 0);
+                const subscriptionsPercent = computed(() => totalIncome.value > 0 ? Math.round((expenses.subscriptions || 0) / totalIncome.value * 100) : 0);
+                const balancePercent = computed(() => totalIncome.value > 0 ? Math.round(balance.value / totalIncome.value * 100) : 0);
+
+                // Детальный расчет КФГ
+                const kfgCalculation = computed(() => {
+                    const result = {
+                        baseValue: 0,
+                        penalties: [],
+                        bonuses: []
+                    };
+                    
+                    if (!currentUser.value || totalIncome.value === 0) return result;
+                    
+                    // Базовая формула
+                    result.baseValue = Math.round(100 - (totalExpenses.value / totalIncome.value * 100));
+                    
+                    // Проверяем штрафы
+                    if (expenses.entertainment > totalIncome.value * 0.3) {
+                        result.penalties.push({
+                            text: `Развлечения > 30% дохода (${entertainmentPercent}%)`,
+                            value: 20
+                        });
+                    }
+                    
+                    if (foodTotal.value > totalIncome.value * 0.5) {
+                        result.penalties.push({
+                            text: `Еда и кафе > 50% дохода (${foodPercent}%)`,
+                            value: 15
+                        });
+                    }
+                    
+                    if (expenses.subscriptions > totalIncome.value * 0.1) {
+                        result.penalties.push({
+                            text: `Подписки > 10% дохода (${subscriptionsPercent}%)`,
+                            value: 10
+                        });
+                    }
+                    
+                    // Проверяем бонусы
+                    if (expenses.education > 0) {
+                        result.bonuses.push({
+                            text: 'Инвестиции в образование',
+                            value: 5
+                        });
+                    }
+                    
+                    if (balance.value > totalIncome.value * 0.2) {
+                        result.bonuses.push({
+                            text: `Сбережения > 20% дохода (${balancePercent}%)`,
+                            value: 10
+                        });
+                    }
+                    
+                    return result;
+                });
 
                 // Общая сумма всех целей
                 const totalGoalsAmount = computed(() => {
@@ -1731,8 +1759,17 @@
                 }
                 
                 function saveToStorage() {
-                    if (!currentUser.value) return;
+                    if (!currentUser.value) {
+                        // Если пользователь не авторизован, просто сохраняем массив пользователей
+                        const data = {
+                            users: users.value,
+                            currentUser: null
+                        };
+                        localStorage.setItem('vueFinancialData', JSON.stringify(data));
+                        return;
+                    }
                     
+                    // Обновляем данные текущего пользователя в общем массиве
                     const userIndex = users.value.findIndex(u => u.login === currentUser.value?.login);
                     if (userIndex !== -1) {
                         users.value[userIndex] = { 
@@ -1756,8 +1793,10 @@
                     if (saved) {
                         try {
                             const data = JSON.parse(saved);
+                            // Всегда загружаем всех пользователей
                             users.value = data.users || [];
                             
+                            // Если есть текущий пользователь в сохраненных данных, пробуем его загрузить
                             if (data.currentUser) {
                                 const userExists = users.value.some(u => u.login === data.currentUser.login);
                                 if (userExists) {
@@ -1772,7 +1811,115 @@
                         } catch (e) {
                             console.error('Ошибка загрузки', e);
                         }
+                    } else {
+                        // Если нет сохраненных данных, создаем тестовых пользователей для демонстрации
+                        createTestUsers();
                     }
+                }
+
+                // Создание тестовых пользователей для демонстрации
+                function createTestUsers() {
+                    const testUsers = [
+                        {
+                            name: 'Иван',
+                            surname: 'Иванов',
+                            nickname: '@ivan',
+                            login: 'ivan',
+                            password: '123',
+                            income: 100000,
+                            avatar: 3,
+                            expenses: {
+                                food: 25000,
+                                transport: 5000,
+                                cafe: 10000,
+                                hobby: 3000,
+                                selfcare: 2000,
+                                health: 3000,
+                                housing: 15000,
+                                entertainment: 8000,
+                                subscriptions: 1500,
+                                education: 5000,
+                                travel: 5000
+                            },
+                            goals: [],
+                            friends: []
+                        },
+                        {
+                            name: 'Мария',
+                            surname: 'Петрова',
+                            nickname: '@maria',
+                            login: 'maria',
+                            password: '123',
+                            income: 85000,
+                            avatar: 4,
+                            expenses: {
+                                food: 20000,
+                                transport: 4000,
+                                cafe: 8000,
+                                hobby: 2000,
+                                selfcare: 3000,
+                                health: 2000,
+                                housing: 12000,
+                                entertainment: 5000,
+                                subscriptions: 1000,
+                                education: 3000,
+                                travel: 3000
+                            },
+                            goals: [],
+                            friends: []
+                        },
+                        {
+                            name: 'Петр',
+                            surname: 'Сидоров',
+                            nickname: '@petr',
+                            login: 'petr',
+                            password: '123',
+                            income: 120000,
+                            avatar: 2,
+                            expenses: {
+                                food: 30000,
+                                transport: 6000,
+                                cafe: 15000,
+                                hobby: 5000,
+                                selfcare: 3000,
+                                health: 4000,
+                                housing: 20000,
+                                entertainment: 12000,
+                                subscriptions: 2500,
+                                education: 2000,
+                                travel: 8000
+                            },
+                            goals: [],
+                            friends: []
+                        },
+                        {
+                            name: 'Анна',
+                            surname: 'Смирнова',
+                            nickname: '@anna',
+                            login: 'anna',
+                            password: '123',
+                            income: 95000,
+                            avatar: 5,
+                            expenses: {
+                                food: 22000,
+                                transport: 4500,
+                                cafe: 9000,
+                                hobby: 4000,
+                                selfcare: 3500,
+                                health: 2500,
+                                housing: 14000,
+                                entertainment: 6000,
+                                subscriptions: 1200,
+                                education: 4000,
+                                travel: 4000
+                            },
+                            goals: [],
+                            friends: []
+                        }
+                    ];
+                    
+                    users.value = testUsers;
+                    saveToStorage();
                 }
                 
                 function initChart() {
@@ -1909,100 +2056,6 @@
                     showMessage('Данные экспортированы!', 'success');
                 }
                 
-                // Методы для демо КФГ
-                function calculateKFG_Demo() {
-                    if (kfgDemo.income <= 0) {
-                        showMessage('Доход должен быть больше 0', 'error');
-                        return;
-                    }
-                    
-                    const totalExpenses = kfgDemo.foodExpenses + kfgDemo.entertainment + 
-                                         kfgDemo.subscriptions + kfgDemo.education + kfgDemo.otherExpenses;
-                    const balance = kfgDemo.income - totalExpenses;
-                    
-                    // База
-                    let baseValue = 100 - (totalExpenses / kfgDemo.income * 100);
-                    let finalValue = baseValue;
-                    
-                    const penalties = [];
-                    const bonuses = [];
-                    
-                    // Проверяем штрафы
-                    if (kfgDemo.entertainment > kfgDemo.income * 0.3) {
-                        penalties.push({
-                            text: `Развлечения > 30% дохода (${Math.round(kfgDemo.entertainment / kfgDemo.income * 100)}%)`,
-                            value: 20
-                        });
-                        finalValue -= 20;
-                    }
-                    
-                    if (kfgDemo.foodExpenses > kfgDemo.income * 0.5) {
-                        penalties.push({
-                            text: `Еда и кафе > 50% дохода (${Math.round(kfgDemo.foodExpenses / kfgDemo.income * 100)}%)`,
-                            value: 15
-                        });
-                        finalValue -= 15;
-                    }
-                    
-                    if (kfgDemo.subscriptions > kfgDemo.income * 0.1) {
-                        penalties.push({
-                            text: `Подписки > 10% дохода (${Math.round(kfgDemo.subscriptions / kfgDemo.income * 100)}%)`,
-                            value: 10
-                        });
-                        finalValue -= 10;
-                    }
-                    
-                    // Проверяем бонусы
-                    if (kfgDemo.education > 0) {
-                        bonuses.push({
-                            text: 'Инвестиции в образование',
-                            value: 5
-                        });
-                        finalValue += 5;
-                    }
-                    
-                    if (balance > kfgDemo.income * 0.2) {
-                        bonuses.push({
-                            text: `Сбережения > 20% дохода (${Math.round(balance / kfgDemo.income * 100)}%)`,
-                            value: 10
-                        });
-                        finalValue += 10;
-                    }
-                    
-                    // Ограничиваем
-                    finalValue = Math.max(0, Math.min(100, Math.round(finalValue)));
-                    
-                    // Определяем рейтинг
-                    let rating, ratingLevel;
-                    if (finalValue >= 90) { rating = 'Гуру'; ratingLevel = 5; }
-                    else if (finalValue >= 70) { rating = 'Эксперт'; ratingLevel = 4; }
-                    else if (finalValue >= 50) { rating = 'Инвестор'; ratingLevel = 3; }
-                    else if (finalValue >= 30) { rating = 'Эконом'; ratingLevel = 2; }
-                    else { rating = 'Новичок'; ratingLevel = 1; }
-                    
-                    // Сохраняем результат
-                    kfgDemoResult.value = finalValue;
-                    kfgDemoResult.rating = rating;
-                    kfgDemoResult.ratingLevel = ratingLevel;
-                    kfgDemoResult.totalExpenses = totalExpenses;
-                    kfgDemoResult.balance = balance;
-                    kfgDemoResult.baseValue = Math.round(baseValue);
-                    kfgDemoResult.penalties = penalties;
-                    kfgDemoResult.bonuses = bonuses;
-                    kfgDemoResult.calculated = true;
-                }
-                
-                function resetDemo() {
-                    kfgDemo.income = 100000;
-                    kfgDemo.foodExpenses = 30000;
-                    kfgDemo.entertainment = 10000;
-                    kfgDemo.subscriptions = 2000;
-                    kfgDemo.education = 5000;
-                    kfgDemo.otherExpenses = 15000;
-                    
-                    kfgDemoResult.calculated = false;
-                }
-                
                 onMounted(() => {
                     loadFromStorage();
                     
@@ -2014,6 +2067,13 @@
                 watch([expenses, goals, friends], () => {
                     if (currentUser.value) {
                         saveToStorage();
+                    } else {
+                        // Если пользователь не авторизован, все равно сохраняем массив пользователей
+                        const data = {
+                            users: users.value,
+                            currentUser: null
+                        };
+                        localStorage.setItem('vueFinancialData', JSON.stringify(data));
                     }
                 }, { deep: true });
 
@@ -2051,6 +2111,12 @@
                     totalExpenses,
                     totalIncome,
                     balance,
+                    foodTotal,
+                    foodPercent,
+                    entertainmentPercent,
+                    subscriptionsPercent,
+                    balancePercent,
+                    kfgCalculation,
                     totalGoalsAmount,
                     totalSaved,
                     kfg,
@@ -2068,8 +2134,6 @@
                     addToGoalAmount,
                     showRemoveGoalModal,
                     selectedGoalNameForRemove,
-                    kfgDemo,
-                    kfgDemoResult,
                     handleRegister,
                     handleLogin,
                     logout,
@@ -2103,9 +2167,7 @@
                     getCategoryColor,
                     editIncome,
                     closeIncomeModal,
-                    saveIncome,
-                    calculateKFG_Demo,
-                    resetDemo
+                    saveIncome
                 };
             }
         });
