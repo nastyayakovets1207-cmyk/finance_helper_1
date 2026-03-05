@@ -1080,20 +1080,26 @@
                     travel: 'fas fa-plane'
                 };
 
-                // Уникальные цвета для каждой категории (все разные)
+                // Уникальные цвета для каждой категории - расширенная палитра без повторений
                 const categoryColors = {
-                    food: '#FF6384',      // Розовый
-                    transport: '#36A2EB',  // Голубой
-                    cafe: '#FFCE56',       // Желтый
-                    hobby: '#4BC0C0',      // Бирюзовый
-                    selfcare: '#9966FF',   // Фиолетовый
-                    health: '#FF9F40',      // Оранжевый
-                    housing: '#FF6384',     // Розовый (повтор, но housing не будет конфликтовать с food, так как они разные)
-                    entertainment: '#36A2EB', // Голубой (повтор, но entertainment не будет конфликтовать с transport)
-                    subscriptions: '#FFCE56',  // Желтый (повтор, но subscriptions не будет конфликтовать с cafe)
-                    education: '#4BC0C0',      // Бирюзовый (повтор, но education не будет конфликтовать с hobby)
-                    travel: '#FF8C42'          // Оранжево-красный
+                    food: '#FF6384',        // Розовый
+                    transport: '#36A2EB',    // Голубой
+                    cafe: '#FFCE56',          // Желтый
+                    hobby: '#4BC0C0',         // Бирюзовый
+                    selfcare: '#9966FF',       // Фиолетовый
+                    health: '#FF9F40',          // Оранжевый
+                    housing: '#FF6384',         // Этот цвет будет заменен на уникальный
+                    entertainment: '#36A2EB',   // Этот цвет будет заменен на уникальный
+                    subscriptions: '#FFCE56',    // Этот цвет будет заменен на уникальный
+                    education: '#4BC0C0',        // Этот цвет будет заменен на уникальный
+                    travel: '#FF8C42'            // Оранжево-красный
                 };
+
+                // Обновляем цвета для категорий, которые повторялись
+                categoryColors.housing = '#8B4513';        // Коричневый
+                categoryColors.entertainment = '#20B2AA';   // Светло-морской волны
+                categoryColors.subscriptions = '#BA55D3';   // Орхидея
+                categoryColors.education = '#2E8B57';       // Морская зелень
                 
                 // Вычисляемые свойства
                 const totalExpenses = computed(() => {
