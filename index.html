@@ -1125,21 +1125,21 @@
                     // Проверяем штрафы
                     if (expenses.entertainment > totalIncome.value * 0.3) {
                         result.penalties.push({
-                            text: `Развлечения > 30% дохода (${entertainmentPercent}%)`,
+                            text: `Развлечения > 30% дохода (${entertainmentPercent.value}%)`,
                             value: 20
                         });
                     }
                     
                     if (foodTotal.value > totalIncome.value * 0.5) {
                         result.penalties.push({
-                            text: `Еда и кафе > 50% дохода (${foodPercent}%)`,
+                            text: `Еда и кафе > 50% дохода (${foodPercent.value}%)`,
                             value: 15
                         });
                     }
                     
                     if (expenses.subscriptions > totalIncome.value * 0.1) {
                         result.penalties.push({
-                            text: `Подписки > 10% дохода (${subscriptionsPercent}%)`,
+                            text: `Подписки > 10% дохода (${subscriptionsPercent.value}%)`,
                             value: 10
                         });
                     }
@@ -1154,7 +1154,7 @@
                     
                     if (balance.value > totalIncome.value * 0.2) {
                         result.bonuses.push({
-                            text: `Сбережения > 20% дохода (${balancePercent}%)`,
+                            text: `Сбережения > 20% дохода (${balancePercent.value}%)`,
                             value: 10
                         });
                     }
