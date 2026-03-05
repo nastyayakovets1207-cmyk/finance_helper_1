@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Финансовый консультант</title>
+    <title>FinGrade - Финансовый рейтинг</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -74,8 +74,8 @@
             <div class="container mx-auto px-4 py-4">
                 <div class="flex items-center justify-between">
                     <div class="flex items-center space-x-2">
-                        <i class="fas fa-wallet text-2xl"></i>
-                        <span class="text-xl font-bold">Финансовый консультант</span>
+                        <i class="fas fa-chart-line text-2xl"></i>
+                        <span class="text-xl font-bold">FinGrade</span>
                     </div>
                     <div class="flex items-center space-x-4">
                         <div v-if="currentUser" class="flex items-center space-x-2">
@@ -105,7 +105,7 @@
             <div class="max-w-4xl mx-auto">
                 <div class="bg-white rounded-xl shadow-lg overflow-hidden">
                     <div class="p-6">
-                        <h1 class="text-3xl font-bold text-center mb-8">Добро пожаловать в Финансовый консультант</h1>
+                        <h1 class="text-3xl font-bold text-center mb-8">Добро пожаловать в FinGrade</h1>
                         
                         <div class="grid md:grid-cols-2 gap-8">
                             <!-- Форма регистрации -->
@@ -659,9 +659,9 @@
                     </div>
                 </div>
 
-                <!-- Вкладка чат-бота -->
+                <!-- Вкладка ИИ-Ассистент (переименовано) -->
                 <div v-show="currentTab === 'chat'" class="p-6">
-                    <h2 class="text-2xl font-bold mb-6">Чат с финансовым советником</h2>
+                    <h2 class="text-2xl font-bold mb-6">ИИ-Ассистент</h2>
                     <div class="bg-gray-50 rounded-lg p-4">
                         <div class="h-96 overflow-y-auto flex flex-col space-y-2 mb-4" ref="chatContainer">
                             <div v-for="(msg, index) in chatMessages" :key="index" 
@@ -670,7 +670,7 @@
                             </div>
                         </div>
                         <div class="flex space-x-2">
-                            <textarea v-model="chatInput" @keyup.enter="sendMessage" rows="2" class="flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:border-purple-500" placeholder="Введите ваш вопрос..."></textarea>
+                            <textarea v-model="chatInput" @keyup.enter="sendMessage" rows="2" class="flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:border-purple-500" placeholder="Задайте вопрос ИИ-ассистенту..."></textarea>
                             <button @click="sendMessage" class="gradient-bg text-white px-6 rounded-lg font-semibold hover:shadow-lg">
                                 <i class="fas fa-paper-plane"></i>
                             </button>
@@ -1017,12 +1017,12 @@
                 
                 // Чат
                 const chatMessages = ref([
-                    { text: 'Привет! Я ваш финансовый советник. Задайте мне вопрос о финансах или попросите совет по экономии.', sender: 'bot' }
+                    { text: 'Привет! Я ваш ИИ-ассистент. Задайте мне вопрос о финансах или попросите совет по экономии.', sender: 'bot' }
                 ]);
                 const chatInput = ref('');
                 const chatContainer = ref(null);
                 
-                // Награды (убрали penalties)
+                // Награды
                 const rewards = [
                     { id: 1, name: 'Бесплатный кофе', kfgRequired: 50, description: 'Скидка 50% на кофе', icon: 'fa-coffee' },
                     { id: 2, name: 'Кино онлайн', kfgRequired: 100, description: 'Месяц подписки на кинотеатр', icon: 'fa-film' },
@@ -1046,7 +1046,7 @@
                     { id: 'expenses', name: 'Расходы', icon: 'fas fa-chart-line' },
                     { id: 'goals', name: 'Цели', icon: 'fas fa-bullseye' },
                     { id: 'analytics', name: 'Аналитика', icon: 'fas fa-chart-pie' },
-                    { id: 'chat', name: 'Чат-бот', icon: 'fas fa-robot' },
+                    { id: 'chat', name: 'ИИ-Ассистент', icon: 'fas fa-robot' },
                     { id: 'friends', name: 'Друзья', icon: 'fas fa-users' },
                     { id: 'rewards', name: 'Награды', icon: 'fas fa-gift' }
                 ];
