@@ -160,7 +160,7 @@
                                 
                                 <div class="mb-4">
                                     <label class="block text-gray-700 font-medium mb-2">Доход в месяц</label>
-                                    <input v-model="registerForm.income" type="number" min="0" max="1000000000"
+                                    <input v-model="registerForm.income" type="number" min="0" max="1000000000" step="1"
                                            class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-purple-500">
                                 </div>
                                 
@@ -195,7 +195,7 @@
                                                 <i :class="['mr-1', categoryIcons[category]]"></i>
                                                 {{ categoryNames[category] }}
                                             </label>
-                                            <input v-model.number="registerForm.expenses[category]" type="number" min="0" max="1000000000"
+                                            <input v-model.number="registerForm.expenses[category]" type="number" min="0" max="1000000000" step="1"
                                                    class="w-full px-2 py-1 text-sm border rounded-lg focus:outline-none focus:border-purple-500">
                                         </div>
                                     </div>
@@ -365,7 +365,7 @@
                                 <i :class="['mr-1', categoryIcons[category]]"></i>
                                 {{ categoryNames[category] }}
                             </label>
-                            <input v-model.number="expenses[category]" type="number" min="0" max="1000000000" 
+                            <input v-model.number="expenses[category]" type="number" min="0" max="1000000000" step="1"
                                    class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-purple-500">
                         </div>
                     </div>
@@ -390,7 +390,7 @@
                             </div>
                             <div>
                                 <label class="block text-gray-700 font-medium mb-2">Необходимая сумма (₽)</label>
-                                <input v-model.number="newGoal.targetAmount" type="number" min="1" max="1000000000"
+                                <input v-model.number="newGoal.targetAmount" type="number" min="1" max="1000000000" step="1"
                                        class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-purple-500"
                                        placeholder="100000">
                             </div>
@@ -560,15 +560,15 @@
                                         
                                         <div class="flex justify-between py-1 border-t border-b mt-2 pt-2 font-medium">
                                             <span>Еда + кафе:</span>
-                                            <span>{{ formatMoney(foodTotal) }} ₽ ({{ foodPercent }}%)</span>
+                                            <span>{{ formatMoney(foodTotal) }} ₽ ({{ foodPercent > 999 ? '>999' : foodPercent }}%)</span>
                                         </div>
                                         <div class="flex justify-between py-1">
                                             <span>Развлечения:</span>
-                                            <span>{{ formatMoney(expenses.entertainment) }} ₽ ({{ entertainmentPercent }}%)</span>
+                                            <span>{{ formatMoney(expenses.entertainment) }} ₽ ({{ entertainmentPercent > 999 ? '>999' : entertainmentPercent }}%)</span>
                                         </div>
                                         <div class="flex justify-between py-1">
                                             <span>Подписки:</span>
-                                            <span>{{ formatMoney(expenses.subscriptions) }} ₽ ({{ subscriptionsPercent }}%)</span>
+                                            <span>{{ formatMoney(expenses.subscriptions) }} ₽ ({{ subscriptionsPercent > 999 ? '>999' : subscriptionsPercent }}%)</span>
                                         </div>
                                         <div class="flex justify-between py-1">
                                             <span>Образование:</span>
@@ -739,7 +739,7 @@
                     </div>
                 </div>
 
-                <!-- Вкладка друзей (обновленная) -->
+                <!-- Вкладка друзей -->
                 <div v-show="currentTab === 'friends'" class="p-6">
                     <h2 class="text-2xl font-bold mb-6">Друзья и рейтинги</h2>
                     
@@ -982,7 +982,7 @@
                 <h3 class="text-xl font-bold mb-4">Изменить доход</h3>
                 <div class="mb-4">
                     <label class="block text-gray-700 font-medium mb-2">Новый доход в месяц (₽)</label>
-                    <input v-model.number="newIncomeValue" type="number" min="0" max="1000000000"
+                    <input v-model.number="newIncomeValue" type="number" min="0" max="1000000000" step="1"
                            class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-purple-500">
                 </div>
                 <div class="flex space-x-2">
@@ -1002,7 +1002,7 @@
                 <h3 class="text-xl font-bold mb-4">Добавить к цели "{{ selectedGoalName }}"</h3>
                 <div class="mb-4">
                     <label class="block text-gray-700 font-medium mb-2">Сумма (₽)</label>
-                    <input v-model.number="addToGoalAmount" type="number" min="1" max="1000000000"
+                    <input v-model.number="addToGoalAmount" type="number" min="1" max="1000000000" step="1"
                            class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-purple-500"
                            placeholder="Введите сумму">
                 </div>
@@ -1215,25 +1215,25 @@
                 const foodPercent = computed(() => {
                     if (totalIncome.value <= 0) return 0;
                     const percent = Math.round(foodTotal.value / totalIncome.value * 100);
-                    return percent > 999 ? 999 : percent;
+                    return Math.min(percent, 999);
                 });
                 
                 const entertainmentPercent = computed(() => {
                     if (totalIncome.value <= 0) return 0;
                     const percent = Math.round((expenses.entertainment || 0) / totalIncome.value * 100);
-                    return percent > 999 ? 999 : percent;
+                    return Math.min(percent, 999);
                 });
                 
                 const subscriptionsPercent = computed(() => {
                     if (totalIncome.value <= 0) return 0;
                     const percent = Math.round((expenses.subscriptions || 0) / totalIncome.value * 100);
-                    return percent > 999 ? 999 : percent;
+                    return Math.min(percent, 999);
                 });
                 
                 const balancePercent = computed(() => {
                     if (totalIncome.value <= 0) return 0;
                     const percent = Math.round(balance.value / totalIncome.value * 100);
-                    return percent > 999 ? 999 : percent;
+                    return Math.min(percent, 999);
                 });
 
                 // Входящие заявки в друзья (для текущего пользователя)
@@ -1252,7 +1252,7 @@
                     }).filter(req => req !== null);
                 });
 
-                // Детальный расчет КФГ (исправленная версия)
+                // Детальный расчет КФГ
                 const kfgCalculation = computed(() => {
                     const result = {
                         baseValue: 0,
@@ -1298,7 +1298,7 @@
                         }
                     }
                     
-                    // Проверяем бонусы (только если есть смысл)
+                    // Проверяем бонусы (только если расходы не превышают доход)
                     if (totalExpenses.value <= totalIncome.value) {
                         if (expenses.education > 0) {
                             result.bonuses.push({
@@ -1339,7 +1339,7 @@
                     return filtered;
                 });
                 
-                // Формула КФГ для пользователя (исправленная)
+                // Формула КФГ для пользователя
                 function calculateKFG(user) {
                     if (!user?.income || user.income <= 0) return 0;
                     
@@ -1377,7 +1377,7 @@
                     return Math.max(0, Math.min(100, Math.round(value)));
                 }
 
-                // КФГ для текущего пользователя (исправленная версия)
+                // КФГ для текущего пользователя
                 const kfg = computed(() => {
                     if (!currentUser.value) return 0;
                     
@@ -1551,6 +1551,7 @@
                     if (amount > 1e12) return '> 1 трлн';
                     if (amount > 1e9) return Math.round(amount / 1e9) + ' млрд';
                     if (amount > 1e6) return Math.round(amount / 1e6) + ' млн';
+                    if (amount < 0 && Math.abs(amount) > 1e12) return '< -1 трлн';
                     return new Intl.NumberFormat('ru-RU').format(amount);
                 }
 
@@ -1577,8 +1578,8 @@
                         return;
                     }
                     
-                    if (newGoal.targetAmount > 1e12) {
-                        showMessage('Слишком большая сумма цели', 'error');
+                    if (newGoal.targetAmount > 1e9) {
+                        showMessage('Слишком большая сумма цели (максимум 1 млрд)', 'error');
                         return;
                     }
                     
@@ -1617,8 +1618,8 @@
                         return;
                     }
                     
-                    if (addToGoalAmount.value > 1e12) {
-                        showMessage('Слишком большая сумма', 'error');
+                    if (addToGoalAmount.value > 1e9) {
+                        showMessage('Слишком большая сумма (максимум 1 млрд)', 'error');
                         return;
                     }
                     
@@ -1629,7 +1630,7 @@
                 }
 
                 function quickAddToGoal(index, amount) {
-                    if (amount > 1e12) {
+                    if (amount > 1e9) {
                         showMessage('Слишком большая сумма', 'error');
                         return;
                     }
@@ -1725,8 +1726,8 @@
                         return;
                     }
                     
-                    if (newIncomeValue.value > 1e12) {
-                        showMessage('Слишком большой доход', 'error');
+                    if (newIncomeValue.value > 1e9) {
+                        showMessage('Слишком большой доход (максимум 1 млрд)', 'error');
                         return;
                     }
 
@@ -1748,8 +1749,8 @@
                         return;
                     }
                     
-                    if (registerForm.income > 1e12) {
-                        showMessage('Слишком большой доход', 'error');
+                    if (registerForm.income > 1e9) {
+                        showMessage('Слишком большой доход (максимум 1 млрд)', 'error');
                         return;
                     }
                     
@@ -1777,8 +1778,8 @@
                     
                     // Проверка на огромные расходы
                     const totalRegExpenses = Object.values(registerForm.expenses).reduce((a, b) => a + b, 0);
-                    if (totalRegExpenses > 1e12) {
-                        showMessage('Слишком большие расходы', 'error');
+                    if (totalRegExpenses > 1e9) {
+                        showMessage('Слишком большие расходы (максимум 1 млрд)', 'error');
                         return;
                     }
                     
@@ -2025,8 +2026,8 @@
                 
                 function saveExpenses() {
                     // Проверка на огромные расходы
-                    if (totalExpenses.value > 1e12) {
-                        showMessage('Слишком большие расходы', 'error');
+                    if (totalExpenses.value > 1e9) {
+                        showMessage('Слишком большие расходы (максимум 1 млрд)', 'error');
                         return;
                     }
                     
