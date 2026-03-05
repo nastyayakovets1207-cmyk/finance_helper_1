@@ -81,6 +81,14 @@
                 transform: scale(1);
             }
         }
+
+        /* Стили для контейнера диаграммы */
+        .chart-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            min-height: 300px;
+        }
     </style>
 </head>
 <body class="bg-gray-100">
@@ -668,7 +676,7 @@
                         <h3 class="text-lg font-semibold mb-4">Структура расходов по категориям</h3>
                         
                         <!-- Контейнер для диаграммы или сообщения об отсутствии данных -->
-                        <div v-if="hasExpenses" class="h-80">
+                        <div v-if="hasExpenses" class="chart-container" ref="chartContainer">
                             <canvas id="expenseChart"></canvas>
                         </div>
                         <div v-else class="h-80 flex items-center justify-center bg-gray-100 rounded-lg">
@@ -1033,6 +1041,9 @@
                 const showRemoveGoalModal = ref(false);
                 const selectedGoalIndexForRemove = ref(null);
                 const selectedGoalNameForRemove = ref('');
+                
+                // Референсы для DOM элементов
+                const chartContainer = ref(null);
                 
                 // Формы авторизации
                 const loginForm = reactive({
@@ -1752,9 +1763,11 @@
                     }
                     
                     // Обновляем диаграмму после загрузки данных
-                    nextTick(() => {
-                        updateChart();
-                    });
+                    setTimeout(() => {
+                        if (currentTab.value === 'analytics') {
+                            initChart();
+                        }
+                    }, 100);
                 }
                 
                 // Методы для работы с друзьями
@@ -1922,7 +1935,13 @@
                     
                     saveToStorage();
                     showMessage('Расходы сохранены!', 'success');
-                    updateChart();
+                    
+                    // Обновляем диаграмму после сохранения
+                    if (currentTab.value === 'analytics') {
+                        setTimeout(() => {
+                            updateChart();
+                        }, 100);
+                    }
                 }
                 
                 function saveToStorage() {
@@ -2100,53 +2119,86 @@
                 }
                 
                 function initChart() {
-                    const ctx = document.getElementById('expenseChart');
-                    if (!ctx) return;
-                    
-                    if (chart) {
-                        chart.destroy();
-                        chart = null;
-                    }
-                    
-                    // Получаем только те категории, у которых есть расходы
-                    const activeCategories = {};
-                    Object.keys(filteredExpenses.value).forEach(key => {
-                        if (filteredExpenses.value[key] > 0) {
-                            activeCategories[key] = filteredExpenses.value[key];
-                        }
-                    });
-                    
-                    // Если нет активных категорий, не создаем диаграмму
-                    if (Object.keys(activeCategories).length === 0) {
+                    // Убеждаемся, что мы на вкладке аналитики и есть данные
+                    if (currentTab.value !== 'analytics' || !hasExpenses.value) {
                         return;
                     }
                     
-                    const labels = Object.keys(activeCategories).map(key => categoryNames[key]);
-                    const data = Object.values(activeCategories);
-                    const colors = Object.keys(activeCategories).map(key => categoryColors[key]);
-                    
-                    chart = new Chart(ctx.getContext('2d'), {
-                        type: 'doughnut',
-                        data: {
-                            labels: labels,
-                            datasets: [{
-                                data: data,
-                                backgroundColor: colors,
-                                borderWidth: 1
-                            }]
-                        },
-                        options: {
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            plugins: {
-                                legend: { 
-                                    position: 'bottom',
-                                    labels: {
-                                        boxWidth: 12,
-                                        padding: 15
+                    // Ждем следующий тик Vue, чтобы убедиться, что DOM обновлен
+                    nextTick(() => {
+                        const canvas = document.getElementById('expenseChart');
+                        if (!canvas) {
+                            console.log('Canvas not found, retrying...');
+                            setTimeout(initChart, 100);
+                            return;
+                        }
+                        
+                        // Уничтожаем старую диаграмму если есть
+                        if (chart) {
+                            chart.destroy();
+                            chart = null;
+                        }
+                        
+                        // Получаем только те категории, у которых есть расходы
+                        const activeCategories = {};
+                        Object.keys(filteredExpenses.value).forEach(key => {
+                            if (filteredExpenses.value[key] > 0) {
+                                activeCategories[key] = filteredExpenses.value[key];
+                            }
+                        });
+                        
+                        // Если нет активных категорий, не создаем диаграмму
+                        if (Object.keys(activeCategories).length === 0) {
+                            return;
+                        }
+                        
+                        const labels = Object.keys(activeCategories).map(key => categoryNames[key]);
+                        const data = Object.values(activeCategories);
+                        const colors = Object.keys(activeCategories).map(key => categoryColors[key]);
+                        
+                        try {
+                            chart = new Chart(canvas.getContext('2d'), {
+                                type: 'doughnut',
+                                data: {
+                                    labels: labels,
+                                    datasets: [{
+                                        data: data,
+                                        backgroundColor: colors,
+                                        borderWidth: 1,
+                                        borderColor: '#ffffff'
+                                    }]
+                                },
+                                options: {
+                                    responsive: true,
+                                    maintainAspectRatio: false,
+                                    plugins: {
+                                        legend: { 
+                                            position: 'bottom',
+                                            labels: {
+                                                boxWidth: 12,
+                                                padding: 15,
+                                                font: {
+                                                    size: 11
+                                                }
+                                            }
+                                        },
+                                        tooltip: {
+                                            callbacks: {
+                                                label: function(context) {
+                                                    const label = context.label || '';
+                                                    const value = context.raw || 0;
+                                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                                    const percentage = Math.round((value / total) * 100);
+                                                    return `${label}: ${formatMoney(value)} ₽ (${percentage}%)`;
+                                                }
+                                            }
+                                        }
                                     }
                                 }
-                            }
+                            });
+                            console.log('Chart initialized successfully');
+                        } catch (error) {
+                            console.error('Error initializing chart:', error);
                         }
                     });
                 }
@@ -2161,25 +2213,23 @@
                         return;
                     }
                     
-                    // Используем nextTick чтобы убедиться, что DOM обновлен
-                    nextTick(() => {
-                        if (chart) {
-                            // Обновляем данные, оставляя только категории с расходами
-                            const activeCategories = {};
-                            Object.keys(filteredExpenses.value).forEach(key => {
-                                if (filteredExpenses.value[key] > 0) {
-                                    activeCategories[key] = filteredExpenses.value[key];
-                                }
-                            });
-                            
-                            chart.data.labels = Object.keys(activeCategories).map(key => categoryNames[key]);
-                            chart.data.datasets[0].data = Object.values(activeCategories);
-                            chart.data.datasets[0].backgroundColor = Object.keys(activeCategories).map(key => categoryColors[key]);
-                            chart.update();
-                        } else {
-                            initChart();
+                    if (!chart) {
+                        initChart();
+                        return;
+                    }
+                    
+                    // Обновляем данные, оставляя только категории с расходами
+                    const activeCategories = {};
+                    Object.keys(filteredExpenses.value).forEach(key => {
+                        if (filteredExpenses.value[key] > 0) {
+                            activeCategories[key] = filteredExpenses.value[key];
                         }
                     });
+                    
+                    chart.data.labels = Object.keys(activeCategories).map(key => categoryNames[key]);
+                    chart.data.datasets[0].data = Object.values(activeCategories);
+                    chart.data.datasets[0].backgroundColor = Object.keys(activeCategories).map(key => categoryColors[key]);
+                    chart.update();
                 }
 
                 function getCategoryColor(category) {
@@ -2285,10 +2335,10 @@
                     
                     // Инициализируем диаграмму после монтирования компонента
                     setTimeout(() => {
-                        if (hasExpenses.value) {
+                        if (currentTab.value === 'analytics' && hasExpenses.value) {
                             initChart();
                         }
-                    }, 100);
+                    }, 200);
                 });
                 
                 watch([expenses, goals, friends, friendRequests, pendingRequests], () => {
@@ -2314,14 +2364,15 @@
                     }
                 });
 
-                // Следим за изменениями расходов и обновляем диаграмму
-                watch([expenses, currentTab], () => {
-                    if (currentTab.value === 'analytics') {
-                        nextTick(() => {
-                            updateChart();
-                        });
+                // Следим за изменениями вкладки и инициализируем диаграмму при переходе на аналитику
+                watch(currentTab, (newTab) => {
+                    if (newTab === 'analytics' && hasExpenses.value) {
+                        // Даем время для рендеринга DOM
+                        setTimeout(() => {
+                            initChart();
+                        }, 100);
                     }
-                }, { deep: true });
+                });
                 
                 return {
                     currentTab,
@@ -2342,6 +2393,7 @@
                     chatMessages,
                     chatInput,
                     chatContainer,
+                    chartContainer,
                     rewards,
                     avatars,
                     tabs,
