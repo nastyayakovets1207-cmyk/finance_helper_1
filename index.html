@@ -569,21 +569,20 @@
                                                 <span class="font-semibold text-red-600">-{{ penalty.value }}</span>
                                             </div>
                                         </div>
-                                        <div v-else class="text-sm text-gray-500 italic">
-                                            Штрафы не применены
-                                        </div>
                                         
-                                        <!-- Бонусы -->
-                                        <div v-if="kfgCalculation.bonuses.length > 0" class="space-y-2">
+                                        <!-- Бонусы (всегда показываем, даже если нет) -->
+                                        <div class="space-y-2">
                                             <h5 class="font-semibold text-green-600 text-xs">Бонусы:</h5>
-                                            <div v-for="bonus in kfgCalculation.bonuses" :key="bonus.text" 
-                                                 class="bonus-step flex justify-between items-center text-sm">
-                                                <span>{{ bonus.text }}</span>
-                                                <span class="font-semibold text-green-600">+{{ bonus.value }}</span>
+                                            <div v-if="kfgCalculation.bonuses.length > 0">
+                                                <div v-for="bonus in kfgCalculation.bonuses" :key="bonus.text" 
+                                                     class="bonus-step flex justify-between items-center text-sm">
+                                                    <span>{{ bonus.text }}</span>
+                                                    <span class="font-semibold text-green-600">+{{ bonus.value }}</span>
+                                                </div>
                                             </div>
-                                        </div>
-                                        <div v-else class="text-sm text-gray-500 italic">
-                                            Бонусы не применены
+                                            <div v-else class="text-sm text-gray-500 italic">
+                                                Нет активных бонусов
+                                            </div>
                                         </div>
                                         
                                         <!-- Итог -->
@@ -605,7 +604,7 @@
                             </div>
                         </div>
                         
-                        <!-- Подсказки -->
+                        <!-- Подсказки (без противоречий) -->
                         <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3">
                             <div v-if="kfg < 50" class="bg-yellow-50 border-l-4 border-yellow-400 p-3 text-sm">
                                 <i class="fas fa-lightbulb text-yellow-600 mr-2"></i>
@@ -615,14 +614,23 @@
                                 <i class="fas fa-lightbulb text-blue-600 mr-2"></i>
                                 <span class="text-blue-700">Хороший КФГ! Есть потенциал для улучшения за счет сокращения ненужных трат.</span>
                             </div>
-                            <div v-else class="bg-green-50 border-l-4 border-green-400 p-3 text-sm">
+                            <div v-else-if="kfg < 100" class="bg-green-50 border-l-4 border-green-400 p-3 text-sm">
                                 <i class="fas fa-lightbulb text-green-600 mr-2"></i>
                                 <span class="text-green-700">Отличный КФГ! Вы финансово грамотный человек.</span>
                             </div>
+                            <div v-else class="bg-purple-50 border-l-4 border-purple-400 p-3 text-sm">
+                                <i class="fas fa-crown text-purple-600 mr-2"></i>
+                                <span class="text-purple-700">Максимальный КФГ! Вы достигли совершенства в финансовой грамотности.</span>
+                            </div>
                             
-                            <div v-if="expenses.education === 0" class="bg-purple-50 border-l-4 border-purple-400 p-3 text-sm">
+                            <!-- Условный совет по образованию (не показываем при КФГ = 100) -->
+                            <div v-if="expenses.education === 0 && kfg < 100" class="bg-purple-50 border-l-4 border-purple-400 p-3 text-sm">
                                 <i class="fas fa-graduation-cap text-purple-600 mr-2"></i>
                                 <span class="text-purple-700">Инвестиции в образование могли бы повысить ваш КФГ на 5 пунктов.</span>
+                            </div>
+                            <div v-else-if="expenses.education === 0 && kfg === 100" class="bg-purple-50 border-l-4 border-purple-400 p-3 text-sm opacity-75">
+                                <i class="fas fa-check-circle text-purple-600 mr-2"></i>
+                                <span class="text-purple-700">У вас максимальный КФГ. Инвестиции в образование помогут сохранить высокий уровень финансовой грамотности.</span>
                             </div>
                         </div>
                     </div>
@@ -809,7 +817,7 @@
                     </div>
                 </div>
 
-                <!-- Вкладка наград -->
+                <!-- Вкладка наград (без раздела "Наказания") -->
                 <div v-show="currentTab === 'rewards'" class="p-6">
                     <h2 class="text-2xl font-bold mb-6">Система наград и аватаров</h2>
                     
@@ -853,6 +861,7 @@
                         </div>
                     </div>
 
+                    <!-- Награды -->
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                         <div v-for="reward in rewards" :key="reward.id" 
                              @click="claimReward(reward)"
@@ -866,13 +875,6 @@
                             <span class="inline-block bg-white bg-opacity-20 text-white px-2 py-1 rounded-full text-xs">
                                 КФГ: {{ reward.kfgRequired }}
                             </span>
-                        </div>
-                    </div>
-
-                    <div class="bg-gray-50 rounded-lg p-4">
-                        <h3 class="text-lg font-semibold mb-3">Наказания</h3>
-                        <div v-for="penalty in penalties" :key="penalty" class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-2">
-                            {{ penalty }}
                         </div>
                     </div>
                 </div>
@@ -1020,7 +1022,7 @@
                 const chatInput = ref('');
                 const chatContainer = ref(null);
                 
-                // Награды
+                // Награды (убрали penalties)
                 const rewards = [
                     { id: 1, name: 'Бесплатный кофе', kfgRequired: 50, description: 'Скидка 50% на кофе', icon: 'fa-coffee' },
                     { id: 2, name: 'Кино онлайн', kfgRequired: 100, description: 'Месяц подписки на кинотеатр', icon: 'fa-film' },
@@ -1499,8 +1501,10 @@
                         recs.push('📱 Проверьте подписки - возможно, вы платите за ненужные сервисы.');
                     }
                     
-                    if (expenses.education === 0) {
-                        recs.push('📚 Инвестируйте в образование - это повысит ваш будущий доход.');
+                    if (expenses.education === 0 && kfg.value < 100) {
+                        recs.push('📚 Инвестиции в образование могли бы повысить ваш КФГ на 5 пунктов.');
+                    } else if (expenses.education === 0 && kfg.value === 100) {
+                        recs.push('📚 Инвестиции в образование помогут сохранить высокий уровень финансовой грамотности.');
                     }
                     
                     if (balance.value > 0) {
@@ -1517,22 +1521,6 @@
                     }
                     
                     return recs;
-                });
-                
-                const penalties = computed(() => {
-                    if (!currentUser.value) return [];
-                    
-                    const pens = [];
-                    
-                    if (kfg.value < 30) {
-                        pens.push('⚠️ Ваш КФГ критически низкий! Увеличьте финансовую грамотность.');
-                    }
-                    
-                    if (totalExpenses.value > currentUser.value.income * 0.9) {
-                        pens.push('📉 Вы тратите почти весь доход - срочно сократите расходы!');
-                    }
-                    
-                    return pens;
                 });
                 
                 // Методы для работы с доходом
@@ -2121,7 +2109,6 @@
                     totalSaved,
                     kfg,
                     recommendations,
-                    penalties,
                     unlockedAvatars,
                     friendsWithKFG,
                     friendsWithDetails,
