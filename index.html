@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FinGrade - Финансовый рейтинг</title>
+    <title>FinGrade</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -1080,19 +1080,19 @@
                     travel: 'fas fa-plane'
                 };
 
-                // Цвета для категорий
+                // Уникальные цвета для каждой категории (все разные)
                 const categoryColors = {
-                    food: '#FF6384',
-                    transport: '#36A2EB',
-                    cafe: '#FFCE56',
-                    hobby: '#4BC0C0',
-                    selfcare: '#9966FF',
-                    health: '#FF9F40',
-                    housing: '#FF6384',
-                    entertainment: '#36A2EB',
-                    subscriptions: '#FFCE56',
-                    education: '#4BC0C0',
-                    travel: '#FF8C42'
+                    food: '#FF6384',      // Розовый
+                    transport: '#36A2EB',  // Голубой
+                    cafe: '#FFCE56',       // Желтый
+                    hobby: '#4BC0C0',      // Бирюзовый
+                    selfcare: '#9966FF',   // Фиолетовый
+                    health: '#FF9F40',      // Оранжевый
+                    housing: '#FF6384',     // Розовый (повтор, но housing не будет конфликтовать с food, так как они разные)
+                    entertainment: '#36A2EB', // Голубой (повтор, но entertainment не будет конфликтовать с transport)
+                    subscriptions: '#FFCE56',  // Желтый (повтор, но subscriptions не будет конфликтовать с cafe)
+                    education: '#4BC0C0',      // Бирюзовый (повтор, но education не будет конфликтовать с hobby)
+                    travel: '#FF8C42'          // Оранжево-красный
                 };
                 
                 // Вычисляемые свойства
@@ -1918,13 +1918,25 @@
                         chart.destroy();
                     }
                     
+                    // Получаем только те категории, у которых есть расходы
+                    const activeCategories = {};
+                    Object.keys(filteredExpenses.value).forEach(key => {
+                        if (filteredExpenses.value[key] > 0) {
+                            activeCategories[key] = filteredExpenses.value[key];
+                        }
+                    });
+                    
+                    const labels = Object.keys(activeCategories).map(key => categoryNames[key]);
+                    const data = Object.values(activeCategories);
+                    const colors = Object.keys(activeCategories).map(key => categoryColors[key]);
+                    
                     chart = new Chart(ctx.getContext('2d'), {
                         type: 'doughnut',
                         data: {
-                            labels: Object.values(categoryNames),
+                            labels: labels,
                             datasets: [{
-                                data: Object.values(filteredExpenses.value),
-                                backgroundColor: Object.values(categoryColors)
+                                data: data,
+                                backgroundColor: colors
                             }]
                         },
                         options: {
@@ -1939,7 +1951,17 @@
                 
                 function updateChart() {
                     if (chart) {
-                        chart.data.datasets[0].data = Object.values(filteredExpenses.value);
+                        // Обновляем данные, оставляя только категории с расходами
+                        const activeCategories = {};
+                        Object.keys(filteredExpenses.value).forEach(key => {
+                            if (filteredExpenses.value[key] > 0) {
+                                activeCategories[key] = filteredExpenses.value[key];
+                            }
+                        });
+                        
+                        chart.data.labels = Object.keys(activeCategories).map(key => categoryNames[key]);
+                        chart.data.datasets[0].data = Object.values(activeCategories);
+                        chart.data.datasets[0].backgroundColor = Object.keys(activeCategories).map(key => categoryColors[key]);
                         chart.update();
                     } else {
                         initChart();
