@@ -17,6 +17,9 @@
     <!-- Vue.js -->
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     
+    <!-- Supabase (бесплатная альтернатива Firebase) -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
     <style>
         .gradient-bg {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -92,10 +95,33 @@
         .warning-text {
             @apply text-red-600 font-semibold;
         }
+        
+        .loading-spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body class="bg-gray-100">
     <div id="app">
+        <!-- Индикатор загрузки -->
+        <div v-if="isLoading" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div class="bg-white rounded-lg p-8 text-center">
+                <div class="loading-spinner"></div>
+                <p class="mt-4 text-gray-600">Загрузка данных...</p>
+            </div>
+        </div>
+
         <!-- Навигация -->
         <nav class="gradient-bg text-white shadow-lg">
             <div class="container mx-auto px-4 py-4">
@@ -1037,6 +1063,12 @@
     <script>
         const { createApp, ref, reactive, computed, watch, onMounted, nextTick } = Vue;
 
+        // Инициализация Supabase с вашими данными
+        const SUPABASE_URL = 'https://odpjnceutisotsplfnnv.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_Da1fU6_iX81vyNzOSceGSg_z-i8wIb7';
+        
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
         const app = createApp({
             setup() {
                 // Состояние приложения
@@ -1064,6 +1096,9 @@
                 
                 // Референсы для DOM элементов
                 const chartContainer = ref(null);
+                
+                // Флаг загрузки
+                const isLoading = ref(false);
                 
                 // Формы авторизации
                 const loginForm = reactive({
@@ -1592,7 +1627,7 @@
                     newGoal.name = '';
                     newGoal.targetAmount = 0;
                     
-                    saveToStorage();
+                    saveToSupabase();
                     showMessage('Цель добавлена!', 'success');
                 }
 
@@ -1624,7 +1659,7 @@
                     }
                     
                     goals.value[selectedGoalIndex.value].currentAmount += addToGoalAmount.value;
-                    saveToStorage();
+                    saveToSupabase();
                     showMessage(`Добавлено ${formatMoney(addToGoalAmount.value)} ₽ к цели!`, 'success');
                     closeAddToGoalModal();
                 }
@@ -1635,7 +1670,7 @@
                         return;
                     }
                     goals.value[index].currentAmount += amount;
-                    saveToStorage();
+                    saveToSupabase();
                     showMessage(`Добавлено ${formatMoney(amount)} ₽ к цели!`, 'success');
                 }
 
@@ -1655,7 +1690,7 @@
                     if (selectedGoalIndexForRemove.value === null) return;
                     
                     goals.value.splice(selectedGoalIndexForRemove.value, 1);
-                    saveToStorage();
+                    saveToSupabase();
                     showMessage('Цель удалена', 'success');
                     closeRemoveGoalModal();
                 }
@@ -1735,14 +1770,77 @@
                     if (userIndex !== -1) {
                         users.value[userIndex].income = newIncomeValue.value;
                         currentUser.value.income = newIncomeValue.value;
-                        saveToStorage();
+                        saveToSupabase();
                         showMessage('Доход успешно обновлен!', 'success');
                         closeIncomeModal();
                     }
                 }
                 
-                // Методы авторизации
-                function handleRegister() {
+                // ===== МЕТОДЫ ДЛЯ SUPABASE =====
+                
+                // Загрузка всех пользователей из Supabase
+                async function loadUsersFromSupabase() {
+                    isLoading.value = true;
+                    try {
+                        const { data, error } = await supabase
+                            .from('users')
+                            .select('*');
+                        
+                        if (error) throw error;
+                        
+                        if (data && data.length > 0) {
+                            users.value = data;
+                        } else {
+                            // Если нет пользователей, создаем тестовых
+                            await createTestUsers();
+                        }
+                        
+                        console.log('Загружено пользователей:', users.value.length);
+                    } catch (error) {
+                        console.error('Ошибка загрузки из Supabase:', error);
+                        showMessage('Ошибка загрузки данных', 'error');
+                        
+                        // Если таблица не существует, создаем тестовых пользователей
+                        await createTestUsers();
+                    } finally {
+                        isLoading.value = false;
+                    }
+                }
+
+                // Сохранение всех пользователей в Supabase
+                async function saveToSupabase() {
+                    if (!users.value.length) return;
+                    
+                    isLoading.value = true;
+                    try {
+                        // Удаляем всех существующих пользователей
+                        const { error: deleteError } = await supabase
+                            .from('users')
+                            .delete()
+                            .neq('login', 'dummy');
+                        
+                        if (deleteError && deleteError.message !== 'Ошибка запроса') {
+                            console.warn('Ошибка при очистке:', deleteError);
+                        }
+                        
+                        // Вставляем обновленных пользователей
+                        const { error } = await supabase
+                            .from('users')
+                            .insert(users.value);
+                        
+                        if (error) throw error;
+                        
+                        console.log('Данные сохранены в Supabase');
+                    } catch (error) {
+                        console.error('Ошибка сохранения в Supabase:', error);
+                        showMessage('Ошибка сохранения данных', 'error');
+                    } finally {
+                        isLoading.value = false;
+                    }
+                }
+
+                // Методы авторизации с Supabase
+                async function handleRegister() {
                     if (!registerForm.name || !registerForm.surname || !registerForm.nickname || 
                         !registerForm.login || !registerForm.password || !registerForm.income) {
                         showMessage('Пожалуйста, заполните все поля', 'error');
@@ -1753,6 +1851,9 @@
                         showMessage('Слишком большой доход (максимум 1 млрд)', 'error');
                         return;
                     }
+                    
+                    // Сначала загружаем актуальных пользователей
+                    await loadUsersFromSupabase();
                     
                     if (users.value.some(u => u.login === registerForm.login)) {
                         showMessage('Пользователь с таким логином уже существует', 'error');
@@ -1799,6 +1900,10 @@
                     };
                     
                     users.value.push(newUser);
+                    
+                    // Сохраняем в Supabase
+                    await saveToSupabase();
+                    
                     currentUser.value = { ...newUser };
                     
                     Object.assign(expenses, registerForm.expenses);
@@ -1813,15 +1918,16 @@
                     registerForm.income = 0;
                     registerForm.avatar = 1;
                     Object.assign(registerForm.expenses, initialExpenses);
-                    
-                    saveToStorage();
                 }
                 
-                function handleLogin() {
+                async function handleLogin() {
                     if (!loginForm.login || !loginForm.password) {
                         showMessage('Заполните все поля', 'error');
                         return;
                     }
+                    
+                    // Загружаем актуальных пользователей из Supabase
+                    await loadUsersFromSupabase();
                     
                     // Ищем пользователя с таким логином и паролем
                     const user = users.value.find(u => 
@@ -1905,7 +2011,7 @@
                     }));
                 }
                 
-                function sendFriendRequest(user) {
+                async function sendFriendRequest(user) {
                     if (!friendRequests.value.includes(user.login)) {
                         friendRequests.value.push(user.login);
                     }
@@ -1929,11 +2035,11 @@
                     friendSearchQuery.value = '';
                     searchPerformed.value = false;
                     
-                    saveToStorage();
+                    await saveToSupabase();
                     showMessage(`Заявка в друзья отправлена пользователю ${user.name}`, 'success');
                 }
                 
-                function acceptFriendRequest(request) {
+                async function acceptFriendRequest(request) {
                     const newFriend = {
                         name: request.name,
                         surname: request.surname,
@@ -1971,11 +2077,11 @@
                         users.value[currentUserIndex].pendingRequests = [...pendingRequests.value];
                     }
                     
-                    saveToStorage();
+                    await saveToSupabase();
                     showMessage(`Вы приняли заявку в друзья от ${request.name}`, 'success');
                 }
                 
-                function rejectFriendRequest(request) {
+                async function rejectFriendRequest(request) {
                     pendingRequests.value = pendingRequests.value.filter(login => login !== request.login);
                     
                     const senderIndex = users.value.findIndex(u => u.login === request.login);
@@ -1989,11 +2095,11 @@
                         users.value[currentUserIndex].pendingRequests = [...pendingRequests.value];
                     }
                     
-                    saveToStorage();
+                    await saveToSupabase();
                     showMessage(`Заявка от ${request.name} отклонена`, 'info');
                 }
                 
-                function removeFriend(friend) {
+                async function removeFriend(friend) {
                     friends.value = friends.value.filter(f => f.login !== friend.login);
                     
                     const friendIndex = users.value.findIndex(u => u.login === friend.login);
@@ -2008,7 +2114,7 @@
                     }
                     
                     showMessage(`Друг ${friend.name} удален`, 'success');
-                    saveToStorage();
+                    await saveToSupabase();
                 }
                 
                 // Остальные методы
@@ -2024,7 +2130,7 @@
                     }, 3000);
                 }
                 
-                function saveExpenses() {
+                async function saveExpenses() {
                     // Проверка на огромные расходы
                     if (totalExpenses.value > 1e9) {
                         showMessage('Слишком большие расходы (максимум 1 млрд)', 'error');
@@ -2037,7 +2143,7 @@
                         currentUser.value.expenses = { ...expenses };
                     }
                     
-                    saveToStorage();
+                    await saveToSupabase();
                     showMessage('Расходы сохранены!', 'success');
                     
                     if (currentTab.value === 'analytics') {
@@ -2047,63 +2153,8 @@
                     }
                 }
                 
-                function saveToStorage() {
-                    if (!currentUser.value) {
-                        const data = {
-                            users: users.value,
-                            currentUser: null
-                        };
-                        localStorage.setItem('vueFinancialData', JSON.stringify(data));
-                        return;
-                    }
-                    
-                    const userIndex = users.value.findIndex(u => u.login === currentUser.value?.login);
-                    if (userIndex !== -1) {
-                        users.value[userIndex] = { 
-                            ...users.value[userIndex], 
-                            ...currentUser.value,
-                            expenses: { ...expenses },
-                            goals: [...goals.value],
-                            friends: [...friends.value],
-                            friendRequests: [...friendRequests.value],
-                            pendingRequests: [...pendingRequests.value]
-                        };
-                    }
-                    
-                    const data = {
-                        users: users.value,
-                        currentUser: currentUser.value,
-                    };
-                    localStorage.setItem('vueFinancialData', JSON.stringify(data));
-                }
-                
-                function loadFromStorage() {
-                    const saved = localStorage.getItem('vueFinancialData');
-                    if (saved) {
-                        try {
-                            const data = JSON.parse(saved);
-                            users.value = data.users || [];
-                            
-                            if (data.currentUser) {
-                                const userExists = users.value.some(u => u.login === data.currentUser.login);
-                                if (userExists) {
-                                    const fullUser = users.value.find(u => u.login === data.currentUser.login);
-                                    if (fullUser) {
-                                        currentUser.value = JSON.parse(JSON.stringify(fullUser));
-                                        loadUserData(currentUser.value);
-                                    }
-                                }
-                            }
-                        } catch (e) {
-                            console.error('Ошибка загрузки', e);
-                        }
-                    } else {
-                        createTestUsers();
-                    }
-                }
-
                 // Создание тестовых пользователей для демонстрации
-                function createTestUsers() {
+                async function createTestUsers() {
                     const testUsers = [
                         {
                             name: 'Иван',
@@ -2212,7 +2263,8 @@
                     ];
                     
                     users.value = testUsers;
-                    saveToStorage();
+                    await saveToSupabase();
+                    showMessage('Тестовые пользователи созданы', 'success');
                 }
                 
                 function initChart() {
@@ -2386,13 +2438,13 @@
                     return avatar ? avatar.name : 'Новичок';
                 }
 
-                function changeAvatar(avatar) {
+                async function changeAvatar(avatar) {
                     if (isAvatarUnlocked(avatar)) {
                         const userIndex = users.value.findIndex(u => u.login === currentUser.value?.login);
                         if (userIndex !== -1) {
                             users.value[userIndex].avatar = avatar.id;
                             currentUser.value.avatar = avatar.id;
-                            saveToStorage();
+                            await saveToSupabase();
                             showMessage(`Аватар изменен на ${avatar.name}!`, 'success');
                         }
                     } else {
@@ -2419,8 +2471,9 @@
                     showMessage('Данные экспортированы!', 'success');
                 }
                 
-                onMounted(() => {
-                    loadFromStorage();
+                onMounted(async () => {
+                    // Загружаем пользователей из Supabase при старте
+                    await loadUsersFromSupabase();
                     
                     setTimeout(() => {
                         if (currentTab.value === 'analytics' && hasExpenses.value) {
@@ -2429,15 +2482,9 @@
                     }, 200);
                 });
                 
-                watch([expenses, goals, friends, friendRequests, pendingRequests], () => {
+                watch([expenses, goals, friends, friendRequests, pendingRequests], async () => {
                     if (currentUser.value) {
-                        saveToStorage();
-                    } else {
-                        const data = {
-                            users: users.value,
-                            currentUser: null
-                        };
-                        localStorage.setItem('vueFinancialData', JSON.stringify(data));
+                        await saveToSupabase();
                     }
                 }, { deep: true });
 
@@ -2509,6 +2556,7 @@
                     addToGoalAmount,
                     showRemoveGoalModal,
                     selectedGoalNameForRemove,
+                    isLoading,
                     handleRegister,
                     handleLogin,
                     logout,
@@ -2548,7 +2596,7 @@
                 };
             }
         });
-        
+
         app.mount('#app');
     </script>
 </body>
