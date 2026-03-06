@@ -14,8 +14,8 @@
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
-    <!-- Vue.js production build -->
-    <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+    <!-- Vue.js -->
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     
     <!-- Supabase -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -46,11 +46,11 @@
             transition: width 0.3s ease;
         }
 
-        .rating-1 { background: linear-gradient(135deg, #cd7f32 0%, #b87333 100%); }
-        .rating-2 { background: linear-gradient(135deg, #c0c0c0 0%, #a8a8a8 100%); }
-        .rating-3 { background: linear-gradient(135deg, #ffd700 0%, #ffb347 100%); }
-        .rating-4 { background: linear-gradient(135deg, #e5e4e2 0%, #d3d3d3 100%); }
-        .rating-5 { background: linear-gradient(135deg, #50c878 0%, #2e8b57 100%); }
+        .rating-1 { background: linear-gradient(135deg, #cd7f32 0%, #b87333 100%); } /* Бронза */
+        .rating-2 { background: linear-gradient(135deg, #c0c0c0 0%, #a8a8a8 100%); } /* Серебро */
+        .rating-3 { background: linear-gradient(135deg, #ffd700 0%, #ffb347 100%); } /* Золото */
+        .rating-4 { background: linear-gradient(135deg, #e5e4e2 0%, #d3d3d3 100%); } /* Платина */
+        .rating-5 { background: linear-gradient(135deg, #50c878 0%, #2e8b57 100%); } /* Изумруд */
 
         .current-user-row {
             background: linear-gradient(135deg, #667eea40 0%, #764ba240 100%);
@@ -74,9 +74,15 @@
         }
 
         @keyframes pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-            100% { transform: scale(1); }
+            0% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.05);
+            }
+            100% {
+                transform: scale(1);
+            }
         }
 
         .chart-container {
@@ -130,6 +136,7 @@
                                 <div class="w-8 h-8 rounded-full overflow-hidden border-2 border-white">
                                     <img :src="getAvatarUrl(currentUser.avatar)" :alt="currentUser.name" class="w-full h-full object-cover">
                                 </div>
+                                <!-- Индикатор новых заявок в друзья -->
                                 <div v-if="pendingFriendRequests.length > 0" 
                                      class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center friend-request-badge">
                                     {{ pendingFriendRequests.length }}
@@ -153,7 +160,7 @@
             {{ message.text }}
         </div>
 
-        <!-- Формы авторизации -->
+        <!-- Формы авторизации (показываются если не авторизован) -->
         <div v-if="!currentUser" class="container mx-auto px-4 py-8">
             <div class="max-w-4xl mx-auto">
                 <div class="bg-white rounded-xl shadow-lg overflow-hidden">
@@ -188,12 +195,14 @@
                                     <input v-model="registerForm.nickname" type="text" 
                                            class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-purple-500"
                                            placeholder="@username">
+                                    <p class="text-xs text-gray-500 mt-1">Должен быть уникальным</p>
                                 </div>
                                 
                                 <div class="mb-4">
                                     <label class="block text-gray-700 font-medium mb-2">Логин (для входа)</label>
                                     <input v-model="registerForm.login" type="text" 
                                            class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-purple-500">
+                                    <p class="text-xs text-gray-500 mt-1">Должен быть уникальным</p>
                                 </div>
                                 
                                 <div class="mb-4">
@@ -204,14 +213,16 @@
 
                                 <div class="mb-4">
                                     <label class="block text-gray-700 font-medium mb-2">Расходы по категориям</label>
+                                    <p class="text-xs text-gray-500 mb-2">Заполните хотя бы одну категорию (КФГ будет рассчитан)</p>
+                                    
                                     <div class="grid grid-cols-2 gap-3">
                                         <div v-for="(value, category) in registerForm.expenses" :key="category" class="mb-2">
                                             <label class="block text-xs text-gray-600 mb-1">
                                                 <i :class="['mr-1', categoryIcons[category]]"></i>
                                                 {{ categoryNames[category] }}
                                             </label>
-                                            <input v-model.number="registerForm.expenses[category]" type="number" min="0" step="1"
-                                                   class="w-full px-2 py-1 text-sm border rounded-lg">
+                                            <input v-model.number="registerForm.expenses[category]" type="number" min="0" max="1000000000" step="1"
+                                                   class="w-full px-2 py-1 text-sm border rounded-lg focus:outline-none focus:border-purple-500">
                                         </div>
                                     </div>
                                 </div>
@@ -220,12 +231,25 @@
                                     <label class="block text-gray-700 font-medium mb-2">Выберите аватар</label>
                                     <div class="grid grid-cols-5 gap-2">
                                         <div v-for="avatar in avatars" :key="avatar.id" 
-                                             @click="registerForm.avatar = avatar.id"
+                                             @click="selectRegisterAvatar(avatar)"
                                              class="relative cursor-pointer rounded-lg overflow-hidden border-2"
-                                             :class="registerForm.avatar === avatar.id ? 'border-purple-500' : 'border-transparent'">
-                                            <img :src="getAvatarUrl(avatar.id)" class="w-full h-auto">
+                                             :class="[
+                                                 registerForm.avatar === avatar.id ? 'border-purple-500' : 'border-transparent',
+                                                 !isAvatarAvailableForRegister(avatar) ? 'cursor-not-allowed' : ''
+                                             ]">
+                                            <img :src="getAvatarUrl(avatar.id)" 
+                                                 :class="['w-full h-auto', !isAvatarAvailableForRegister(avatar) ? 'avatar-locked' : '']">
+                                            <!-- Замок для заблокированных аватаров -->
+                                            <div v-if="!isAvatarAvailableForRegister(avatar)" 
+                                                 class="absolute inset-0 bg-black bg-opacity-30 flex items-center justify-center">
+                                                <i class="fas fa-lock text-white text-xl"></i>
+                                            </div>
                                         </div>
                                     </div>
+                                    <p class="text-xs text-gray-500 mt-2">
+                                        <i class="fas fa-info-circle mr-1"></i>
+                                        При регистрации доступен только аватар "Новичок". Остальные открываются при повышении КФГ.
+                                    </p>
                                 </div>
                                 
                                 <button @click="handleRegister" 
@@ -261,7 +285,7 @@
             </div>
         </div>
 
-        <!-- Основной контейнер для авторизованных пользователей -->
+        <!-- Основной контейнер (для авторизованных пользователей) -->
         <div v-else class="container mx-auto px-4 py-8">
             <!-- Табы -->
             <div class="bg-white rounded-xl shadow-lg overflow-hidden">
@@ -274,6 +298,7 @@
                                          : 'text-gray-500 hover:text-gray-700']">
                         <i :class="['mr-2', tab.icon]"></i>
                         {{ tab.name }}
+                        <!-- Бейдж с количеством новых заявок для вкладки друзья -->
                         <span v-if="tab.id === 'friends' && pendingFriendRequests.length > 0" 
                               class="ml-2 bg-red-500 text-white text-xs rounded-full px-2 py-0.5">
                             {{ pendingFriendRequests.length }}
@@ -281,7 +306,7 @@
                     </button>
                 </div>
 
-                <!-- Профиль -->
+                <!-- Вкладка профиля -->
                 <div v-show="currentTab === 'profile'" class="p-6">
                     <h2 class="text-2xl font-bold mb-6">Мой профиль</h2>
                     <div class="grid md:grid-cols-2 gap-6">
@@ -326,6 +351,10 @@
                                         {{ getUserRating(currentUser) }}
                                     </span>
                                 </div>
+                                <div class="flex justify-between pb-2 border-b">
+                                    <span class="text-gray-600">Разблокированные аватары:</span>
+                                    <span class="font-semibold">{{ unlockedAvatars.join(', ') }}</span>
+                                </div>
                             </div>
                         </div>
                         
@@ -344,12 +373,16 @@
                                     <p class="text-sm opacity-90">Остаток</p>
                                     <p class="text-2xl font-bold">{{ formatMoney(balance) }} ₽</p>
                                 </div>
+                                <div v-if="totalExpenses > totalIncome * 10" class="bg-red-100 border-l-4 border-red-500 p-3 text-sm text-red-700">
+                                    <i class="fas fa-exclamation-triangle mr-2"></i>
+                                    <span>Внимание! Ваши расходы значительно превышают доход. КФГ будет равен 0.</span>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Расходы -->
+                <!-- Вкладка расходов -->
                 <div v-show="currentTab === 'expenses'" class="p-6">
                     <h2 class="text-2xl font-bold mb-6">Расходы по категориям</h2>
                     <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
@@ -358,7 +391,7 @@
                                 <i :class="['mr-1', categoryIcons[category]]"></i>
                                 {{ categoryNames[category] }}
                             </label>
-                            <input v-model.number="expenses[category]" type="number" min="0" step="1"
+                            <input v-model.number="expenses[category]" type="number" min="0" max="1000000000" step="1"
                                    class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-purple-500">
                         </div>
                     </div>
@@ -367,10 +400,139 @@
                     </button>
                 </div>
 
-                <!-- Аналитика -->
+                <!-- Вкладка финансовых целей -->
+                <div v-show="currentTab === 'goals'" class="p-6">
+                    <h2 class="text-2xl font-bold mb-6">Финансовые цели</h2>
+                    
+                    <!-- Форма создания новой цели -->
+                    <div class="bg-gray-50 rounded-lg p-6 mb-6">
+                        <h3 class="text-lg font-semibold mb-4">Новая цель</h3>
+                        <div class="grid md:grid-cols-3 gap-4">
+                            <div>
+                                <label class="block text-gray-700 font-medium mb-2">Название цели</label>
+                                <input v-model="newGoal.name" type="text" 
+                                       class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-purple-500"
+                                       placeholder="Например: Купить машину">
+                            </div>
+                            <div>
+                                <label class="block text-gray-700 font-medium mb-2">Необходимая сумма (₽)</label>
+                                <input v-model.number="newGoal.targetAmount" type="number" min="1" max="1000000000" step="1"
+                                       class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-purple-500"
+                                       placeholder="100000">
+                            </div>
+                            <div class="flex items-end">
+                                <button @click="addGoal" 
+                                        class="gradient-bg text-white px-6 py-2 rounded-lg font-semibold hover:shadow-lg">
+                                    <i class="fas fa-plus-circle mr-2"></i>Добавить цель
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Список целей -->
+                    <h3 class="text-lg font-semibold mb-3">Мои цели ({{ goals.length }})</h3>
+                    
+                    <div v-if="goals.length === 0" class="bg-gray-50 rounded-lg p-8 text-center text-gray-500">
+                        <i class="fas fa-bullseye text-4xl mb-3 opacity-50"></i>
+                        <p>У вас пока нет финансовых целей</p>
+                        <p class="text-sm">Создайте цель, чтобы начать копить</p>
+                    </div>
+                    
+                    <div v-else class="space-y-4">
+                        <div v-for="(goal, index) in goals" :key="index" 
+                             class="bg-gray-50 rounded-lg p-4 hover:shadow-md transition">
+                            
+                            <div class="flex justify-between items-start mb-3">
+                                <div>
+                                    <h4 class="font-semibold text-lg">{{ goal.name }}</h4>
+                                    <p class="text-sm text-gray-600">
+                                        Нужно: {{ formatMoney(goal.targetAmount) }} ₽ • Накоплено: {{ formatMoney(goal.currentAmount) }} ₽
+                                    </p>
+                                </div>
+                                <div class="flex space-x-2">
+                                    <button @click="openAddToGoalModal(index)" 
+                                            class="text-green-600 hover:text-green-800">
+                                        <i class="fas fa-plus-circle text-xl"></i>
+                                    </button>
+                                    <button @click="openRemoveGoalModal(index)" 
+                                            class="text-red-500 hover:text-red-700">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <!-- Прогресс бар -->
+                            <div class="relative pt-1">
+                                <div class="flex mb-2 items-center justify-between">
+                                    <div>
+                                        <span class="text-xs font-semibold inline-block text-purple-600">
+                                            Прогресс
+                                        </span>
+                                    </div>
+                                    <div class="text-right">
+                                        <span class="text-xs font-semibold inline-block text-purple-600">
+                                            {{ Math.min(100, Math.round((goal.currentAmount / goal.targetAmount) * 100)) }}%
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="overflow-hidden h-2 mb-4 text-xs flex rounded bg-purple-200">
+                                    <div :style="{ width: Math.min(100, (goal.currentAmount / goal.targetAmount) * 100) + '%' }"
+                                         class="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-purple-600 goal-progress">
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Кнопки быстрого пополнения -->
+                            <div class="flex space-x-2 mt-2">
+                                <button @click="quickAddToGoal(index, 1000)" 
+                                        class="text-xs bg-gray-200 hover:bg-gray-300 px-2 py-1 rounded">
+                                    +1000 ₽
+                                </button>
+                                <button @click="quickAddToGoal(index, 5000)" 
+                                        class="text-xs bg-gray-200 hover:bg-gray-300 px-2 py-1 rounded">
+                                    +5000 ₽
+                                </button>
+                                <button @click="quickAddToGoal(index, 10000)" 
+                                        class="text-xs bg-gray-200 hover:bg-gray-300 px-2 py-1 rounded">
+                                    +10000 ₽
+                                </button>
+                                <span v-if="goal.currentAmount >= goal.targetAmount" 
+                                      class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded ml-auto">
+                                    <i class="fas fa-check-circle mr-1"></i>Цель достигнута!
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Советы по достижению целей -->
+                    <div class="bg-blue-50 rounded-lg p-4 mt-6">
+                        <h4 class="font-semibold text-blue-700 mb-2">
+                            <i class="fas fa-lightbulb mr-2"></i>Совет по достижению целей
+                        </h4>
+                        <p class="text-sm text-blue-600">
+                            Чтобы быстрее достичь цели, откладывайте часть дохода сразу после его получения.
+                            Рекомендуется откладывать не менее 10-20% от месячного дохода.
+                        </p>
+                        <p class="text-sm text-blue-600 mt-2">
+                            📊 Ежемесячный остаток: {{ formatMoney(balance) }} ₽
+                        </p>
+                        <p v-if="goals.length > 0" class="text-sm text-blue-600 mt-2">
+                            🎯 Общая сумма целей: {{ formatMoney(totalGoalsAmount) }} ₽
+                        </p>
+                        <p v-if="goals.length > 0 && balance > 0" class="text-sm text-blue-600 mt-2">
+                            ⏱️ При текущем темпе накоплений ({{ formatMoney(balance) }} ₽/мес) все цели будут достигнуты через {{ getMonthWord(Math.ceil((totalGoalsAmount - totalSaved) / Math.max(1, balance))) }}
+                        </p>
+                        <p v-else-if="goals.length > 0 && balance <= 0" class="text-sm text-orange-600 mt-2">
+                            ⚠️ У вас нет свободных средств для накопления. Сократите расходы, чтобы начать копить на цели.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Вкладка аналитики -->
                 <div v-show="currentTab === 'analytics'" class="p-6">
                     <h2 class="text-2xl font-bold mb-6">Аналитика</h2>
                     
+                    <!-- Карточки с общей статистикой -->
                     <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
                         <div class="gradient-bg text-white rounded-lg p-4">
                             <p class="text-sm opacity-90">Общий доход</p>
@@ -389,6 +551,453 @@
                             <p class="text-2xl font-bold">{{ kfg }}</p>
                         </div>
                     </div>
+
+                    <!-- Детальный расчет КФГ на основе данных пользователя -->
+                    <div class="bg-gray-50 rounded-xl p-6 mb-6">
+                        <h3 class="text-lg font-semibold mb-4">Детальный расчет вашего КФГ</h3>
+                        
+                        <div class="grid lg:grid-cols-2 gap-6">
+                            <!-- Левая колонка: исходные данные -->
+                            <div>
+                                <div class="bg-white rounded-lg p-4">
+                                    <h4 class="font-medium mb-3 text-purple-600">Исходные данные</h4>
+                                    
+                                    <div class="space-y-2 text-sm">
+                                        <div class="flex justify-between py-1 border-b">
+                                            <span class="text-gray-600">Доход:</span>
+                                            <span class="font-semibold">{{ formatMoney(currentUser.income) }} ₽</span>
+                                        </div>
+                                        <div class="flex justify-between py-1 border-b">
+                                            <span class="text-gray-600">Общие расходы:</span>
+                                            <span class="font-semibold">{{ formatMoney(totalExpenses) }} ₽</span>
+                                        </div>
+                                        
+                                        <div class="mt-3 pt-2">
+                                            <p class="font-medium text-sm mb-2">Расходы по категориям:</p>
+                                            <div v-for="(value, category) in filteredExpenses" :key="category" 
+                                                 class="flex justify-between py-1 text-xs">
+                                                <span class="text-gray-600">
+                                                    <i :class="[categoryIcons[category], 'mr-1']"></i>
+                                                    {{ categoryNames[category] }}:
+                                                </span>
+                                                <span>{{ formatMoney(value) }} ₽</span>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="flex justify-between py-1 border-t border-b mt-2 pt-2 font-medium">
+                                            <span>Еда + кафе:</span>
+                                            <span>{{ formatMoney(foodTotal) }} ₽ ({{ foodPercent > 999 ? '>999' : foodPercent }}%)</span>
+                                        </div>
+                                        <div class="flex justify-between py-1">
+                                            <span>Развлечения:</span>
+                                            <span>{{ formatMoney(expenses.entertainment) }} ₽ ({{ entertainmentPercent > 999 ? '>999' : entertainmentPercent }}%)</span>
+                                        </div>
+                                        <div class="flex justify-between py-1">
+                                            <span>Подписки:</span>
+                                            <span>{{ formatMoney(expenses.subscriptions) }} ₽ ({{ subscriptionsPercent > 999 ? '>999' : subscriptionsPercent }}%)</span>
+                                        </div>
+                                        <div class="flex justify-between py-1">
+                                            <span>Образование:</span>
+                                            <span>{{ formatMoney(expenses.education) }} ₽</span>
+                                        </div>
+                                        <div class="flex justify-between py-1 border-b pb-2">
+                                            <span>Остаток (сбережения):</span>
+                                            <span :class="balance >= 0 ? 'text-green-600' : 'text-red-600'">
+                                                {{ formatMoney(balance) }} ₽ ({{ balancePercent > 999 ? '>999' : balancePercent }}%)
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Правая колонка: пошаговый расчет -->
+                            <div>
+                                <div class="bg-white rounded-lg p-4">
+                                    <h4 class="font-medium mb-3 text-purple-600">Пошаговый расчет</h4>
+                                    
+                                    <div class="space-y-3 text-sm">
+                                        <!-- Предупреждение о превышении расходов -->
+                                        <div v-if="totalExpenses > totalIncome * 10" class="bg-red-100 border-l-4 border-red-500 p-3 text-sm text-red-700">
+                                            <i class="fas fa-exclamation-triangle mr-2"></i>
+                                            <span>Расходы превышают доход более чем в 10 раз. КФГ принудительно установлен в 0.</span>
+                                        </div>
+                                        
+                                        <!-- Шаг 1: База -->
+                                        <div class="calculation-step">
+                                            <div class="flex justify-between items-center mb-1">
+                                                <span class="font-semibold">1. Базовая формула</span>
+                                                <span class="text-xs font-mono bg-purple-200 px-2 py-0.5 rounded">
+                                                    100 - (расходы/доход × 100)
+                                                </span>
+                                            </div>
+                                            <p class="text-gray-600">
+                                                100 - ({{ formatMoney(totalExpenses) }} / {{ formatMoney(currentUser.income) }} × 100) = 
+                                                <span class="font-semibold">{{ kfgCalculation.baseValue > 999 ? '>999' : kfgCalculation.baseValue }}</span>
+                                            </p>
+                                            <p v-if="totalExpenses > totalIncome" class="text-xs text-red-500 mt-1">
+                                                ⚠️ Расходы превышают доход, база отрицательная
+                                            </p>
+                                        </div>
+                                        
+                                        <!-- Штрафы -->
+                                        <div v-if="kfgCalculation.penalties.length > 0" class="space-y-2">
+                                            <h5 class="font-semibold text-red-600 text-xs">Штрафы:</h5>
+                                            <div v-for="penalty in kfgCalculation.penalties" :key="penalty.text" 
+                                                 class="penalty-step flex justify-between items-center text-sm">
+                                                <span>{{ penalty.text }}</span>
+                                                <span class="font-semibold text-red-600">-{{ penalty.value }}</span>
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Бонусы -->
+                                        <div class="space-y-2">
+                                            <h5 class="font-semibold text-green-600 text-xs">Бонусы:</h5>
+                                            <div v-if="kfgCalculation.bonuses.length > 0">
+                                                <div v-for="bonus in kfgCalculation.bonuses" :key="bonus.text" 
+                                                     class="bonus-step flex justify-between items-center text-sm">
+                                                    <span>{{ bonus.text }}</span>
+                                                    <span class="font-semibold text-green-600">+{{ bonus.value }}</span>
+                                                </div>
+                                            </div>
+                                            <div v-else class="text-sm text-gray-500 italic">
+                                                Нет активных бонусов
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Итог -->
+                                        <div class="bg-purple-100 rounded-lg p-3 mt-2">
+                                            <div class="flex justify-between items-center">
+                                                <span class="font-semibold">Итоговый КФГ:</span>
+                                                <span class="text-xl font-bold text-purple-600">{{ kfg }}</span>
+                                            </div>
+                                            <div class="flex justify-between items-center mt-1">
+                                                <span class="text-xs text-gray-600">Ваш рейтинг:</span>
+                                                <span class="px-2 py-0.5 rounded-full text-white text-xs" 
+                                                      :class="'rating-' + getUserRatingLevel(currentUser)">
+                                                    {{ getUserRating(currentUser) }}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Подсказки -->
+                        <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <div v-if="kfg < 30" class="bg-yellow-50 border-l-4 border-yellow-400 p-3 text-sm">
+                                <i class="fas fa-lightbulb text-yellow-600 mr-2"></i>
+                                <span class="text-yellow-700">Ваш КФГ низкий. Рекомендуется сократить расходы.</span>
+                            </div>
+                            <div v-else-if="kfg < 50" class="bg-blue-50 border-l-4 border-blue-400 p-3 text-sm">
+                                <i class="fas fa-lightbulb text-blue-600 mr-2"></i>
+                                <span class="text-blue-700">КФГ ниже среднего. Есть потенциал для улучшения.</span>
+                            </div>
+                            <div v-else-if="kfg < 70" class="bg-green-50 border-l-4 border-green-400 p-3 text-sm">
+                                <i class="fas fa-lightbulb text-green-600 mr-2"></i>
+                                <span class="text-green-700">Хороший КФГ! Продолжайте в том же духе.</span>
+                            </div>
+                            <div v-else-if="kfg < 100" class="bg-purple-50 border-l-4 border-purple-400 p-3 text-sm">
+                                <i class="fas fa-star text-purple-600 mr-2"></i>
+                                <span class="text-purple-700">Отличный КФГ! Вы финансово грамотный человек.</span>
+                            </div>
+                            <div v-else class="bg-indigo-50 border-l-4 border-indigo-400 p-3 text-sm">
+                                <i class="fas fa-crown text-indigo-600 mr-2"></i>
+                                <span class="text-indigo-700">Максимальный КФГ! Вы достигли совершенства!</span>
+                            </div>
+                            
+                            <div v-if="expenses.education === 0 && kfg < 100 && totalExpenses <= totalIncome" class="bg-purple-50 border-l-4 border-purple-400 p-3 text-sm">
+                                <i class="fas fa-graduation-cap text-purple-600 mr-2"></i>
+                                <span class="text-purple-700">Инвестиции в образование могли бы повысить ваш КФГ на 5 пунктов.</span>
+                            </div>
+                            <div v-else-if="totalExpenses > totalIncome" class="bg-red-50 border-l-4 border-red-400 p-3 text-sm">
+                                <i class="fas fa-exclamation-circle text-red-600 mr-2"></i>
+                                <span class="text-red-700">Срочно сократите расходы! Они превышают доход.</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Круговая диаграмма расходов -->
+                    <div class="bg-gray-50 rounded-xl p-6">
+                        <h3 class="text-lg font-semibold mb-4">Структура расходов по категориям</h3>
+                        
+                        <!-- Контейнер для диаграммы или сообщения об отсутствии данных -->
+                        <div v-if="hasExpenses" class="chart-container" ref="chartContainer">
+                            <canvas id="expenseChart"></canvas>
+                        </div>
+                        <div v-else class="h-80 flex items-center justify-center bg-gray-100 rounded-lg">
+                            <div class="text-center text-gray-500">
+                                <i class="fas fa-chart-pie text-5xl mb-3 opacity-30"></i>
+                                <p>Нет данных о расходах</p>
+                                <p class="text-sm">Добавьте расходы во вкладке "Расходы"</p>
+                            </div>
+                        </div>
+                        
+                        <!-- Легенда с суммами (показываем только если есть расходы) -->
+                        <div v-if="hasExpenses" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 mt-4">
+                            <div v-for="(value, category) in filteredExpenses" :key="category" 
+                                 v-if="value > 0"
+                                 class="flex items-center space-x-2 text-sm">
+                                <div class="w-3 h-3 rounded-full" :style="{ backgroundColor: getCategoryColor(category) }"></div>
+                                <span class="text-gray-600">{{ categoryNames[category] }}:</span>
+                                <span class="font-medium">{{ formatMoney(value) }} ₽</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Вкладка ИИ-Ассистент -->
+                <div v-show="currentTab === 'chat'" class="p-6">
+                    <h2 class="text-2xl font-bold mb-6">ИИ-Ассистент</h2>
+                    <div class="bg-gray-50 rounded-lg p-4">
+                        <div class="h-96 overflow-y-auto flex flex-col space-y-2 mb-4" ref="chatContainer">
+                            <div v-for="(msg, index) in chatMessages" :key="index" 
+                                 :class="msg.sender === 'bot' ? 'message-bot' : 'message-user'">
+                                {{ msg.text }}
+                            </div>
+                        </div>
+                        <div class="flex space-x-2">
+                            <textarea v-model="chatInput" @keyup.enter="sendMessage" rows="2" class="flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:border-purple-500" placeholder="Задайте вопрос ИИ-ассистенту..."></textarea>
+                            <button @click="sendMessage" class="gradient-bg text-white px-6 rounded-lg font-semibold hover:shadow-lg">
+                                <i class="fas fa-paper-plane"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Вкладка друзей -->
+                <div v-show="currentTab === 'friends'" class="p-6">
+                    <h2 class="text-2xl font-bold mb-6">Друзья и рейтинги</h2>
+                    
+                    <!-- Рейтинговая таблица (включая текущего пользователя) -->
+                    <div class="bg-gradient-to-r from-purple-600 to-indigo-600 rounded-lg p-4 mb-6 text-white">
+                        <h3 class="text-lg font-semibold mb-3 text-white">🏆 Рейтинг КФГ (вы и ваши друзья)</h3>
+                        <div class="space-y-2">
+                            <div v-for="(participant, index) in ratingParticipants" :key="participant.login" 
+                                 class="flex items-center justify-between rounded-lg p-2"
+                                 :class="participant.isCurrentUser ? 'current-user-row' : 'bg-white bg-opacity-20'">
+                                <div class="flex items-center space-x-3">
+                                    <span class="font-bold text-lg w-6 text-white">{{ index + 1 }}</span>
+                                    <div class="w-8 h-8 rounded-full overflow-hidden">
+                                        <img :src="getAvatarUrl(participant.avatar)" class="w-full h-full object-cover">
+                                    </div>
+                                    <div>
+                                        <span class="font-medium text-white">
+                                            {{ participant.name }} {{ participant.isCurrentUser ? '(Вы)' : '' }}
+                                        </span>
+                                        <span class="text-xs text-white opacity-80 ml-2">{{ participant.nickname }}</span>
+                                    </div>
+                                </div>
+                                <div class="flex items-center space-x-3">
+                                    <span class="font-bold text-white">{{ participant.kfg }}</span>
+                                    <span class="text-xs px-2 py-1 rounded-full text-white" :class="'rating-' + participant.ratingLevel">
+                                        {{ participant.ratingName }}
+                                    </span>
+                                </div>
+                            </div>
+                            <div v-if="ratingParticipants.length === 0" class="text-center py-2 text-white opacity-80">
+                                У вас пока нет друзей для рейтинга
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Новая секция: Заявки в друзья -->
+                    <div v-if="pendingFriendRequests.length > 0" class="bg-yellow-50 rounded-lg p-4 mb-6 border-2 border-yellow-200">
+                        <div class="flex items-center justify-between mb-3">
+                            <h3 class="text-lg font-semibold text-yellow-700">
+                                <i class="fas fa-user-plus mr-2"></i>
+                                Новые заявки в друзья ({{ pendingFriendRequests.length }})
+                            </h3>
+                        </div>
+                        <div class="space-y-3">
+                            <div v-for="request in pendingFriendRequests" :key="request.login" 
+                                 class="bg-white p-3 rounded-lg flex justify-between items-center border border-yellow-200">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-10 h-10 rounded-full overflow-hidden">
+                                        <img :src="getAvatarUrl(request.avatar)" class="w-full h-full object-cover">
+                                    </div>
+                                    <div>
+                                        <span class="font-medium">{{ request.name }} {{ request.surname }}</span>
+                                        <span class="text-sm text-gray-500 ml-2">{{ request.nickname }}</span>
+                                    </div>
+                                </div>
+                                <div class="flex space-x-2">
+                                    <button @click="acceptFriendRequest(request)" 
+                                            class="bg-green-500 text-white px-3 py-1 rounded-lg text-sm hover:bg-green-600">
+                                        <i class="fas fa-check mr-1"></i>Принять
+                                    </button>
+                                    <button @click="rejectFriendRequest(request)" 
+                                            class="bg-red-500 text-white px-3 py-1 rounded-lg text-sm hover:bg-red-600">
+                                        <i class="fas fa-times mr-1"></i>Отклонить
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Поиск друзей -->
+                    <div class="bg-gray-50 rounded-lg p-4 mb-6">
+                        <h3 class="text-lg font-semibold mb-3">Найти друга по никнейму</h3>
+                        <div class="flex space-x-2">
+                            <input v-model="friendSearchQuery" type="text" 
+                                   class="flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:border-purple-500" 
+                                   placeholder="Введите никнейм (например: @username)">
+                            <button @click="searchFriends" class="gradient-bg text-white px-6 py-2 rounded-lg font-semibold hover:shadow-lg">
+                                <i class="fas fa-search mr-2"></i>Поиск
+                            </button>
+                        </div>
+                        
+                        <div v-if="searchResults.length > 0" class="mt-4">
+                            <h4 class="text-sm font-medium text-gray-600 mb-2">Результаты поиска:</h4>
+                            <div class="space-y-2">
+                                <div v-for="user in searchResults" :key="user.login" 
+                                     class="bg-white p-3 rounded-lg flex justify-between items-center border">
+                                    <div class="flex items-center space-x-3">
+                                        <div class="w-8 h-8 rounded-full overflow-hidden">
+                                            <img :src="getAvatarUrl(user.avatar)" class="w-full h-full object-cover">
+                                        </div>
+                                        <div>
+                                            <span class="font-medium">{{ user.name }} {{ user.surname }}</span>
+                                            <span class="text-sm text-gray-500 ml-2">{{ user.nickname }}</span>
+                                        </div>
+                                    </div>
+                                    <button @click="sendFriendRequest(user)" 
+                                            class="bg-purple-500 text-white px-3 py-1 rounded-lg text-sm hover:bg-purple-600">
+                                        <i class="fas fa-user-plus mr-1"></i>Добавить
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div v-else-if="friendSearchQuery && searchPerformed" class="mt-4 text-gray-500 text-center py-4">
+                            Пользователь с таким никнеймом не найден
+                        </div>
+                    </div>
+
+                    <!-- Список друзей с их друзьями -->
+                    <h3 class="text-lg font-semibold mb-3">Мои друзья ({{ friends.length }})</h3>
+                    
+                    <div v-if="friends.length === 0" class="bg-gray-50 rounded-lg p-8 text-center text-gray-500">
+                        <i class="fas fa-user-friends text-4xl mb-3 opacity-50"></i>
+                        <p>У вас пока нет друзей</p>
+                        <p class="text-sm">Найдите друзей по никнейму выше</p>
+                    </div>
+                    
+                    <div v-else class="space-y-3">
+                        <div v-for="friend in friendsWithDetails" :key="friend.login" 
+                             class="bg-gray-50 rounded-lg p-4 hover:shadow-md transition">
+                            <!-- Основная информация о друге -->
+                            <div class="flex justify-between items-center">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-10 h-10 rounded-full overflow-hidden">
+                                        <img :src="getAvatarUrl(friend.avatar)" :alt="friend.name" class="w-full h-full object-cover">
+                                    </div>
+                                    <div>
+                                        <div class="flex items-center space-x-2">
+                                            <span class="font-medium">{{ friend.name }} {{ friend.surname }}</span>
+                                            <span class="text-xs px-2 py-1 rounded-full text-white" :class="'rating-' + friend.ratingLevel">
+                                                {{ friend.ratingName }}
+                                            </span>
+                                        </div>
+                                        <span class="text-sm text-gray-500">{{ friend.nickname }}</span>
+                                    </div>
+                                </div>
+                                <div class="flex items-center space-x-4">
+                                    <div class="text-right">
+                                        <div class="text-sm text-gray-600">КФГ</div>
+                                        <div class="font-bold text-purple-600">{{ friend.kfg }}</div>
+                                    </div>
+                                    <button @click="removeFriend(friend)" 
+                                            class="text-red-500 hover:text-red-700">
+                                        <i class="fas fa-user-minus"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <!-- Друзья друга (если есть) -->
+                            <div v-if="friend.friends && friend.friends.length > 0" class="mt-3 pl-13 border-t pt-2">
+                                <p class="text-xs text-gray-500 mb-2">
+                                    <i class="fas fa-users mr-1"></i>Друзья {{ friend.name }} ({{ friend.friends.length }}):
+                                </p>
+                                <div class="flex flex-wrap gap-2">
+                                    <div v-for="friendOfFriend in friend.friends.slice(0, 3)" :key="friendOfFriend.login" 
+                                         class="flex items-center space-x-1 bg-white rounded-full px-2 py-1 text-xs">
+                                        <div class="w-4 h-4 rounded-full overflow-hidden">
+                                            <img :src="getAvatarUrl(friendOfFriend.avatar)" class="w-full h-full object-cover">
+                                        </div>
+                                        <span>{{ friendOfFriend.name }}</span>
+                                    </div>
+                                    <span v-if="friend.friends.length > 3" class="text-xs text-gray-500">
+                                        и еще {{ friend.friends.length - 3 }}
+                                    </span>
+                                </div>
+                            </div>
+                            <div v-else class="mt-3 pl-13 border-t pt-2">
+                                <p class="text-xs text-gray-400">Нет общих друзей</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Вкладка наград -->
+                <div v-show="currentTab === 'rewards'" class="p-6">
+                    <h2 class="text-2xl font-bold mb-6">Система наград и аватаров</h2>
+                    
+                    <div class="bg-gray-50 rounded-lg p-4 mb-6">
+                        <h3 class="text-lg font-semibold mb-2">Ваш КФГ: <span class="text-purple-600">{{ kfg }}</span></h3>
+                        <h3 class="text-lg font-semibold mb-2">Ваш рейтинг: <span class="px-2 py-1 rounded-full text-white" :class="'rating-' + getUserRatingLevel(currentUser)">{{ getUserRating(currentUser) }}</span></h3>
+                        <h3 class="text-lg font-semibold mb-2">Разблокированные аватары: <span class="text-purple-600">{{ unlockedAvatars.join(', ') }}</span></h3>
+                    </div>
+
+                    <!-- Доступные аватары -->
+                    <div class="bg-gray-50 rounded-lg p-4 mb-6">
+                        <h3 class="text-lg font-semibold mb-4">Аватары</h3>
+                        <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+                            <div v-for="avatar in avatars" :key="avatar.id" 
+                                 @click="changeAvatar(avatar)"
+                                 class="relative cursor-pointer rounded-lg overflow-hidden border-2 p-2"
+                                 :class="[
+                                     isAvatarUnlocked(avatar) ? 'opacity-100 hover:border-purple-500' : 'opacity-50 cursor-not-allowed',
+                                     currentUser.avatar === avatar.id ? 'border-purple-500' : 'border-gray-200'
+                                 ]">
+                                <img :src="getAvatarUrl(avatar.id)" 
+                                     :class="['w-full h-auto mb-2', !isAvatarUnlocked(avatar) ? 'avatar-locked' : '']">
+                                <div class="text-center">
+                                    <p class="text-sm font-medium">{{ avatar.name }}</p>
+                                    <p class="text-xs" :class="isAvatarUnlocked(avatar) ? 'text-green-600' : 'text-gray-500'">
+                                        {{ getAvatarStatus(avatar) }}
+                                    </p>
+                                </div>
+                                <div v-if="!isAvatarUnlocked(avatar)" 
+                                     class="absolute inset-0 bg-black bg-opacity-20 flex items-center justify-center">
+                                    <i class="fas fa-lock text-gray-600 text-2xl"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-4 p-3 bg-blue-50 rounded-lg">
+                            <p class="text-sm text-blue-700">
+                                <i class="fas fa-info-circle mr-1"></i>
+                                Все аватары, кроме "Новичок", становятся недоступны при падении КФГ ниже требуемого порога.
+                                Новичок (КФГ 0), Эконом (КФГ 40), Инвестор (КФГ 70), Эксперт (КФГ 90), Гуру (КФГ 100).
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Награды -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                        <div v-for="reward in rewards" :key="reward.id" 
+                             @click="claimReward(reward)"
+                             :class="['rounded-lg p-4 text-center cursor-pointer transition-transform hover:scale-105',
+                                      reward.kfgRequired <= kfg 
+                                          ? 'bg-gradient-to-br from-yellow-400 to-orange-400' 
+                                          : 'bg-gradient-to-br from-gray-300 to-gray-400 opacity-75']">
+                            <i :class="['fas', reward.icon, 'text-3xl mb-2 text-white']"></i>
+                            <h4 class="font-bold text-white mb-1">{{ reward.name }}</h4>
+                            <p class="text-xs text-white opacity-90 mb-2">{{ reward.description }}</p>
+                            <span class="inline-block bg-white bg-opacity-20 text-white px-2 py-1 rounded-full text-xs">
+                                КФГ: {{ reward.kfgRequired }}
+                            </span>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -399,7 +1008,7 @@
                 <h3 class="text-xl font-bold mb-4">Изменить доход</h3>
                 <div class="mb-4">
                     <label class="block text-gray-700 font-medium mb-2">Новый доход в месяц (₽)</label>
-                    <input v-model.number="newIncomeValue" type="number" min="0" step="1"
+                    <input v-model.number="newIncomeValue" type="number" min="0" max="1000000000" step="1"
                            class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-purple-500">
                 </div>
                 <div class="flex space-x-2">
@@ -412,13 +1021,49 @@
                 </div>
             </div>
         </div>
+
+        <!-- Модальное окно для добавления суммы к цели -->
+        <div v-if="showAddToGoalModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div class="bg-white rounded-xl p-6 max-w-md w-full mx-4">
+                <h3 class="text-xl font-bold mb-4">Добавить к цели "{{ selectedGoalName }}"</h3>
+                <div class="mb-4">
+                    <label class="block text-gray-700 font-medium mb-2">Сумма (₽)</label>
+                    <input v-model.number="addToGoalAmount" type="number" min="1" max="1000000000" step="1"
+                           class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-purple-500"
+                           placeholder="Введите сумму">
+                </div>
+                <div class="flex space-x-2">
+                    <button @click="confirmAddToGoal" class="gradient-bg text-white px-6 py-2 rounded-lg font-semibold hover:shadow-lg flex-1">
+                        Добавить
+                    </button>
+                    <button @click="closeAddToGoalModal" class="bg-gray-300 text-gray-700 px-6 py-2 rounded-lg font-semibold hover:bg-gray-400">
+                        Отмена
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Модальное окно для удаления цели -->
+        <div v-if="showRemoveGoalModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div class="bg-white rounded-xl p-6 max-w-md w-full mx-4">
+                <h3 class="text-xl font-bold mb-4">Удалить цель</h3>
+                <p class="text-gray-600 mb-6">Вы уверены, что хотите удалить цель "{{ selectedGoalNameForRemove }}"?</p>
+                <div class="flex space-x-2">
+                    <button @click="confirmRemoveGoal" class="bg-red-500 text-white px-6 py-2 rounded-lg font-semibold hover:bg-red-600 flex-1">
+                        Удалить
+                    </button>
+                    <button @click="closeRemoveGoalModal" class="bg-gray-300 text-gray-700 px-6 py-2 rounded-lg font-semibold hover:bg-gray-400">
+                        Отмена
+                    </button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script>
-        const { createApp, ref, reactive, computed, watch, onMounted } = Vue;
+        const { createApp, ref, reactive, computed, watch, onMounted, nextTick } = Vue;
 
-        // ИНИЦИАЛИЗАЦИЯ SUPABASE - ТОЛЬКО ОДИН РАЗ!
-        // ИНИЦИАЛИЗАЦИЯ SUPABASE - ТОЛЬКО ОДИН РАЗ!
+        // ===== ВАШИ НОВЫЕ ДАННЫЕ SUPABASE =====
         const SUPABASE_URL = 'https://yszaynajzfgwhavrzqtw.supabase.co';
         const SUPABASE_KEY = 'sb_publishable_ikzakjNbamCeII7NP7TshQ_lYvwxY24';
         
@@ -426,49 +1071,112 @@
 
         const app = createApp({
             setup() {
-                // Состояние
+                // Состояние приложения
                 const currentTab = ref('profile');
                 const message = reactive({ show: false, text: '', type: 'success' });
+                
+                // Пользователи и текущий пользователь
                 const users = ref([]);
                 const currentUser = ref(null);
-                const isLoading = ref(false);
+                
+                // Модальное окно для изменения дохода
                 const showIncomeModal = ref(false);
                 const newIncomeValue = ref(0);
                 
-                // Формы
-                const loginForm = reactive({ login: '', password: '' });
+                // Модальное окно для добавления к цели
+                const showAddToGoalModal = ref(false);
+                const selectedGoalIndex = ref(null);
+                const selectedGoalName = ref('');
+                const addToGoalAmount = ref(1000);
                 
+                // Модальное окно для удаления цели
+                const showRemoveGoalModal = ref(false);
+                const selectedGoalIndexForRemove = ref(null);
+                const selectedGoalNameForRemove = ref('');
+                
+                // Референсы для DOM элементов
+                const chartContainer = ref(null);
+                
+                // Флаг загрузки
+                const isLoading = ref(false);
+                
+                // Формы авторизации
+                const loginForm = reactive({
+                    login: '',
+                    password: ''
+                });
+                
+                // Начальные значения расходов для формы регистрации
                 const initialExpenses = {
-                    food: 0, transport: 0, cafe: 0, hobby: 0, selfcare: 0,
-                    health: 0, housing: 0, entertainment: 0,
-                    subscriptions: 0, education: 0, travel: 0
+                    food: 0, 
+                    transport: 0, 
+                    cafe: 0,
+                    hobby: 0, 
+                    selfcare: 0,
+                    health: 0, 
+                    housing: 0, 
+                    entertainment: 0,
+                    subscriptions: 0, 
+                    education: 0, 
+                    travel: 0
                 };
                 
                 const registerForm = reactive({
-                    name: '', surname: '', nickname: '', login: '', password: '', 
-                    income: 0, avatar: 1, expenses: { ...initialExpenses }
+                    name: '',
+                    surname: '',
+                    nickname: '',
+                    login: '',
+                    password: '',
+                    income: 0,
+                    avatar: 1,
+                    expenses: { ...initialExpenses }
                 });
                 
+                // Расходы (для текущего пользователя)
                 const expenses = reactive({ ...initialExpenses });
+
+                // Финансовые цели
+                const goals = ref([]);
+                const newGoal = reactive({
+                    name: '',
+                    targetAmount: 0
+                });
                 
                 // Друзья и заявки
                 const friends = ref([]);
-                const friendRequests = ref([]);
-                const pendingRequests = ref([]);
+                const friendRequests = ref([]); // Исходящие заявки
+                const pendingRequests = ref([]); // Входящие заявки
                 
                 const friendSearchQuery = ref('');
                 const searchResults = ref([]);
                 const searchPerformed = ref(false);
+                
+                // Чат
+                const chatMessages = ref([
+                    { text: 'Привет! Я ваш ИИ-ассистент. Задайте мне вопрос о финансах или попросите совет по экономии.', sender: 'bot' }
+                ]);
+                const chatInput = ref('');
+                const chatContainer = ref(null);
+                
+                // Награды
+                const rewards = [
+                    { id: 1, name: 'Бесплатный кофе', kfgRequired: 50, description: 'Скидка 50% на кофе', icon: 'fa-coffee' },
+                    { id: 2, name: 'Кино онлайн', kfgRequired: 100, description: 'Месяц подписки на кинотеатр', icon: 'fa-film' },
+                    { id: 3, name: 'Книга', kfgRequired: 150, description: 'Электронная книга в подарок', icon: 'fa-book' },
+                    { id: 4, name: 'Спортзал', kfgRequired: 200, description: 'Месяц в спортзал бесплатно', icon: 'fa-dumbbell' },
+                    { id: 5, name: 'Путешествие', kfgRequired: 300, description: 'Скидка на билеты 20%', icon: 'fa-plane' }
+                ];
 
-                // Константы
+                // Аватары
                 const avatars = [
-                    { id: 1, name: 'Новичок' },
-                    { id: 2, name: 'Эконом' },
-                    { id: 3, name: 'Инвестор' },
-                    { id: 4, name: 'Эксперт' },
-                    { id: 5, name: 'Гуру' }
+                    { id: 1, name: 'Новичок', kfgRequired: 0, isPermanent: true, icon: 'fa-user' },
+                    { id: 2, name: 'Эконом', kfgRequired: 40, isPermanent: false, icon: 'fa-piggy-bank' },
+                    { id: 3, name: 'Инвестор', kfgRequired: 70, isPermanent: false, icon: 'fa-chart-line' },
+                    { id: 4, name: 'Эксперт', kfgRequired: 90, isPermanent: false, icon: 'fa-crown' },
+                    { id: 5, name: 'Гуру', kfgRequired: 100, isPermanent: false, icon: 'fa-gem' }
                 ];
                 
+                // Константы
                 const tabs = [
                     { id: 'profile', name: 'Профиль', icon: 'fas fa-user' },
                     { id: 'expenses', name: 'Расходы', icon: 'fas fa-chart-line' },
@@ -479,54 +1187,286 @@
                     { id: 'rewards', name: 'Награды', icon: 'fas fa-gift' }
                 ];
                 
+                // Категории расходов
                 const categoryNames = {
-                    food: 'Еда', transport: 'Транспорт', cafe: 'Кафе', hobby: 'Хобби',
-                    selfcare: 'Уход', health: 'Здоровье', housing: 'Жилье',
-                    entertainment: 'Развлечения', subscriptions: 'Подписки',
-                    education: 'Учеба', travel: 'Путешествия'
+                    food: 'Еда',
+                    transport: 'Транспорт',
+                    cafe: 'Кафе и рестораны',
+                    hobby: 'Хобби',
+                    selfcare: 'Уход',
+                    health: 'Здоровье',
+                    housing: 'Жилье',
+                    entertainment: 'Развлечения',
+                    subscriptions: 'Подписки',
+                    education: 'Учеба',
+                    travel: 'Путешествия'
                 };
                 
                 const categoryIcons = {
-                    food: 'fas fa-utensils', transport: 'fas fa-bus', cafe: 'fas fa-coffee',
-                    hobby: 'fas fa-palette', selfcare: 'fas fa-spa', health: 'fas fa-heartbeat',
-                    housing: 'fas fa-home', entertainment: 'fas fa-gamepad',
-                    subscriptions: 'fas fa-tv', education: 'fas fa-book', travel: 'fas fa-plane'
+                    food: 'fas fa-utensils',
+                    transport: 'fas fa-bus',
+                    cafe: 'fas fa-coffee',
+                    hobby: 'fas fa-palette',
+                    selfcare: 'fas fa-spa',
+                    health: 'fas fa-heartbeat',
+                    housing: 'fas fa-home',
+                    entertainment: 'fas fa-gamepad',
+                    subscriptions: 'fas fa-tv',
+                    education: 'fas fa-book',
+                    travel: 'fas fa-plane'
                 };
 
+                // Уникальные цвета для каждой категории
+                const categoryColors = {
+                    food: '#FF6384',        // Розовый
+                    transport: '#36A2EB',    // Голубой
+                    cafe: '#FFCE56',          // Желтый
+                    hobby: '#4BC0C0',         // Бирюзовый
+                    selfcare: '#9966FF',       // Фиолетовый
+                    health: '#FF9F40',          // Оранжевый
+                    housing: '#8B4513',        // Коричневый
+                    entertainment: '#20B2AA',   // Светло-морской волны
+                    subscriptions: '#BA55D3',   // Орхидея
+                    education: '#2E8B57',       // Морская зелень
+                    travel: '#FF8C42'            // Оранжево-красный
+                };
+                
                 // Вычисляемые свойства
-                const totalExpenses = computed(() => Object.values(expenses).reduce((a, b) => a + b, 0));
+                const totalExpenses = computed(() => {
+                    return Object.values(expenses).reduce((a, b) => a + b, 0);
+                });
+                
                 const totalIncome = computed(() => currentUser.value?.income || 0);
+                
                 const balance = computed(() => totalIncome.value - totalExpenses.value);
-                const hasExpenses = computed(() => Object.values(expenses).some(val => val > 0));
 
-                const filteredExpenses = computed(() => {
-                    const filtered = {};
-                    Object.keys(expenses).forEach(key => {
-                        if (categoryNames[key]) filtered[key] = expenses[key];
-                    });
-                    return filtered;
+                // Проверка наличия расходов для отображения диаграммы
+                const hasExpenses = computed(() => {
+                    return Object.values(expenses).some(val => val > 0);
                 });
 
+                // Проценты от дохода (с защитой от деления на ноль и огромных чисел)
+                const foodTotal = computed(() => (expenses.food || 0) + (expenses.cafe || 0));
+                const foodPercent = computed(() => {
+                    if (totalIncome.value <= 0) return 0;
+                    const percent = Math.round(foodTotal.value / totalIncome.value * 100);
+                    return Math.min(percent, 999);
+                });
+                
+                const entertainmentPercent = computed(() => {
+                    if (totalIncome.value <= 0) return 0;
+                    const percent = Math.round((expenses.entertainment || 0) / totalIncome.value * 100);
+                    return Math.min(percent, 999);
+                });
+                
+                const subscriptionsPercent = computed(() => {
+                    if (totalIncome.value <= 0) return 0;
+                    const percent = Math.round((expenses.subscriptions || 0) / totalIncome.value * 100);
+                    return Math.min(percent, 999);
+                });
+                
+                const balancePercent = computed(() => {
+                    if (totalIncome.value <= 0) return 0;
+                    const percent = Math.round(balance.value / totalIncome.value * 100);
+                    return Math.min(percent, 999);
+                });
+
+                // Входящие заявки в друзья (для текущего пользователя)
                 const pendingFriendRequests = computed(() => {
                     if (!currentUser.value) return [];
+                    
                     return pendingRequests.value.map(requestLogin => {
                         const user = users.value.find(u => u.login === requestLogin);
                         return user ? {
-                            login: user.login, name: user.name, surname: user.surname,
-                            nickname: user.nickname, avatar: user.avatar
+                            login: user.login,
+                            name: user.name,
+                            surname: user.surname,
+                            nickname: user.nickname,
+                            avatar: user.avatar
                         } : null;
                     }).filter(req => req !== null);
                 });
 
+                // Детальный расчет КФГ
+                const kfgCalculation = computed(() => {
+                    const result = {
+                        baseValue: 0,
+                        penalties: [],
+                        bonuses: []
+                    };
+                    
+                    if (!currentUser.value || totalIncome.value <= 0) return result;
+                    
+                    // Проверка на экстремальные значения
+                    if (totalExpenses.value > totalIncome.value * 1000) {
+                        result.baseValue = -999;
+                        return result;
+                    }
+                    
+                    // Базовая формула с защитой от бесконечности
+                    let baseValue = 100 - (totalExpenses.value / totalIncome.value * 100);
+                    
+                    // Округляем и ограничиваем для отображения
+                    result.baseValue = Math.round(baseValue);
+                    
+                    // Проверяем штрафы (только если расходы не сильно превышают доход)
+                    if (totalExpenses.value <= totalIncome.value * 10) {
+                        if (expenses.entertainment > totalIncome.value * 0.3) {
+                            result.penalties.push({
+                                text: `Развлечения > 30% дохода`,
+                                value: 20
+                            });
+                        }
+                        
+                        if (foodTotal.value > totalIncome.value * 0.5) {
+                            result.penalties.push({
+                                text: `Еда и кафе > 50% дохода`,
+                                value: 15
+                            });
+                        }
+                        
+                        if (expenses.subscriptions > totalIncome.value * 0.1) {
+                            result.penalties.push({
+                                text: `Подписки > 10% дохода`,
+                                value: 10
+                            });
+                        }
+                    }
+                    
+                    // Проверяем бонусы (только если расходы не превышают доход)
+                    if (totalExpenses.value <= totalIncome.value) {
+                        if (expenses.education > 0) {
+                            result.bonuses.push({
+                                text: 'Инвестиции в образование',
+                                value: 5
+                            });
+                        }
+                        
+                        if (balance.value > totalIncome.value * 0.2) {
+                            result.bonuses.push({
+                                text: `Сбережения > 20% дохода`,
+                                value: 10
+                            });
+                        }
+                    }
+                    
+                    return result;
+                });
+
+                // Общая сумма всех целей
+                const totalGoalsAmount = computed(() => {
+                    return goals.value.reduce((sum, goal) => sum + goal.targetAmount, 0);
+                });
+
+                // Общая накопленная сумма по всем целям
+                const totalSaved = computed(() => {
+                    return goals.value.reduce((sum, goal) => sum + goal.currentAmount, 0);
+                });
+
+                // Фильтр для отображения только существующих категорий расходов
+                const filteredExpenses = computed(() => {
+                    const filtered = {};
+                    Object.keys(expenses).forEach(key => {
+                        if (categoryNames[key]) {
+                            filtered[key] = expenses[key];
+                        }
+                    });
+                    return filtered;
+                });
+                
+                // Формула КФГ для пользователя
+                function calculateKFG(user) {
+                    if (!user?.income || user.income <= 0) return 0;
+                    
+                    // Проверяем, есть ли расходы
+                    const userExpenses = user.expenses || {};
+                    const hasAnyExpenses = Object.values(userExpenses).some(val => val > 0);
+                    if (!hasAnyExpenses) {
+                        return 0;
+                    }
+                    
+                    const totalUserExpenses = Object.values(userExpenses).reduce((a, b) => a + b, 0);
+                    
+                    // Если расходы экстремально превышают доход, возвращаем 0
+                    if (totalUserExpenses > user.income * 1000) {
+                        return 0;
+                    }
+                    
+                    let value = 100 - (totalUserExpenses / user.income * 100);
+                    
+                    // Штрафы (только если расходы не сильно превышают доход)
+                    if (totalUserExpenses <= user.income * 10) {
+                        const totalFood = (userExpenses.food || 0) + (userExpenses.cafe || 0);
+                        if (userExpenses.entertainment > user.income * 0.3) value -= 20;
+                        if (totalFood > user.income * 0.5) value -= 15;
+                        if (userExpenses.subscriptions > user.income * 0.1) value -= 10;
+                    }
+                    
+                    // Бонусы (только если расходы не превышают доход)
+                    if (totalUserExpenses <= user.income) {
+                        if (userExpenses.education > 0) value += 5;
+                        if ((user.income - totalUserExpenses) > user.income * 0.2) value += 10;
+                    }
+                    
+                    // Ограничиваем значение от 0 до 100
+                    return Math.max(0, Math.min(100, Math.round(value)));
+                }
+
+                // КФГ для текущего пользователя
                 const kfg = computed(() => {
-                    if (!currentUser.value || totalIncome.value <= 0) return 0;
-                    let value = 100 - (totalExpenses.value / totalIncome.value * 100);
+                    if (!currentUser.value) return 0;
+                    
+                    // Проверка на экстремальные значения
+                    if (totalExpenses.value > totalIncome.value * 1000) {
+                        return 0;
+                    }
+                    
+                    // Используем текущие расходы из формы, если они есть
+                    const hasAnyExpenses = Object.values(expenses).some(val => val > 0);
+                    if (!hasAnyExpenses) {
+                        return 0;
+                    }
+                    
+                    let value = 100 - (totalExpenses.value / currentUser.value.income * 100);
+                    
+                    // Штрафы (только если расходы не сильно превышают доход)
+                    if (totalExpenses.value <= currentUser.value.income * 10) {
+                        const totalFood = (expenses.food || 0) + (expenses.cafe || 0);
+                        if (expenses.entertainment > currentUser.value.income * 0.3) value -= 20;
+                        if (totalFood > currentUser.value.income * 0.5) value -= 15;
+                        if (expenses.subscriptions > currentUser.value.income * 0.1) value -= 10;
+                    }
+                    
+                    // Бонусы (только если расходы не превышают доход)
+                    if (totalExpenses.value <= currentUser.value.income) {
+                        if (expenses.education > 0) value += 5;
+                        if (balance.value > currentUser.value.income * 0.2) value += 10;
+                    }
+                    
+                    // Ограничиваем значение от 0 до 100
                     return Math.max(0, Math.min(100, Math.round(value)));
                 });
 
-                // Функции
+                // Разблокированные аватары
+                const unlockedAvatars = computed(() => {
+                    if (!currentUser.value) return [];
+                    
+                    const unlocked = [];
+                    
+                    avatars.forEach(avatar => {
+                        if (avatar.id === 1) {
+                            unlocked.push(avatar.name);
+                        } else if (kfg.value >= avatar.kfgRequired) {
+                            unlocked.push(avatar.name);
+                        }
+                    });
+                    
+                    return unlocked;
+                });
+
+                // Функция для получения рейтинга пользователя
                 function getUserRating(user) {
-                    const userKFG = kfg.value;
+                    const userKFG = calculateKFG(user);
                     if (userKFG >= 90) return 'Гуру';
                     if (userKFG >= 70) return 'Эксперт';
                     if (userKFG >= 50) return 'Инвестор';
@@ -535,7 +1475,7 @@
                 }
 
                 function getUserRatingLevel(user) {
-                    const userKFG = kfg.value;
+                    const userKFG = calculateKFG(user);
                     if (userKFG >= 90) return 5;
                     if (userKFG >= 70) return 4;
                     if (userKFG >= 50) return 3;
@@ -543,15 +1483,973 @@
                     return 1;
                 }
 
+                // Друзья с их КФГ и деталями
+                const friendsWithDetails = computed(() => {
+                    return friends.value.map(friend => {
+                        const fullUser = users.value.find(u => u.login === friend.login);
+                        if (!fullUser) return friend;
+                        
+                        // Получаем друзей друга
+                        const friendFriends = (fullUser.friends || []).map(f => {
+                            const friendUser = users.value.find(u => u.login === f.login);
+                            return {
+                                ...f,
+                                avatar: friendUser?.avatar || f.avatar
+                            };
+                        });
+                        
+                        return {
+                            ...friend,
+                            kfg: calculateKFG(fullUser),
+                            ratingName: getUserRating(fullUser),
+                            ratingLevel: getUserRatingLevel(fullUser),
+                            avatar: fullUser.avatar,
+                            friends: friendFriends
+                        };
+                    });
+                });
+
+                // Участники рейтинга (текущий пользователь + друзья)
+                const ratingParticipants = computed(() => {
+                    if (!currentUser.value) return [];
+                    
+                    const participants = [];
+                    
+                    // Добавляем текущего пользователя
+                    participants.push({
+                        ...currentUser.value,
+                        kfg: kfg.value,
+                        isCurrentUser: true,
+                        ratingName: getUserRating(currentUser.value),
+                        ratingLevel: getUserRatingLevel(currentUser.value)
+                    });
+                    
+                    // Добавляем друзей
+                    friends.value.forEach(friend => {
+                        const fullUser = users.value.find(u => u.login === friend.login);
+                        if (fullUser) {
+                            participants.push({
+                                ...friend,
+                                kfg: calculateKFG(fullUser),
+                                avatar: fullUser.avatar,
+                                isCurrentUser: false,
+                                ratingName: getUserRating(fullUser),
+                                ratingLevel: getUserRatingLevel(fullUser)
+                            });
+                        }
+                    });
+                    
+                    // Сортируем по КФГ (по убыванию)
+                    return participants.sort((a, b) => b.kfg - a.kfg);
+                });
+
+                // Проверка, разблокирован ли аватар
+                function isAvatarUnlocked(avatar) {
+                    if (!currentUser.value) return false;
+                    
+                    if (avatar.id === 1) {
+                        return true;
+                    } else {
+                        return kfg.value >= avatar.kfgRequired;
+                    }
+                }
+
+                // Проверка доступности аватара при регистрации
+                function isAvatarAvailableForRegister(avatar) {
+                    return avatar.id === 1;
+                }
+
+                function selectRegisterAvatar(avatar) {
+                    if (isAvatarAvailableForRegister(avatar)) {
+                        registerForm.avatar = avatar.id;
+                    } else {
+                        showMessage('Этот аватар недоступен при регистрации', 'error');
+                    }
+                }
+
+                function getAvatarStatus(avatar) {
+                    if (!currentUser.value) return '';
+                    
+                    if (avatar.id === 1) {
+                        return 'Всегда доступен';
+                    } else {
+                        if (kfg.value >= avatar.kfgRequired) {
+                            return 'Доступен';
+                        } else {
+                            return `Требуется КФГ ${avatar.kfgRequired}`;
+                        }
+                    }
+                }
+
+                // Форматирование чисел с защитой от огромных значений
+                function formatMoney(amount) {
+                    if (amount > 1e12) return '> 1 трлн';
+                    if (amount > 1e9) return Math.round(amount / 1e9) + ' млрд';
+                    if (amount > 1e6) return Math.round(amount / 1e6) + ' млн';
+                    if (amount < 0 && Math.abs(amount) > 1e12) return '< -1 трлн';
+                    return new Intl.NumberFormat('ru-RU').format(amount);
+                }
+
+                // Функция для склонения слова "месяц"
+                function getMonthWord(months) {
+                    if (months % 10 === 1 && months % 100 !== 11) {
+                        return 'месяц';
+                    } else if ([2, 3, 4].includes(months % 10) && ![12, 13, 14].includes(months % 100)) {
+                        return 'месяца';
+                    } else {
+                        return 'месяцев';
+                    }
+                }
+
+                // Методы для работы с целями
+                function addGoal() {
+                    if (!newGoal.name.trim()) {
+                        showMessage('Введите название цели', 'error');
+                        return;
+                    }
+                    
+                    if (newGoal.targetAmount <= 0) {
+                        showMessage('Введите корректную сумму цели', 'error');
+                        return;
+                    }
+                    
+                    if (newGoal.targetAmount > 1e9) {
+                        showMessage('Слишком большая сумма цели (максимум 1 млрд)', 'error');
+                        return;
+                    }
+                    
+                    goals.value.push({
+                        name: newGoal.name,
+                        targetAmount: newGoal.targetAmount,
+                        currentAmount: 0
+                    });
+                    
+                    newGoal.name = '';
+                    newGoal.targetAmount = 0;
+                    
+                    saveToSupabase();
+                    showMessage('Цель добавлена!', 'success');
+                }
+
+                function openAddToGoalModal(index) {
+                    selectedGoalIndex.value = index;
+                    selectedGoalName.value = goals.value[index].name;
+                    addToGoalAmount.value = 1000;
+                    showAddToGoalModal.value = true;
+                }
+
+                function closeAddToGoalModal() {
+                    showAddToGoalModal.value = false;
+                    selectedGoalIndex.value = null;
+                    selectedGoalName.value = '';
+                    addToGoalAmount.value = 1000;
+                }
+
+                function confirmAddToGoal() {
+                    if (selectedGoalIndex.value === null) return;
+                    
+                    if (addToGoalAmount.value <= 0) {
+                        showMessage('Введите корректную сумму', 'error');
+                        return;
+                    }
+                    
+                    if (addToGoalAmount.value > 1e9) {
+                        showMessage('Слишком большая сумма (максимум 1 млрд)', 'error');
+                        return;
+                    }
+                    
+                    goals.value[selectedGoalIndex.value].currentAmount += addToGoalAmount.value;
+                    saveToSupabase();
+                    showMessage(`Добавлено ${formatMoney(addToGoalAmount.value)} ₽ к цели!`, 'success');
+                    closeAddToGoalModal();
+                }
+
+                function quickAddToGoal(index, amount) {
+                    if (amount > 1e9) {
+                        showMessage('Слишком большая сумма', 'error');
+                        return;
+                    }
+                    goals.value[index].currentAmount += amount;
+                    saveToSupabase();
+                    showMessage(`Добавлено ${formatMoney(amount)} ₽ к цели!`, 'success');
+                }
+
+                function openRemoveGoalModal(index) {
+                    selectedGoalIndexForRemove.value = index;
+                    selectedGoalNameForRemove.value = goals.value[index].name;
+                    showRemoveGoalModal.value = true;
+                }
+
+                function closeRemoveGoalModal() {
+                    showRemoveGoalModal.value = false;
+                    selectedGoalIndexForRemove.value = null;
+                    selectedGoalNameForRemove.value = '';
+                }
+
+                function confirmRemoveGoal() {
+                    if (selectedGoalIndexForRemove.value === null) return;
+                    
+                    goals.value.splice(selectedGoalIndexForRemove.value, 1);
+                    saveToSupabase();
+                    showMessage('Цель удалена', 'success');
+                    closeRemoveGoalModal();
+                }
+                
+                const recommendations = computed(() => {
+                    if (!currentUser.value) return [];
+                    
+                    const recs = [];
+                    
+                    if (totalExpenses.value > currentUser.value.income) {
+                        recs.push('⚠️ Ваши расходы превышают доход! Срочно сократите траты.');
+                    }
+                    
+                    if (totalExpenses.value > currentUser.value.income * 10) {
+                        recs.push('🔥 Критическое превышение расходов! КФГ принудительно установлен в 0.');
+                    }
+                    
+                    if (expenses.entertainment > currentUser.value.income * 0.2 && totalExpenses.value <= currentUser.value.income) {
+                        recs.push('🎯 Попробуйте сократить расходы на развлечения до 20% от дохода.');
+                    }
+                    
+                    const totalFood = (expenses.food || 0) + (expenses.cafe || 0);
+                    if (totalFood > currentUser.value.income * 0.3 && totalExpenses.value <= currentUser.value.income) {
+                        recs.push('🍎 Готовьте дома чаще - это сэкономит до 50% на еде и кафе.');
+                    }
+                    
+                    if (expenses.subscriptions > 1000 && totalExpenses.value <= currentUser.value.income) {
+                        recs.push('📱 Проверьте подписки - возможно, вы платите за ненужные сервисы.');
+                    }
+                    
+                    if (expenses.education === 0 && kfg.value < 100 && totalExpenses.value <= currentUser.value.income) {
+                        recs.push('📚 Инвестиции в образование могли бы повысить ваш КФГ на 5 пунктов.');
+                    }
+                    
+                    if (balance.value > 0) {
+                        recs.push(`💪 Отличная работа! Вы откладываете ${formatMoney(balance.value)} ₽ в месяц.`);
+                    }
+
+                    if (goals.value.length > 0 && balance.value > 0) {
+                        const totalNeeded = totalGoalsAmount.value;
+                        const totalSavedVal = totalSaved.value;
+                        if (totalSavedVal < totalNeeded) {
+                            const remaining = totalNeeded - totalSavedVal;
+                            const months = Math.ceil(remaining / Math.max(1, balance.value));
+                            if (months < 1000) {
+                                recs.push(`🎯 Для достижения всех целей осталось накопить ${formatMoney(remaining)} ₽ (${months} ${getMonthWord(months)})`);
+                            }
+                        }
+                    }
+                    
+                    return recs;
+                });
+                
+                // Методы для работы с доходом
+                function editIncome() {
+                    newIncomeValue.value = currentUser.value.income;
+                    showIncomeModal.value = true;
+                }
+
+                function closeIncomeModal() {
+                    showIncomeModal.value = false;
+                    newIncomeValue.value = 0;
+                }
+
+                function saveIncome() {
+                    if (newIncomeValue.value < 0) {
+                        showMessage('Доход не может быть отрицательным', 'error');
+                        return;
+                    }
+                    
+                    if (newIncomeValue.value > 1e9) {
+                        showMessage('Слишком большой доход (максимум 1 млрд)', 'error');
+                        return;
+                    }
+
+                    const userIndex = users.value.findIndex(u => u.login === currentUser.value?.login);
+                    if (userIndex !== -1) {
+                        users.value[userIndex].income = newIncomeValue.value;
+                        currentUser.value.income = newIncomeValue.value;
+                        saveToSupabase();
+                        showMessage('Доход успешно обновлен!', 'success');
+                        closeIncomeModal();
+                    }
+                }
+                
+                // ===== МЕТОДЫ ДЛЯ SUPABASE =====
+                
+                // Загрузка всех пользователей из Supabase
+                async function loadUsersFromSupabase() {
+                    isLoading.value = true;
+                    try {
+                        const { data, error } = await supabase
+                            .from('users')
+                            .select('*');
+                        
+                        if (error) throw error;
+                        
+                        if (data && data.length > 0) {
+                            users.value = data;
+                            console.log('Загружено пользователей из Supabase:', users.value.length);
+                        } else {
+                            console.log('Нет пользователей в Supabase, создаем тестовых');
+                            await createTestUsers();
+                        }
+                    } catch (error) {
+                        console.error('Ошибка загрузки из Supabase:', error);
+                        showMessage('Ошибка загрузки данных из облака', 'error');
+                        // Пробуем загрузить из localStorage как запасной вариант
+                        loadFromLocalStorage();
+                    } finally {
+                        isLoading.value = false;
+                    }
+                }
+
+                // Сохранение всех пользователей в Supabase
+                async function saveToSupabase() {
+                    if (!users.value.length) return;
+                    
+                    isLoading.value = true;
+                    try {
+                        // Удаляем всех существующих пользователей
+                        const { error: deleteError } = await supabase
+                            .from('users')
+                            .delete()
+                            .neq('login', 'dummy');
+                        
+                        if (deleteError) {
+                            console.warn('Ошибка при очистке:', deleteError);
+                        }
+                        
+                        // Вставляем обновленных пользователей
+                        const { error } = await supabase
+                            .from('users')
+                            .insert(users.value);
+                        
+                        if (error) throw error;
+                        
+                        console.log('Данные сохранены в Supabase');
+                        
+                        // Также сохраняем в localStorage как запасной вариант
+                        saveToLocalStorage();
+                    } catch (error) {
+                        console.error('Ошибка сохранения в Supabase:', error);
+                        showMessage('Ошибка сохранения в облако, данные сохранены локально', 'warning');
+                        // Сохраняем в localStorage как запасной вариант
+                        saveToLocalStorage();
+                    } finally {
+                        isLoading.value = false;
+                    }
+                }
+
+                // Сохранение в localStorage (запасной вариант)
+                function saveToLocalStorage() {
+                    const data = {
+                        users: users.value,
+                        currentUser: currentUser.value
+                    };
+                    localStorage.setItem('fingrade_backup', JSON.stringify(data));
+                }
+
+                // Загрузка из localStorage (запасной вариант)
+                function loadFromLocalStorage() {
+                    const saved = localStorage.getItem('fingrade_backup');
+                    if (saved) {
+                        try {
+                            const data = JSON.parse(saved);
+                            users.value = data.users || [];
+                            if (data.currentUser) {
+                                currentUser.value = data.currentUser;
+                                loadUserData(currentUser.value);
+                            }
+                            console.log('Загружено из localStorage');
+                        } catch (e) {
+                            console.error('Ошибка загрузки из localStorage', e);
+                        }
+                    }
+                }
+
+                // Методы авторизации с Supabase
+                async function handleRegister() {
+                    if (!registerForm.name || !registerForm.surname || !registerForm.nickname || 
+                        !registerForm.login || !registerForm.password || !registerForm.income) {
+                        showMessage('Пожалуйста, заполните все поля', 'error');
+                        return;
+                    }
+                    
+                    if (registerForm.income > 1e9) {
+                        showMessage('Слишком большой доход (максимум 1 млрд)', 'error');
+                        return;
+                    }
+                    
+                    // Сначала загружаем актуальных пользователей
+                    await loadUsersFromSupabase();
+                    
+                    if (users.value.some(u => u.login === registerForm.login)) {
+                        showMessage('Пользователь с таким логином уже существует', 'error');
+                        return;
+                    }
+                    
+                    if (users.value.some(u => u.nickname === registerForm.nickname)) {
+                        showMessage('Пользователь с таким никнеймом уже существует', 'error');
+                        return;
+                    }
+                    
+                    if (registerForm.avatar !== 1) {
+                        showMessage('При регистрации доступен только аватар "Новичок"', 'error');
+                        registerForm.avatar = 1;
+                        return;
+                    }
+                    
+                    const hasExpenses = Object.values(registerForm.expenses).some(val => val > 0);
+                    if (!hasExpenses) {
+                        showMessage('Заполните хотя бы одну категорию расходов', 'error');
+                        return;
+                    }
+                    
+                    // Проверка на огромные расходы
+                    const totalRegExpenses = Object.values(registerForm.expenses).reduce((a, b) => a + b, 0);
+                    if (totalRegExpenses > 1e9) {
+                        showMessage('Слишком большие расходы (максимум 1 млрд)', 'error');
+                        return;
+                    }
+                    
+                    const newUser = {
+                        name: registerForm.name,
+                        surname: registerForm.surname,
+                        nickname: registerForm.nickname,
+                        login: registerForm.login,
+                        password: registerForm.password,
+                        income: Number(registerForm.income),
+                        avatar: registerForm.avatar,
+                        expenses: { ...registerForm.expenses },
+                        goals: [],
+                        friends: [],
+                        friendRequests: [],
+                        pendingRequests: []
+                    };
+                    
+                    users.value.push(newUser);
+                    
+                    // Сохраняем в Supabase
+                    await saveToSupabase();
+                    
+                    currentUser.value = { ...newUser };
+                    
+                    Object.assign(expenses, registerForm.expenses);
+                    
+                    showMessage('Регистрация успешна!', 'success');
+                    
+                    registerForm.name = '';
+                    registerForm.surname = '';
+                    registerForm.nickname = '';
+                    registerForm.login = '';
+                    registerForm.password = '';
+                    registerForm.income = 0;
+                    registerForm.avatar = 1;
+                    Object.assign(registerForm.expenses, initialExpenses);
+                }
+                
+                async function handleLogin() {
+                    if (!loginForm.login || !loginForm.password) {
+                        showMessage('Заполните все поля', 'error');
+                        return;
+                    }
+                    
+                    // Загружаем актуальных пользователей из Supabase
+                    await loadUsersFromSupabase();
+                    
+                    // Ищем пользователя с таким логином и паролем
+                    const user = users.value.find(u => 
+                        u.login === loginForm.login && u.password === loginForm.password
+                    );
+                    
+                    if (user) {
+                        // Создаем копию пользователя, чтобы не изменять исходный объект напрямую
+                        currentUser.value = JSON.parse(JSON.stringify(user));
+                        loadUserData(currentUser.value);
+                        showMessage('Добро пожаловать!', 'success');
+                        
+                        loginForm.login = '';
+                        loginForm.password = '';
+                    } else {
+                        showMessage('Неверный логин или пароль', 'error');
+                    }
+                }
+                
+                function logout() {
+                    currentUser.value = null;
+                    
+                    Object.assign(expenses, initialExpenses);
+                    goals.value = [];
+                    friends.value = [];
+                    friendRequests.value = [];
+                    pendingRequests.value = [];
+                    
+                    showMessage('Вы вышли из системы', 'success');
+                }
+                
+                function loadUserData(user) {
+                    if (user.expenses) {
+                        Object.assign(expenses, user.expenses);
+                    }
+                    
+                    if (user.goals) {
+                        goals.value = user.goals;
+                    }
+                    
+                    if (user.friends) {
+                        friends.value = user.friends;
+                    }
+                    
+                    if (user.friendRequests) {
+                        friendRequests.value = user.friendRequests;
+                    }
+                    
+                    if (user.pendingRequests) {
+                        pendingRequests.value = user.pendingRequests;
+                    }
+                    
+                    // Обновляем диаграмму после загрузки данных
+                    setTimeout(() => {
+                        if (currentTab.value === 'analytics') {
+                            initChart();
+                        }
+                    }, 100);
+                }
+                
+                // Методы для работы с друзьями
+                function searchFriends() {
+                    searchPerformed.value = true;
+                    
+                    if (!friendSearchQuery.value.trim()) {
+                        searchResults.value = [];
+                        return;
+                    }
+                    
+                    const query = friendSearchQuery.value.toLowerCase();
+                    
+                    searchResults.value = users.value.filter(u => 
+                        u.nickname.toLowerCase() === query && 
+                        u.login !== currentUser.value?.login &&
+                        !friends.value.some(f => f.login === u.login) &&
+                        !friendRequests.value.includes(u.login) &&
+                        !pendingRequests.value.includes(u.login)
+                    ).map(u => ({
+                        ...u,
+                        kfg: calculateKFG(u)
+                    }));
+                }
+                
+                async function sendFriendRequest(user) {
+                    if (!friendRequests.value.includes(user.login)) {
+                        friendRequests.value.push(user.login);
+                    }
+                    
+                    const targetUserIndex = users.value.findIndex(u => u.login === user.login);
+                    if (targetUserIndex !== -1) {
+                        if (!users.value[targetUserIndex].pendingRequests) {
+                            users.value[targetUserIndex].pendingRequests = [];
+                        }
+                        if (!users.value[targetUserIndex].pendingRequests.includes(currentUser.value.login)) {
+                            users.value[targetUserIndex].pendingRequests.push(currentUser.value.login);
+                        }
+                    }
+                    
+                    const currentUserIndex = users.value.findIndex(u => u.login === currentUser.value?.login);
+                    if (currentUserIndex !== -1) {
+                        users.value[currentUserIndex].friendRequests = [...friendRequests.value];
+                    }
+                    
+                    searchResults.value = [];
+                    friendSearchQuery.value = '';
+                    searchPerformed.value = false;
+                    
+                    await saveToSupabase();
+                    showMessage(`Заявка в друзья отправлена пользователю ${user.name}`, 'success');
+                }
+                
+                async function acceptFriendRequest(request) {
+                    const newFriend = {
+                        name: request.name,
+                        surname: request.surname,
+                        nickname: request.nickname,
+                        login: request.login,
+                        avatar: request.avatar
+                    };
+                    
+                    friends.value.push(newFriend);
+                    
+                    pendingRequests.value = pendingRequests.value.filter(login => login !== request.login);
+                    
+                    const senderIndex = users.value.findIndex(u => u.login === request.login);
+                    if (senderIndex !== -1) {
+                        if (!users.value[senderIndex].friends) {
+                            users.value[senderIndex].friends = [];
+                        }
+                        users.value[senderIndex].friends.push({
+                            name: currentUser.value.name,
+                            surname: currentUser.value.surname,
+                            nickname: currentUser.value.nickname,
+                            login: currentUser.value.login,
+                            avatar: currentUser.value.avatar
+                        });
+                        
+                        if (users.value[senderIndex].friendRequests) {
+                            users.value[senderIndex].friendRequests = 
+                                users.value[senderIndex].friendRequests.filter(login => login !== currentUser.value.login);
+                        }
+                    }
+                    
+                    const currentUserIndex = users.value.findIndex(u => u.login === currentUser.value?.login);
+                    if (currentUserIndex !== -1) {
+                        users.value[currentUserIndex].friends = [...friends.value];
+                        users.value[currentUserIndex].pendingRequests = [...pendingRequests.value];
+                    }
+                    
+                    await saveToSupabase();
+                    showMessage(`Вы приняли заявку в друзья от ${request.name}`, 'success');
+                }
+                
+                async function rejectFriendRequest(request) {
+                    pendingRequests.value = pendingRequests.value.filter(login => login !== request.login);
+                    
+                    const senderIndex = users.value.findIndex(u => u.login === request.login);
+                    if (senderIndex !== -1 && users.value[senderIndex].friendRequests) {
+                        users.value[senderIndex].friendRequests = 
+                            users.value[senderIndex].friendRequests.filter(login => login !== currentUser.value.login);
+                    }
+                    
+                    const currentUserIndex = users.value.findIndex(u => u.login === currentUser.value?.login);
+                    if (currentUserIndex !== -1) {
+                        users.value[currentUserIndex].pendingRequests = [...pendingRequests.value];
+                    }
+                    
+                    await saveToSupabase();
+                    showMessage(`Заявка от ${request.name} отклонена`, 'info');
+                }
+                
+                async function removeFriend(friend) {
+                    friends.value = friends.value.filter(f => f.login !== friend.login);
+                    
+                    const friendIndex = users.value.findIndex(u => u.login === friend.login);
+                    if (friendIndex !== -1 && users.value[friendIndex].friends) {
+                        users.value[friendIndex].friends = 
+                            users.value[friendIndex].friends.filter(f => f.login !== currentUser.value.login);
+                    }
+                    
+                    const currentUserIndex = users.value.findIndex(u => u.login === currentUser.value?.login);
+                    if (currentUserIndex !== -1) {
+                        users.value[currentUserIndex].friends = [...friends.value];
+                    }
+                    
+                    showMessage(`Друг ${friend.name} удален`, 'success');
+                    await saveToSupabase();
+                }
+                
+                // Остальные методы
+                let chart = null;
+                
                 function showMessage(text, type) {
                     message.text = text;
                     message.type = type;
                     message.show = true;
-                    setTimeout(() => { message.show = false; }, 3000);
+                    
+                    setTimeout(() => {
+                        message.show = false;
+                    }, 3000);
+                }
+                
+                async function saveExpenses() {
+                    // Проверка на огромные расходы
+                    if (totalExpenses.value > 1e9) {
+                        showMessage('Слишком большие расходы (максимум 1 млрд)', 'error');
+                        return;
+                    }
+                    
+                    const userIndex = users.value.findIndex(u => u.login === currentUser.value?.login);
+                    if (userIndex !== -1) {
+                        users.value[userIndex].expenses = { ...expenses };
+                        currentUser.value.expenses = { ...expenses };
+                    }
+                    
+                    await saveToSupabase();
+                    showMessage('Расходы сохранены!', 'success');
+                    
+                    if (currentTab.value === 'analytics') {
+                        setTimeout(() => {
+                            updateChart();
+                        }, 100);
+                    }
+                }
+                
+                // Создание тестовых пользователей для демонстрации
+                async function createTestUsers() {
+                    const testUsers = [
+                        {
+                            name: 'Иван',
+                            surname: 'Иванов',
+                            nickname: '@ivan',
+                            login: 'ivan',
+                            password: '123',
+                            income: 100000,
+                            avatar: 3,
+                            expenses: {
+                                food: 25000,
+                                transport: 5000,
+                                cafe: 10000,
+                                hobby: 3000,
+                                selfcare: 2000,
+                                health: 3000,
+                                housing: 15000,
+                                entertainment: 8000,
+                                subscriptions: 1500,
+                                education: 5000,
+                                travel: 5000
+                            },
+                            goals: [],
+                            friends: [],
+                            friendRequests: [],
+                            pendingRequests: []
+                        },
+                        {
+                            name: 'Мария',
+                            surname: 'Петрова',
+                            nickname: '@maria',
+                            login: 'maria',
+                            password: '123',
+                            income: 85000,
+                            avatar: 4,
+                            expenses: {
+                                food: 20000,
+                                transport: 4000,
+                                cafe: 8000,
+                                hobby: 2000,
+                                selfcare: 3000,
+                                health: 2000,
+                                housing: 12000,
+                                entertainment: 5000,
+                                subscriptions: 1000,
+                                education: 3000,
+                                travel: 3000
+                            },
+                            goals: [],
+                            friends: [],
+                            friendRequests: [],
+                            pendingRequests: []
+                        },
+                        {
+                            name: 'Петр',
+                            surname: 'Сидоров',
+                            nickname: '@petr',
+                            login: 'petr',
+                            password: '123',
+                            income: 120000,
+                            avatar: 2,
+                            expenses: {
+                                food: 30000,
+                                transport: 6000,
+                                cafe: 15000,
+                                hobby: 5000,
+                                selfcare: 3000,
+                                health: 4000,
+                                housing: 20000,
+                                entertainment: 12000,
+                                subscriptions: 2500,
+                                education: 2000,
+                                travel: 8000
+                            },
+                            goals: [],
+                            friends: [],
+                            friendRequests: [],
+                            pendingRequests: []
+                        },
+                        {
+                            name: 'Анна',
+                            surname: 'Смирнова',
+                            nickname: '@anna',
+                            login: 'anna',
+                            password: '123',
+                            income: 95000,
+                            avatar: 5,
+                            expenses: {
+                                food: 22000,
+                                transport: 4500,
+                                cafe: 9000,
+                                hobby: 4000,
+                                selfcare: 3500,
+                                health: 2500,
+                                housing: 14000,
+                                entertainment: 6000,
+                                subscriptions: 1200,
+                                education: 4000,
+                                travel: 4000
+                            },
+                            goals: [],
+                            friends: [],
+                            friendRequests: [],
+                            pendingRequests: []
+                        }
+                    ];
+                    
+                    users.value = testUsers;
+                    await saveToSupabase();
+                    showMessage('Тестовые пользователи созданы', 'success');
+                }
+                
+                function initChart() {
+                    if (currentTab.value !== 'analytics' || !hasExpenses.value) {
+                        return;
+                    }
+                    
+                    nextTick(() => {
+                        const canvas = document.getElementById('expenseChart');
+                        if (!canvas) {
+                            console.log('Canvas not found, retrying...');
+                            setTimeout(initChart, 100);
+                            return;
+                        }
+                        
+                        if (chart) {
+                            chart.destroy();
+                            chart = null;
+                        }
+                        
+                        const activeCategories = {};
+                        Object.keys(filteredExpenses.value).forEach(key => {
+                            if (filteredExpenses.value[key] > 0) {
+                                activeCategories[key] = filteredExpenses.value[key];
+                            }
+                        });
+                        
+                        if (Object.keys(activeCategories).length === 0) {
+                            return;
+                        }
+                        
+                        const labels = Object.keys(activeCategories).map(key => categoryNames[key]);
+                        const data = Object.values(activeCategories);
+                        const colors = Object.keys(activeCategories).map(key => categoryColors[key]);
+                        
+                        try {
+                            chart = new Chart(canvas.getContext('2d'), {
+                                type: 'doughnut',
+                                data: {
+                                    labels: labels,
+                                    datasets: [{
+                                        data: data,
+                                        backgroundColor: colors,
+                                        borderWidth: 1,
+                                        borderColor: '#ffffff'
+                                    }]
+                                },
+                                options: {
+                                    responsive: true,
+                                    maintainAspectRatio: false,
+                                    plugins: {
+                                        legend: { 
+                                            position: 'bottom',
+                                            labels: {
+                                                boxWidth: 12,
+                                                padding: 15,
+                                                font: {
+                                                    size: 11
+                                                }
+                                            }
+                                        },
+                                        tooltip: {
+                                            callbacks: {
+                                                label: function(context) {
+                                                    const label = context.label || '';
+                                                    const value = context.raw || 0;
+                                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                                    const percentage = Math.round((value / total) * 100);
+                                                    return `${label}: ${formatMoney(value)} ₽ (${percentage}%)`;
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            });
+                        } catch (error) {
+                            console.error('Error initializing chart:', error);
+                        }
+                    });
+                }
+                
+                function updateChart() {
+                    if (!hasExpenses.value) {
+                        if (chart) {
+                            chart.destroy();
+                            chart = null;
+                        }
+                        return;
+                    }
+                    
+                    if (!chart) {
+                        initChart();
+                        return;
+                    }
+                    
+                    const activeCategories = {};
+                    Object.keys(filteredExpenses.value).forEach(key => {
+                        if (filteredExpenses.value[key] > 0) {
+                            activeCategories[key] = filteredExpenses.value[key];
+                        }
+                    });
+                    
+                    chart.data.labels = Object.keys(activeCategories).map(key => categoryNames[key]);
+                    chart.data.datasets[0].data = Object.values(activeCategories);
+                    chart.data.datasets[0].backgroundColor = Object.keys(activeCategories).map(key => categoryColors[key]);
+                    chart.update();
                 }
 
-                function formatMoney(amount) {
-                    return new Intl.NumberFormat('ru-RU').format(amount);
+                function getCategoryColor(category) {
+                    return categoryColors[category] || '#CCCCCC';
+                }
+                
+                async function sendMessage() {
+                    if (!chatInput.value.trim()) return;
+                    
+                    chatMessages.value.push({
+                        text: chatInput.value,
+                        sender: 'user'
+                    });
+                    
+                    chatInput.value = '';
+                    
+                    setTimeout(() => {
+                        if (chatContainer.value) {
+                            chatContainer.value.scrollTop = chatContainer.value.scrollHeight;
+                        }
+                    }, 100);
+                    
+                    setTimeout(() => {
+                        const responses = [
+                            "Отличный вопрос! Для экономии рекомендую вести учет всех расходов.",
+                            "Попробуйте правило 50/30/20: 50% на нужное, 30% на желания, 20% в копилку.",
+                            "Самый простой способ экономии - готовить дома и брать еду с собой.",
+                            "Используйте кэшбэк-сервисы и следите за акциями в магазинах.",
+                            "Отложите 10% дохода сразу после получения - так вы не потратите их.",
+                            "Проверьте, не платите ли вы за ненужные подписки."
+                        ];
+                        
+                        chatMessages.value.push({
+                            text: responses[Math.floor(Math.random() * responses.length)],
+                            sender: 'bot'
+                        });
+                        
+                        if (chatContainer.value) {
+                            chatContainer.value.scrollTop = chatContainer.value.scrollHeight;
+                        }
+                    }, 1000);
+                }
+                
+                function claimReward(reward) {
+                    if (reward.kfgRequired <= kfg.value) {
+                        showMessage(`Поздравляем! Вы получили: ${reward.name}`, 'success');
+                    } else {
+                        showMessage('У вас недостаточно КФГ для этой награды', 'error');
+                    }
                 }
 
                 function getAvatarUrl(avatarId) {
@@ -570,147 +2468,74 @@
                     return avatar ? avatar.name : 'Новичок';
                 }
 
-                function editIncome() {
-                    newIncomeValue.value = currentUser.value.income;
-                    showIncomeModal.value = true;
-                }
-
-                function closeIncomeModal() {
-                    showIncomeModal.value = false;
-                }
-
-                // МЕТОДЫ SUPABASE
-                async function loadUsers() {
-                    isLoading.value = true;
-                    try {
-                        const { data, error } = await supabase
-                            .from('users')
-                            .select('*');
-                        
-                        if (error) throw error;
-                        
-                        if (data && data.length > 0) {
-                            users.value = data;
+                async function changeAvatar(avatar) {
+                    if (isAvatarUnlocked(avatar)) {
+                        const userIndex = users.value.findIndex(u => u.login === currentUser.value?.login);
+                        if (userIndex !== -1) {
+                            users.value[userIndex].avatar = avatar.id;
+                            currentUser.value.avatar = avatar.id;
+                            await saveToSupabase();
+                            showMessage(`Аватар изменен на ${avatar.name}!`, 'success');
                         }
-                    } catch (error) {
-                        console.error('Ошибка загрузки:', error);
-                    } finally {
-                        isLoading.value = false;
-                    }
-                }
-
-                async function saveUser(user) {
-                    isLoading.value = true;
-                    try {
-                        const { error } = await supabase
-                            .from('users')
-                            .upsert(user, { onConflict: 'login' });
-                        
-                        if (error) throw error;
-                    } catch (error) {
-                        console.error('Ошибка сохранения:', error);
-                        showMessage('Ошибка сохранения', 'error');
-                    } finally {
-                        isLoading.value = false;
-                    }
-                }
-
-                async function handleRegister() {
-                    if (!registerForm.name || !registerForm.surname || !registerForm.nickname || 
-                        !registerForm.login || !registerForm.password || !registerForm.income) {
-                        showMessage('Заполните все поля', 'error');
-                        return;
-                    }
-                    
-                    await loadUsers();
-                    
-                    if (users.value.some(u => u.login === registerForm.login)) {
-                        showMessage('Логин уже существует', 'error');
-                        return;
-                    }
-                    
-                    const newUser = {
-                        name: registerForm.name,
-                        surname: registerForm.surname,
-                        nickname: registerForm.nickname,
-                        login: registerForm.login,
-                        password: registerForm.password,
-                        income: Number(registerForm.income),
-                        avatar: registerForm.avatar,
-                        expenses: registerForm.expenses,
-                        friends: [],
-                        friendRequests: [],
-                        pendingRequests: []
-                    };
-                    
-                    await saveUser(newUser);
-                    await loadUsers();
-                    
-                    currentUser.value = { ...newUser };
-                    Object.assign(expenses, registerForm.expenses);
-                    showMessage('Регистрация успешна!', 'success');
-                }
-
-                async function handleLogin() {
-                    if (!loginForm.login || !loginForm.password) {
-                        showMessage('Заполните все поля', 'error');
-                        return;
-                    }
-                    
-                    await loadUsers();
-                    
-                    const user = users.value.find(u => 
-                        u.login === loginForm.login && u.password === loginForm.password
-                    );
-                    
-                    if (user) {
-                        currentUser.value = { ...user };
-                        if (user.expenses) Object.assign(expenses, user.expenses);
-                        showMessage('Добро пожаловать!', 'success');
-                        loginForm.login = '';
-                        loginForm.password = '';
                     } else {
-                        showMessage('Неверный логин или пароль', 'error');
+                        showMessage(`Этот аватар недоступен`, 'error');
                     }
                 }
-
-                function logout() {
-                    currentUser.value = null;
-                    Object.assign(expenses, initialExpenses);
-                    showMessage('Вы вышли из системы', 'success');
-                }
-
-                async function saveExpenses() {
-                    if (!currentUser.value) return;
-                    
-                    const updatedUser = {
-                        ...currentUser.value,
-                        expenses: { ...expenses }
+                
+                function exportData() {
+                    const data = {
+                        user: currentUser.value,
+                        expenses: { ...expenses },
+                        goals: [...goals.value],
+                        friends: friends.value,
+                        exportDate: new Date().toISOString()
                     };
                     
-                    await saveUser(updatedUser);
-                    currentUser.value = updatedUser;
-                    showMessage('Расходы сохранены!', 'success');
-                }
-
-                async function saveIncome() {
-                    if (!currentUser.value || newIncomeValue.value < 0) return;
+                    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `financial_data_${new Date().toISOString().split('T')[0]}.json`;
+                    a.click();
                     
-                    const updatedUser = {
-                        ...currentUser.value,
-                        income: newIncomeValue.value
-                    };
-                    
-                    await saveUser(updatedUser);
-                    currentUser.value = updatedUser;
-                    showMessage('Доход обновлен!', 'success');
-                    closeIncomeModal();
+                    showMessage('Данные экспортированы!', 'success');
                 }
-
+                
                 onMounted(async () => {
-                    await loadUsers();
+                    // Загружаем пользователей из Supabase при старте
+                    await loadUsersFromSupabase();
+                    
+                    setTimeout(() => {
+                        if (currentTab.value === 'analytics' && hasExpenses.value) {
+                            initChart();
+                        }
+                    }, 200);
+                });
+                
+                watch([expenses, goals, friends, friendRequests, pendingRequests], async () => {
+                    if (currentUser.value) {
+                        await saveToSupabase();
+                    }
+                }, { deep: true });
+
+                watch(kfg, (newKfg, oldKfg) => {
+                    if (currentUser.value && oldKfg !== undefined && newKfg !== oldKfg) {
+                        const currentAvatar = avatars.find(a => a.id === currentUser.value.avatar);
+                        if (currentAvatar && !isAvatarUnlocked(currentAvatar)) {
+                            changeAvatar(avatars[0]);
+                            showMessage(`Ваш аватар изменен на Новичок, так как предыдущий стал недоступен`, 'info');
+                        }
+                    }
                 });
 
+                watch(currentTab, (newTab) => {
+                    if (newTab === 'analytics' && hasExpenses.value) {
+                        setTimeout(() => {
+                            initChart();
+                        }, 100);
+                    }
+                });
+                
                 return {
                     currentTab,
                     message,
@@ -718,9 +2543,8 @@
                     loginForm,
                     registerForm,
                     expenses,
-                    isLoading,
-                    showIncomeModal,
-                    newIncomeValue,
+                    goals,
+                    newGoal,
                     friends,
                     friendRequests,
                     pendingRequests,
@@ -728,27 +2552,76 @@
                     friendSearchQuery,
                     searchResults,
                     searchPerformed,
+                    chatMessages,
+                    chatInput,
+                    chatContainer,
+                    chartContainer,
+                    rewards,
                     avatars,
                     tabs,
                     categoryNames,
                     categoryIcons,
-                    filteredExpenses,
                     totalExpenses,
                     totalIncome,
                     balance,
                     hasExpenses,
+                    foodTotal,
+                    foodPercent,
+                    entertainmentPercent,
+                    subscriptionsPercent,
+                    balancePercent,
+                    kfgCalculation,
+                    totalGoalsAmount,
+                    totalSaved,
                     kfg,
-                    getUserRating,
-                    getUserRatingLevel,
-                    formatMoney,
-                    getAvatarUrl,
-                    getAvatarName,
-                    editIncome,
-                    closeIncomeModal,
+                    recommendations,
+                    unlockedAvatars,
+                    friendsWithDetails,
+                    ratingParticipants,
+                    showIncomeModal,
+                    newIncomeValue,
+                    filteredExpenses,
+                    showAddToGoalModal,
+                    selectedGoalName,
+                    addToGoalAmount,
+                    showRemoveGoalModal,
+                    selectedGoalNameForRemove,
+                    isLoading,
                     handleRegister,
                     handleLogin,
                     logout,
+                    searchFriends,
+                    sendFriendRequest,
+                    acceptFriendRequest,
+                    rejectFriendRequest,
+                    removeFriend,
                     saveExpenses,
+                    addGoal,
+                    openAddToGoalModal,
+                    closeAddToGoalModal,
+                    confirmAddToGoal,
+                    quickAddToGoal,
+                    openRemoveGoalModal,
+                    closeRemoveGoalModal,
+                    confirmRemoveGoal,
+                    sendMessage,
+                    claimReward,
+                    exportData,
+                    getAvatarUrl,
+                    getAvatarName,
+                    changeAvatar,
+                    isAvatarUnlocked,
+                    isAvatarAvailableForRegister,
+                    selectRegisterAvatar,
+                    getAvatarStatus,
+                    getMonthWord,
+                    getUserRating,
+                    getUserRatingLevel,
+                    calculateKFG,
+                    formatMoney,
+                    getCategoryColor,
+                    editIncome,
+                    closeIncomeModal,
                     saveIncome
                 };
             }
