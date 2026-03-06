@@ -17,7 +17,7 @@
     <!-- Vue.js -->
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     
-    <!-- Supabase (бесплатная альтернатива Firebase) -->
+    <!-- Supabase -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
     <style>
@@ -136,7 +136,6 @@
                                 <div class="w-8 h-8 rounded-full overflow-hidden border-2 border-white">
                                     <img :src="getAvatarUrl(currentUser.avatar)" :alt="currentUser.name" class="w-full h-full object-cover">
                                 </div>
-                                <!-- Индикатор новых заявок в друзья -->
                                 <div v-if="pendingFriendRequests.length > 0" 
                                      class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center friend-request-badge">
                                     {{ pendingFriendRequests.length }}
@@ -160,7 +159,7 @@
             {{ message.text }}
         </div>
 
-        <!-- Формы авторизации (показываются если не авторизован) -->
+        <!-- Формы авторизации -->
         <div v-if="!currentUser" class="container mx-auto px-4 py-8">
             <div class="max-w-4xl mx-auto">
                 <div class="bg-white rounded-xl shadow-lg overflow-hidden">
@@ -213,7 +212,7 @@
 
                                 <div class="mb-4">
                                     <label class="block text-gray-700 font-medium mb-2">Расходы по категориям</label>
-                                    <p class="text-xs text-gray-500 mb-2">Заполните хотя бы одну категорию (КФГ будет рассчитан)</p>
+                                    <p class="text-xs text-gray-500 mb-2">Заполните хотя бы одну категорию</p>
                                     
                                     <div class="grid grid-cols-2 gap-3">
                                         <div v-for="(value, category) in registerForm.expenses" :key="category" class="mb-2">
@@ -239,7 +238,6 @@
                                              ]">
                                             <img :src="getAvatarUrl(avatar.id)" 
                                                  :class="['w-full h-auto', !isAvatarAvailableForRegister(avatar) ? 'avatar-locked' : '']">
-                                            <!-- Замок для заблокированных аватаров -->
                                             <div v-if="!isAvatarAvailableForRegister(avatar)" 
                                                  class="absolute inset-0 bg-black bg-opacity-30 flex items-center justify-center">
                                                 <i class="fas fa-lock text-white text-xl"></i>
@@ -285,7 +283,7 @@
             </div>
         </div>
 
-        <!-- Основной контейнер (для авторизованных пользователей) -->
+        <!-- Основной контейнер для авторизованных пользователей -->
         <div v-else class="container mx-auto px-4 py-8">
             <!-- Табы -->
             <div class="bg-white rounded-xl shadow-lg overflow-hidden">
@@ -298,7 +296,6 @@
                                          : 'text-gray-500 hover:text-gray-700']">
                         <i :class="['mr-2', tab.icon]"></i>
                         {{ tab.name }}
-                        <!-- Бейдж с количеством новых заявок для вкладки друзья -->
                         <span v-if="tab.id === 'friends' && pendingFriendRequests.length > 0" 
                               class="ml-2 bg-red-500 text-white text-xs rounded-full px-2 py-0.5">
                             {{ pendingFriendRequests.length }}
@@ -404,7 +401,6 @@
                 <div v-show="currentTab === 'goals'" class="p-6">
                     <h2 class="text-2xl font-bold mb-6">Финансовые цели</h2>
                     
-                    <!-- Форма создания новой цели -->
                     <div class="bg-gray-50 rounded-lg p-6 mb-6">
                         <h3 class="text-lg font-semibold mb-4">Новая цель</h3>
                         <div class="grid md:grid-cols-3 gap-4">
@@ -429,7 +425,6 @@
                         </div>
                     </div>
 
-                    <!-- Список целей -->
                     <h3 class="text-lg font-semibold mb-3">Мои цели ({{ goals.length }})</h3>
                     
                     <div v-if="goals.length === 0" class="bg-gray-50 rounded-lg p-8 text-center text-gray-500">
@@ -461,7 +456,6 @@
                                 </div>
                             </div>
                             
-                            <!-- Прогресс бар -->
                             <div class="relative pt-1">
                                 <div class="flex mb-2 items-center justify-between">
                                     <div>
@@ -482,7 +476,6 @@
                                 </div>
                             </div>
                             
-                            <!-- Кнопки быстрого пополнения -->
                             <div class="flex space-x-2 mt-2">
                                 <button @click="quickAddToGoal(index, 1000)" 
                                         class="text-xs bg-gray-200 hover:bg-gray-300 px-2 py-1 rounded">
@@ -503,36 +496,12 @@
                             </div>
                         </div>
                     </div>
-
-                    <!-- Советы по достижению целей -->
-                    <div class="bg-blue-50 rounded-lg p-4 mt-6">
-                        <h4 class="font-semibold text-blue-700 mb-2">
-                            <i class="fas fa-lightbulb mr-2"></i>Совет по достижению целей
-                        </h4>
-                        <p class="text-sm text-blue-600">
-                            Чтобы быстрее достичь цели, откладывайте часть дохода сразу после его получения.
-                            Рекомендуется откладывать не менее 10-20% от месячного дохода.
-                        </p>
-                        <p class="text-sm text-blue-600 mt-2">
-                            📊 Ежемесячный остаток: {{ formatMoney(balance) }} ₽
-                        </p>
-                        <p v-if="goals.length > 0" class="text-sm text-blue-600 mt-2">
-                            🎯 Общая сумма целей: {{ formatMoney(totalGoalsAmount) }} ₽
-                        </p>
-                        <p v-if="goals.length > 0 && balance > 0" class="text-sm text-blue-600 mt-2">
-                            ⏱️ При текущем темпе накоплений ({{ formatMoney(balance) }} ₽/мес) все цели будут достигнуты через {{ getMonthWord(Math.ceil((totalGoalsAmount - totalSaved) / Math.max(1, balance))) }}
-                        </p>
-                        <p v-else-if="goals.length > 0 && balance <= 0" class="text-sm text-orange-600 mt-2">
-                            ⚠️ У вас нет свободных средств для накопления. Сократите расходы, чтобы начать копить на цели.
-                        </p>
-                    </div>
                 </div>
 
                 <!-- Вкладка аналитики -->
                 <div v-show="currentTab === 'analytics'" class="p-6">
                     <h2 class="text-2xl font-bold mb-6">Аналитика</h2>
                     
-                    <!-- Карточки с общей статистикой -->
                     <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
                         <div class="gradient-bg text-white rounded-lg p-4">
                             <p class="text-sm opacity-90">Общий доход</p>
@@ -552,12 +521,10 @@
                         </div>
                     </div>
 
-                    <!-- Детальный расчет КФГ на основе данных пользователя -->
                     <div class="bg-gray-50 rounded-xl p-6 mb-6">
                         <h3 class="text-lg font-semibold mb-4">Детальный расчет вашего КФГ</h3>
                         
                         <div class="grid lg:grid-cols-2 gap-6">
-                            <!-- Левая колонка: исходные данные -->
                             <div>
                                 <div class="bg-white rounded-lg p-4">
                                     <h4 class="font-medium mb-3 text-purple-600">Исходные данные</h4>
@@ -583,46 +550,20 @@
                                                 <span>{{ formatMoney(value) }} ₽</span>
                                             </div>
                                         </div>
-                                        
-                                        <div class="flex justify-between py-1 border-t border-b mt-2 pt-2 font-medium">
-                                            <span>Еда + кафе:</span>
-                                            <span>{{ formatMoney(foodTotal) }} ₽ ({{ foodPercent > 999 ? '>999' : foodPercent }}%)</span>
-                                        </div>
-                                        <div class="flex justify-between py-1">
-                                            <span>Развлечения:</span>
-                                            <span>{{ formatMoney(expenses.entertainment) }} ₽ ({{ entertainmentPercent > 999 ? '>999' : entertainmentPercent }}%)</span>
-                                        </div>
-                                        <div class="flex justify-between py-1">
-                                            <span>Подписки:</span>
-                                            <span>{{ formatMoney(expenses.subscriptions) }} ₽ ({{ subscriptionsPercent > 999 ? '>999' : subscriptionsPercent }}%)</span>
-                                        </div>
-                                        <div class="flex justify-between py-1">
-                                            <span>Образование:</span>
-                                            <span>{{ formatMoney(expenses.education) }} ₽</span>
-                                        </div>
-                                        <div class="flex justify-between py-1 border-b pb-2">
-                                            <span>Остаток (сбережения):</span>
-                                            <span :class="balance >= 0 ? 'text-green-600' : 'text-red-600'">
-                                                {{ formatMoney(balance) }} ₽ ({{ balancePercent > 999 ? '>999' : balancePercent }}%)
-                                            </span>
-                                        </div>
                                     </div>
                                 </div>
                             </div>
                             
-                            <!-- Правая колонка: пошаговый расчет -->
                             <div>
                                 <div class="bg-white rounded-lg p-4">
                                     <h4 class="font-medium mb-3 text-purple-600">Пошаговый расчет</h4>
                                     
                                     <div class="space-y-3 text-sm">
-                                        <!-- Предупреждение о превышении расходов -->
                                         <div v-if="totalExpenses > totalIncome * 10" class="bg-red-100 border-l-4 border-red-500 p-3 text-sm text-red-700">
                                             <i class="fas fa-exclamation-triangle mr-2"></i>
                                             <span>Расходы превышают доход более чем в 10 раз. КФГ принудительно установлен в 0.</span>
                                         </div>
                                         
-                                        <!-- Шаг 1: База -->
                                         <div class="calculation-step">
                                             <div class="flex justify-between items-center mb-1">
                                                 <span class="font-semibold">1. Базовая формула</span>
@@ -634,94 +575,23 @@
                                                 100 - ({{ formatMoney(totalExpenses) }} / {{ formatMoney(currentUser.income) }} × 100) = 
                                                 <span class="font-semibold">{{ kfgCalculation.baseValue > 999 ? '>999' : kfgCalculation.baseValue }}</span>
                                             </p>
-                                            <p v-if="totalExpenses > totalIncome" class="text-xs text-red-500 mt-1">
-                                                ⚠️ Расходы превышают доход, база отрицательная
-                                            </p>
                                         </div>
                                         
-                                        <!-- Штрафы -->
-                                        <div v-if="kfgCalculation.penalties.length > 0" class="space-y-2">
-                                            <h5 class="font-semibold text-red-600 text-xs">Штрафы:</h5>
-                                            <div v-for="penalty in kfgCalculation.penalties" :key="penalty.text" 
-                                                 class="penalty-step flex justify-between items-center text-sm">
-                                                <span>{{ penalty.text }}</span>
-                                                <span class="font-semibold text-red-600">-{{ penalty.value }}</span>
-                                            </div>
-                                        </div>
-                                        
-                                        <!-- Бонусы -->
-                                        <div class="space-y-2">
-                                            <h5 class="font-semibold text-green-600 text-xs">Бонусы:</h5>
-                                            <div v-if="kfgCalculation.bonuses.length > 0">
-                                                <div v-for="bonus in kfgCalculation.bonuses" :key="bonus.text" 
-                                                     class="bonus-step flex justify-between items-center text-sm">
-                                                    <span>{{ bonus.text }}</span>
-                                                    <span class="font-semibold text-green-600">+{{ bonus.value }}</span>
-                                                </div>
-                                            </div>
-                                            <div v-else class="text-sm text-gray-500 italic">
-                                                Нет активных бонусов
-                                            </div>
-                                        </div>
-                                        
-                                        <!-- Итог -->
                                         <div class="bg-purple-100 rounded-lg p-3 mt-2">
                                             <div class="flex justify-between items-center">
                                                 <span class="font-semibold">Итоговый КФГ:</span>
                                                 <span class="text-xl font-bold text-purple-600">{{ kfg }}</span>
-                                            </div>
-                                            <div class="flex justify-between items-center mt-1">
-                                                <span class="text-xs text-gray-600">Ваш рейтинг:</span>
-                                                <span class="px-2 py-0.5 rounded-full text-white text-xs" 
-                                                      :class="'rating-' + getUserRatingLevel(currentUser)">
-                                                    {{ getUserRating(currentUser) }}
-                                                </span>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
-                        
-                        <!-- Подсказки -->
-                        <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3">
-                            <div v-if="kfg < 30" class="bg-yellow-50 border-l-4 border-yellow-400 p-3 text-sm">
-                                <i class="fas fa-lightbulb text-yellow-600 mr-2"></i>
-                                <span class="text-yellow-700">Ваш КФГ низкий. Рекомендуется сократить расходы.</span>
-                            </div>
-                            <div v-else-if="kfg < 50" class="bg-blue-50 border-l-4 border-blue-400 p-3 text-sm">
-                                <i class="fas fa-lightbulb text-blue-600 mr-2"></i>
-                                <span class="text-blue-700">КФГ ниже среднего. Есть потенциал для улучшения.</span>
-                            </div>
-                            <div v-else-if="kfg < 70" class="bg-green-50 border-l-4 border-green-400 p-3 text-sm">
-                                <i class="fas fa-lightbulb text-green-600 mr-2"></i>
-                                <span class="text-green-700">Хороший КФГ! Продолжайте в том же духе.</span>
-                            </div>
-                            <div v-else-if="kfg < 100" class="bg-purple-50 border-l-4 border-purple-400 p-3 text-sm">
-                                <i class="fas fa-star text-purple-600 mr-2"></i>
-                                <span class="text-purple-700">Отличный КФГ! Вы финансово грамотный человек.</span>
-                            </div>
-                            <div v-else class="bg-indigo-50 border-l-4 border-indigo-400 p-3 text-sm">
-                                <i class="fas fa-crown text-indigo-600 mr-2"></i>
-                                <span class="text-indigo-700">Максимальный КФГ! Вы достигли совершенства!</span>
-                            </div>
-                            
-                            <div v-if="expenses.education === 0 && kfg < 100 && totalExpenses <= totalIncome" class="bg-purple-50 border-l-4 border-purple-400 p-3 text-sm">
-                                <i class="fas fa-graduation-cap text-purple-600 mr-2"></i>
-                                <span class="text-purple-700">Инвестиции в образование могли бы повысить ваш КФГ на 5 пунктов.</span>
-                            </div>
-                            <div v-else-if="totalExpenses > totalIncome" class="bg-red-50 border-l-4 border-red-400 p-3 text-sm">
-                                <i class="fas fa-exclamation-circle text-red-600 mr-2"></i>
-                                <span class="text-red-700">Срочно сократите расходы! Они превышают доход.</span>
-                            </div>
-                        </div>
                     </div>
 
-                    <!-- Круговая диаграмма расходов -->
                     <div class="bg-gray-50 rounded-xl p-6">
                         <h3 class="text-lg font-semibold mb-4">Структура расходов по категориям</h3>
                         
-                        <!-- Контейнер для диаграммы или сообщения об отсутствии данных -->
                         <div v-if="hasExpenses" class="chart-container" ref="chartContainer">
                             <canvas id="expenseChart"></canvas>
                         </div>
@@ -730,17 +600,6 @@
                                 <i class="fas fa-chart-pie text-5xl mb-3 opacity-30"></i>
                                 <p>Нет данных о расходах</p>
                                 <p class="text-sm">Добавьте расходы во вкладке "Расходы"</p>
-                            </div>
-                        </div>
-                        
-                        <!-- Легенда с суммами (показываем только если есть расходы) -->
-                        <div v-if="hasExpenses" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 mt-4">
-                            <div v-for="(value, category) in filteredExpenses" :key="category" 
-                                 v-if="value > 0"
-                                 class="flex items-center space-x-2 text-sm">
-                                <div class="w-3 h-3 rounded-full" :style="{ backgroundColor: getCategoryColor(category) }"></div>
-                                <span class="text-gray-600">{{ categoryNames[category] }}:</span>
-                                <span class="font-medium">{{ formatMoney(value) }} ₽</span>
                             </div>
                         </div>
                     </div>
@@ -769,7 +628,6 @@
                 <div v-show="currentTab === 'friends'" class="p-6">
                     <h2 class="text-2xl font-bold mb-6">Друзья и рейтинги</h2>
                     
-                    <!-- Рейтинговая таблица (включая текущего пользователя) -->
                     <div class="bg-gradient-to-r from-purple-600 to-indigo-600 rounded-lg p-4 mb-6 text-white">
                         <h3 class="text-lg font-semibold mb-3 text-white">🏆 Рейтинг КФГ (вы и ваши друзья)</h3>
                         <div class="space-y-2">
@@ -801,7 +659,6 @@
                         </div>
                     </div>
 
-                    <!-- Новая секция: Заявки в друзья -->
                     <div v-if="pendingFriendRequests.length > 0" class="bg-yellow-50 rounded-lg p-4 mb-6 border-2 border-yellow-200">
                         <div class="flex items-center justify-between mb-3">
                             <h3 class="text-lg font-semibold text-yellow-700">
@@ -835,7 +692,6 @@
                         </div>
                     </div>
 
-                    <!-- Поиск друзей -->
                     <div class="bg-gray-50 rounded-lg p-4 mb-6">
                         <h3 class="text-lg font-semibold mb-3">Найти друга по никнейму</h3>
                         <div class="flex space-x-2">
@@ -873,7 +729,6 @@
                         </div>
                     </div>
 
-                    <!-- Список друзей с их друзьями -->
                     <h3 class="text-lg font-semibold mb-3">Мои друзья ({{ friends.length }})</h3>
                     
                     <div v-if="friends.length === 0" class="bg-gray-50 rounded-lg p-8 text-center text-gray-500">
@@ -885,7 +740,6 @@
                     <div v-else class="space-y-3">
                         <div v-for="friend in friendsWithDetails" :key="friend.login" 
                              class="bg-gray-50 rounded-lg p-4 hover:shadow-md transition">
-                            <!-- Основная информация о друге -->
                             <div class="flex justify-between items-center">
                                 <div class="flex items-center space-x-3">
                                     <div class="w-10 h-10 rounded-full overflow-hidden">
@@ -912,28 +766,6 @@
                                     </button>
                                 </div>
                             </div>
-                            
-                            <!-- Друзья друга (если есть) -->
-                            <div v-if="friend.friends && friend.friends.length > 0" class="mt-3 pl-13 border-t pt-2">
-                                <p class="text-xs text-gray-500 mb-2">
-                                    <i class="fas fa-users mr-1"></i>Друзья {{ friend.name }} ({{ friend.friends.length }}):
-                                </p>
-                                <div class="flex flex-wrap gap-2">
-                                    <div v-for="friendOfFriend in friend.friends.slice(0, 3)" :key="friendOfFriend.login" 
-                                         class="flex items-center space-x-1 bg-white rounded-full px-2 py-1 text-xs">
-                                        <div class="w-4 h-4 rounded-full overflow-hidden">
-                                            <img :src="getAvatarUrl(friendOfFriend.avatar)" class="w-full h-full object-cover">
-                                        </div>
-                                        <span>{{ friendOfFriend.name }}</span>
-                                    </div>
-                                    <span v-if="friend.friends.length > 3" class="text-xs text-gray-500">
-                                        и еще {{ friend.friends.length - 3 }}
-                                    </span>
-                                </div>
-                            </div>
-                            <div v-else class="mt-3 pl-13 border-t pt-2">
-                                <p class="text-xs text-gray-400">Нет общих друзей</p>
-                            </div>
                         </div>
                     </div>
                 </div>
@@ -948,7 +780,6 @@
                         <h3 class="text-lg font-semibold mb-2">Разблокированные аватары: <span class="text-purple-600">{{ unlockedAvatars.join(', ') }}</span></h3>
                     </div>
 
-                    <!-- Доступные аватары -->
                     <div class="bg-gray-50 rounded-lg p-4 mb-6">
                         <h3 class="text-lg font-semibold mb-4">Аватары</h3>
                         <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
@@ -973,16 +804,8 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="mt-4 p-3 bg-blue-50 rounded-lg">
-                            <p class="text-sm text-blue-700">
-                                <i class="fas fa-info-circle mr-1"></i>
-                                Все аватары, кроме "Новичок", становятся недоступны при падении КФГ ниже требуемого порога.
-                                Новичок (КФГ 0), Эконом (КФГ 40), Инвестор (КФГ 70), Эксперт (КФГ 90), Гуру (КФГ 100).
-                            </p>
-                        </div>
                     </div>
 
-                    <!-- Награды -->
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                         <div v-for="reward in rewards" :key="reward.id" 
                              @click="claimReward(reward)"
@@ -1002,7 +825,7 @@
             </div>
         </div>
 
-        <!-- Модальное окно для изменения дохода -->
+        <!-- Модальные окна -->
         <div v-if="showIncomeModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div class="bg-white rounded-xl p-6 max-w-md w-full mx-4">
                 <h3 class="text-xl font-bold mb-4">Изменить доход</h3>
@@ -1022,7 +845,6 @@
             </div>
         </div>
 
-        <!-- Модальное окно для добавления суммы к цели -->
         <div v-if="showAddToGoalModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div class="bg-white rounded-xl p-6 max-w-md w-full mx-4">
                 <h3 class="text-xl font-bold mb-4">Добавить к цели "{{ selectedGoalName }}"</h3>
@@ -1043,7 +865,6 @@
             </div>
         </div>
 
-        <!-- Модальное окно для удаления цели -->
         <div v-if="showRemoveGoalModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div class="bg-white rounded-xl p-6 max-w-md w-full mx-4">
                 <h3 class="text-xl font-bold mb-4">Удалить цель</h3>
@@ -1144,8 +965,8 @@
                 
                 // Друзья и заявки
                 const friends = ref([]);
-                const friendRequests = ref([]); // Исходящие заявки
-                const pendingRequests = ref([]); // Входящие заявки
+                const friendRequests = ref([]);
+                const pendingRequests = ref([]);
                 
                 const friendSearchQuery = ref('');
                 const searchResults = ref([]);
@@ -1218,17 +1039,17 @@
 
                 // Уникальные цвета для каждой категории
                 const categoryColors = {
-                    food: '#FF6384',        // Розовый
-                    transport: '#36A2EB',    // Голубой
-                    cafe: '#FFCE56',          // Желтый
-                    hobby: '#4BC0C0',         // Бирюзовый
-                    selfcare: '#9966FF',       // Фиолетовый
-                    health: '#FF9F40',          // Оранжевый
-                    housing: '#8B4513',        // Коричневый
-                    entertainment: '#20B2AA',   // Светло-морской волны
-                    subscriptions: '#BA55D3',   // Орхидея
-                    education: '#2E8B57',       // Морская зелень
-                    travel: '#FF8C42'            // Оранжево-красный
+                    food: '#FF6384',
+                    transport: '#36A2EB',
+                    cafe: '#FFCE56',
+                    hobby: '#4BC0C0',
+                    selfcare: '#9966FF',
+                    health: '#FF9F40',
+                    housing: '#8B4513',
+                    entertainment: '#20B2AA',
+                    subscriptions: '#BA55D3',
+                    education: '#2E8B57',
+                    travel: '#FF8C42'
                 };
                 
                 // Вычисляемые свойства
@@ -1240,38 +1061,12 @@
                 
                 const balance = computed(() => totalIncome.value - totalExpenses.value);
 
-                // Проверка наличия расходов для отображения диаграммы
                 const hasExpenses = computed(() => {
                     return Object.values(expenses).some(val => val > 0);
                 });
 
-                // Проценты от дохода (с защитой от деления на ноль и огромных чисел)
                 const foodTotal = computed(() => (expenses.food || 0) + (expenses.cafe || 0));
-                const foodPercent = computed(() => {
-                    if (totalIncome.value <= 0) return 0;
-                    const percent = Math.round(foodTotal.value / totalIncome.value * 100);
-                    return Math.min(percent, 999);
-                });
                 
-                const entertainmentPercent = computed(() => {
-                    if (totalIncome.value <= 0) return 0;
-                    const percent = Math.round((expenses.entertainment || 0) / totalIncome.value * 100);
-                    return Math.min(percent, 999);
-                });
-                
-                const subscriptionsPercent = computed(() => {
-                    if (totalIncome.value <= 0) return 0;
-                    const percent = Math.round((expenses.subscriptions || 0) / totalIncome.value * 100);
-                    return Math.min(percent, 999);
-                });
-                
-                const balancePercent = computed(() => {
-                    if (totalIncome.value <= 0) return 0;
-                    const percent = Math.round(balance.value / totalIncome.value * 100);
-                    return Math.min(percent, 999);
-                });
-
-                // Входящие заявки в друзья (для текущего пользователя)
                 const pendingFriendRequests = computed(() => {
                     if (!currentUser.value) return [];
                     
@@ -1287,7 +1082,6 @@
                     }).filter(req => req !== null);
                 });
 
-                // Детальный расчет КФГ
                 const kfgCalculation = computed(() => {
                     const result = {
                         baseValue: 0,
@@ -1297,73 +1091,25 @@
                     
                     if (!currentUser.value || totalIncome.value <= 0) return result;
                     
-                    // Проверка на экстремальные значения
                     if (totalExpenses.value > totalIncome.value * 1000) {
                         result.baseValue = -999;
                         return result;
                     }
                     
-                    // Базовая формула с защитой от бесконечности
                     let baseValue = 100 - (totalExpenses.value / totalIncome.value * 100);
-                    
-                    // Округляем и ограничиваем для отображения
                     result.baseValue = Math.round(baseValue);
-                    
-                    // Проверяем штрафы (только если расходы не сильно превышают доход)
-                    if (totalExpenses.value <= totalIncome.value * 10) {
-                        if (expenses.entertainment > totalIncome.value * 0.3) {
-                            result.penalties.push({
-                                text: `Развлечения > 30% дохода`,
-                                value: 20
-                            });
-                        }
-                        
-                        if (foodTotal.value > totalIncome.value * 0.5) {
-                            result.penalties.push({
-                                text: `Еда и кафе > 50% дохода`,
-                                value: 15
-                            });
-                        }
-                        
-                        if (expenses.subscriptions > totalIncome.value * 0.1) {
-                            result.penalties.push({
-                                text: `Подписки > 10% дохода`,
-                                value: 10
-                            });
-                        }
-                    }
-                    
-                    // Проверяем бонусы (только если расходы не превышают доход)
-                    if (totalExpenses.value <= totalIncome.value) {
-                        if (expenses.education > 0) {
-                            result.bonuses.push({
-                                text: 'Инвестиции в образование',
-                                value: 5
-                            });
-                        }
-                        
-                        if (balance.value > totalIncome.value * 0.2) {
-                            result.bonuses.push({
-                                text: `Сбережения > 20% дохода`,
-                                value: 10
-                            });
-                        }
-                    }
                     
                     return result;
                 });
 
-                // Общая сумма всех целей
                 const totalGoalsAmount = computed(() => {
                     return goals.value.reduce((sum, goal) => sum + goal.targetAmount, 0);
                 });
 
-                // Общая накопленная сумма по всем целям
                 const totalSaved = computed(() => {
                     return goals.value.reduce((sum, goal) => sum + goal.currentAmount, 0);
                 });
 
-                // Фильтр для отображения только существующих категорий расходов
                 const filteredExpenses = computed(() => {
                     const filtered = {};
                     Object.keys(expenses).forEach(key => {
@@ -1374,11 +1120,9 @@
                     return filtered;
                 });
                 
-                // Формула КФГ для пользователя
                 function calculateKFG(user) {
                     if (!user?.income || user.income <= 0) return 0;
                     
-                    // Проверяем, есть ли расходы
                     const userExpenses = user.expenses || {};
                     const hasAnyExpenses = Object.values(userExpenses).some(val => val > 0);
                     if (!hasAnyExpenses) {
@@ -1387,14 +1131,12 @@
                     
                     const totalUserExpenses = Object.values(userExpenses).reduce((a, b) => a + b, 0);
                     
-                    // Если расходы экстремально превышают доход, возвращаем 0
                     if (totalUserExpenses > user.income * 1000) {
                         return 0;
                     }
                     
                     let value = 100 - (totalUserExpenses / user.income * 100);
                     
-                    // Штрафы (только если расходы не сильно превышают доход)
                     if (totalUserExpenses <= user.income * 10) {
                         const totalFood = (userExpenses.food || 0) + (userExpenses.cafe || 0);
                         if (userExpenses.entertainment > user.income * 0.3) value -= 20;
@@ -1402,26 +1144,21 @@
                         if (userExpenses.subscriptions > user.income * 0.1) value -= 10;
                     }
                     
-                    // Бонусы (только если расходы не превышают доход)
                     if (totalUserExpenses <= user.income) {
                         if (userExpenses.education > 0) value += 5;
                         if ((user.income - totalUserExpenses) > user.income * 0.2) value += 10;
                     }
                     
-                    // Ограничиваем значение от 0 до 100
                     return Math.max(0, Math.min(100, Math.round(value)));
                 }
 
-                // КФГ для текущего пользователя
                 const kfg = computed(() => {
                     if (!currentUser.value) return 0;
                     
-                    // Проверка на экстремальные значения
                     if (totalExpenses.value > totalIncome.value * 1000) {
                         return 0;
                     }
                     
-                    // Используем текущие расходы из формы, если они есть
                     const hasAnyExpenses = Object.values(expenses).some(val => val > 0);
                     if (!hasAnyExpenses) {
                         return 0;
@@ -1429,7 +1166,6 @@
                     
                     let value = 100 - (totalExpenses.value / currentUser.value.income * 100);
                     
-                    // Штрафы (только если расходы не сильно превышают доход)
                     if (totalExpenses.value <= currentUser.value.income * 10) {
                         const totalFood = (expenses.food || 0) + (expenses.cafe || 0);
                         if (expenses.entertainment > currentUser.value.income * 0.3) value -= 20;
@@ -1437,17 +1173,14 @@
                         if (expenses.subscriptions > currentUser.value.income * 0.1) value -= 10;
                     }
                     
-                    // Бонусы (только если расходы не превышают доход)
                     if (totalExpenses.value <= currentUser.value.income) {
                         if (expenses.education > 0) value += 5;
                         if (balance.value > currentUser.value.income * 0.2) value += 10;
                     }
                     
-                    // Ограничиваем значение от 0 до 100
                     return Math.max(0, Math.min(100, Math.round(value)));
                 });
 
-                // Разблокированные аватары
                 const unlockedAvatars = computed(() => {
                     if (!currentUser.value) return [];
                     
@@ -1464,7 +1197,6 @@
                     return unlocked;
                 });
 
-                // Функция для получения рейтинга пользователя
                 function getUserRating(user) {
                     const userKFG = calculateKFG(user);
                     if (userKFG >= 90) return 'Гуру';
@@ -1483,13 +1215,11 @@
                     return 1;
                 }
 
-                // Друзья с их КФГ и деталями
                 const friendsWithDetails = computed(() => {
                     return friends.value.map(friend => {
                         const fullUser = users.value.find(u => u.login === friend.login);
                         if (!fullUser) return friend;
                         
-                        // Получаем друзей друга
                         const friendFriends = (fullUser.friends || []).map(f => {
                             const friendUser = users.value.find(u => u.login === f.login);
                             return {
@@ -1509,13 +1239,11 @@
                     });
                 });
 
-                // Участники рейтинга (текущий пользователь + друзья)
                 const ratingParticipants = computed(() => {
                     if (!currentUser.value) return [];
                     
                     const participants = [];
                     
-                    // Добавляем текущего пользователя
                     participants.push({
                         ...currentUser.value,
                         kfg: kfg.value,
@@ -1524,7 +1252,6 @@
                         ratingLevel: getUserRatingLevel(currentUser.value)
                     });
                     
-                    // Добавляем друзей
                     friends.value.forEach(friend => {
                         const fullUser = users.value.find(u => u.login === friend.login);
                         if (fullUser) {
@@ -1539,11 +1266,9 @@
                         }
                     });
                     
-                    // Сортируем по КФГ (по убыванию)
                     return participants.sort((a, b) => b.kfg - a.kfg);
                 });
 
-                // Проверка, разблокирован ли аватар
                 function isAvatarUnlocked(avatar) {
                     if (!currentUser.value) return false;
                     
@@ -1554,7 +1279,6 @@
                     }
                 }
 
-                // Проверка доступности аватара при регистрации
                 function isAvatarAvailableForRegister(avatar) {
                     return avatar.id === 1;
                 }
@@ -1581,7 +1305,6 @@
                     }
                 }
 
-                // Форматирование чисел с защитой от огромных значений
                 function formatMoney(amount) {
                     if (amount > 1e12) return '> 1 трлн';
                     if (amount > 1e9) return Math.round(amount / 1e9) + ' млрд';
@@ -1590,7 +1313,6 @@
                     return new Intl.NumberFormat('ru-RU').format(amount);
                 }
 
-                // Функция для склонения слова "месяц"
                 function getMonthWord(months) {
                     if (months % 10 === 1 && months % 100 !== 11) {
                         return 'месяц';
@@ -1601,7 +1323,6 @@
                     }
                 }
 
-                // Методы для работы с целями
                 function addGoal() {
                     if (!newGoal.name.trim()) {
                         showMessage('Введите название цели', 'error');
@@ -1695,56 +1416,6 @@
                     closeRemoveGoalModal();
                 }
                 
-                const recommendations = computed(() => {
-                    if (!currentUser.value) return [];
-                    
-                    const recs = [];
-                    
-                    if (totalExpenses.value > currentUser.value.income) {
-                        recs.push('⚠️ Ваши расходы превышают доход! Срочно сократите траты.');
-                    }
-                    
-                    if (totalExpenses.value > currentUser.value.income * 10) {
-                        recs.push('🔥 Критическое превышение расходов! КФГ принудительно установлен в 0.');
-                    }
-                    
-                    if (expenses.entertainment > currentUser.value.income * 0.2 && totalExpenses.value <= currentUser.value.income) {
-                        recs.push('🎯 Попробуйте сократить расходы на развлечения до 20% от дохода.');
-                    }
-                    
-                    const totalFood = (expenses.food || 0) + (expenses.cafe || 0);
-                    if (totalFood > currentUser.value.income * 0.3 && totalExpenses.value <= currentUser.value.income) {
-                        recs.push('🍎 Готовьте дома чаще - это сэкономит до 50% на еде и кафе.');
-                    }
-                    
-                    if (expenses.subscriptions > 1000 && totalExpenses.value <= currentUser.value.income) {
-                        recs.push('📱 Проверьте подписки - возможно, вы платите за ненужные сервисы.');
-                    }
-                    
-                    if (expenses.education === 0 && kfg.value < 100 && totalExpenses.value <= currentUser.value.income) {
-                        recs.push('📚 Инвестиции в образование могли бы повысить ваш КФГ на 5 пунктов.');
-                    }
-                    
-                    if (balance.value > 0) {
-                        recs.push(`💪 Отличная работа! Вы откладываете ${formatMoney(balance.value)} ₽ в месяц.`);
-                    }
-
-                    if (goals.value.length > 0 && balance.value > 0) {
-                        const totalNeeded = totalGoalsAmount.value;
-                        const totalSavedVal = totalSaved.value;
-                        if (totalSavedVal < totalNeeded) {
-                            const remaining = totalNeeded - totalSavedVal;
-                            const months = Math.ceil(remaining / Math.max(1, balance.value));
-                            if (months < 1000) {
-                                recs.push(`🎯 Для достижения всех целей осталось накопить ${formatMoney(remaining)} ₽ (${months} ${getMonthWord(months)})`);
-                            }
-                        }
-                    }
-                    
-                    return recs;
-                });
-                
-                // Методы для работы с доходом
                 function editIncome() {
                     newIncomeValue.value = currentUser.value.income;
                     showIncomeModal.value = true;
@@ -1776,9 +1447,7 @@
                     }
                 }
                 
-                // ===== МЕТОДЫ ДЛЯ SUPABASE =====
-                
-                // Загрузка всех пользователей из Supabase
+                // Методы для Supabase
                 async function loadUsersFromSupabase() {
                     isLoading.value = true;
                     try {
@@ -1791,29 +1460,23 @@
                         if (data && data.length > 0) {
                             users.value = data;
                         } else {
-                            // Если нет пользователей, создаем тестовых
                             await createTestUsers();
                         }
                         
                         console.log('Загружено пользователей:', users.value.length);
                     } catch (error) {
                         console.error('Ошибка загрузки из Supabase:', error);
-                        showMessage('Ошибка загрузки данных', 'error');
-                        
-                        // Если таблица не существует, создаем тестовых пользователей
                         await createTestUsers();
                     } finally {
                         isLoading.value = false;
                     }
                 }
 
-                // Сохранение всех пользователей в Supabase
                 async function saveToSupabase() {
                     if (!users.value.length) return;
                     
                     isLoading.value = true;
                     try {
-                        // Удаляем всех существующих пользователей
                         const { error: deleteError } = await supabase
                             .from('users')
                             .delete()
@@ -1823,7 +1486,6 @@
                             console.warn('Ошибка при очистке:', deleteError);
                         }
                         
-                        // Вставляем обновленных пользователей
                         const { error } = await supabase
                             .from('users')
                             .insert(users.value);
@@ -1833,13 +1495,11 @@
                         console.log('Данные сохранены в Supabase');
                     } catch (error) {
                         console.error('Ошибка сохранения в Supabase:', error);
-                        showMessage('Ошибка сохранения данных', 'error');
                     } finally {
                         isLoading.value = false;
                     }
                 }
 
-                // Методы авторизации с Supabase
                 async function handleRegister() {
                     if (!registerForm.name || !registerForm.surname || !registerForm.nickname || 
                         !registerForm.login || !registerForm.password || !registerForm.income) {
@@ -1852,7 +1512,6 @@
                         return;
                     }
                     
-                    // Сначала загружаем актуальных пользователей
                     await loadUsersFromSupabase();
                     
                     if (users.value.some(u => u.login === registerForm.login)) {
@@ -1877,7 +1536,6 @@
                         return;
                     }
                     
-                    // Проверка на огромные расходы
                     const totalRegExpenses = Object.values(registerForm.expenses).reduce((a, b) => a + b, 0);
                     if (totalRegExpenses > 1e9) {
                         showMessage('Слишком большие расходы (максимум 1 млрд)', 'error');
@@ -1901,7 +1559,6 @@
                     
                     users.value.push(newUser);
                     
-                    // Сохраняем в Supabase
                     await saveToSupabase();
                     
                     currentUser.value = { ...newUser };
@@ -1926,16 +1583,13 @@
                         return;
                     }
                     
-                    // Загружаем актуальных пользователей из Supabase
                     await loadUsersFromSupabase();
                     
-                    // Ищем пользователя с таким логином и паролем
                     const user = users.value.find(u => 
                         u.login === loginForm.login && u.password === loginForm.password
                     );
                     
                     if (user) {
-                        // Создаем копию пользователя, чтобы не изменять исходный объект напрямую
                         currentUser.value = JSON.parse(JSON.stringify(user));
                         loadUserData(currentUser.value);
                         showMessage('Добро пожаловать!', 'success');
@@ -1980,7 +1634,6 @@
                         pendingRequests.value = user.pendingRequests;
                     }
                     
-                    // Обновляем диаграмму после загрузки данных
                     setTimeout(() => {
                         if (currentTab.value === 'analytics') {
                             initChart();
@@ -1988,7 +1641,6 @@
                     }, 100);
                 }
                 
-                // Методы для работы с друзьями
                 function searchFriends() {
                     searchPerformed.value = true;
                     
@@ -2117,7 +1769,6 @@
                     await saveToSupabase();
                 }
                 
-                // Остальные методы
                 let chart = null;
                 
                 function showMessage(text, type) {
@@ -2131,7 +1782,6 @@
                 }
                 
                 async function saveExpenses() {
-                    // Проверка на огромные расходы
                     if (totalExpenses.value > 1e9) {
                         showMessage('Слишком большие расходы (максимум 1 млрд)', 'error');
                         return;
@@ -2153,7 +1803,6 @@
                     }
                 }
                 
-                // Создание тестовых пользователей для демонстрации
                 async function createTestUsers() {
                     const testUsers = [
                         {
@@ -2275,7 +1924,6 @@
                     nextTick(() => {
                         const canvas = document.getElementById('expenseChart');
                         if (!canvas) {
-                            console.log('Canvas not found, retrying...');
                             setTimeout(initChart, 100);
                             return;
                         }
@@ -2472,7 +2120,6 @@
                 }
                 
                 onMounted(async () => {
-                    // Загружаем пользователей из Supabase при старте
                     await loadUsersFromSupabase();
                     
                     setTimeout(() => {
