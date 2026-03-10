@@ -1932,7 +1932,7 @@
                             users: users.value,
                             currentUser: null
                         };
-                        localStorage.setItem('vueFinancialData', JSON.stringify(data));
+                        localStorage.setItem('financialData', JSON.stringify(data));
                         return;
                     }
                     
@@ -1954,11 +1954,11 @@
                         users: users.value,
                         currentUser: currentUser.value,
                     };
-                    localStorage.setItem('vueFinancialData', JSON.stringify(data));
+                    localStorage.setItem('financialData', JSON.stringify(data));
                 }
                 
                 function loadFromStorage() {
-                    const saved = localStorage.getItem('vueFinancialData');
+                    const saved = localStorage.getItem('financialData');
                     if (saved) {
                         try {
                             const data = JSON.parse(saved);
@@ -2300,7 +2300,7 @@
                             users: users.value,
                             currentUser: null
                         };
-                        localStorage.setItem('vueFinancialData', JSON.stringify(data));
+                        localStorage.setItem('financialData', JSON.stringify(data));
                     }
                 }, { deep: true });
 
