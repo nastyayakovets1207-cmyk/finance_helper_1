@@ -22,6 +22,9 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
     
+    <!-- Axios для API запросов -->
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    
     <style>
         .gradient-bg {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -100,6 +103,48 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+
+        .typing-indicator {
+            display: flex;
+            align-items: center;
+            column-gap: 6px;
+        }
+
+        .typing-indicator span {
+            height: 8px;
+            width: 8px;
+            background: #7c3aed;
+            border-radius: 50%;
+            display: block;
+            opacity: 0.4;
+        }
+
+        .typing-indicator span:nth-child(1) {
+            animation: pulse-dot 1.2s infinite;
+        }
+
+        .typing-indicator span:nth-child(2) {
+            animation: pulse-dot 1.2s infinite 0.2s;
+        }
+
+        .typing-indicator span:nth-child(3) {
+            animation: pulse-dot 1.2s infinite 0.4s;
+        }
+
+        @keyframes pulse-dot {
+            0%, 60%, 100% {
+                transform: scale(1);
+                opacity: 0.4;
+            }
+            30% {
+                transform: scale(1.3);
+                opacity: 1;
+            }
+        }
+
+        .suggestion-chip {
+            @apply px-3 py-1.5 bg-purple-100 text-purple-700 rounded-full text-sm cursor-pointer hover:bg-purple-200 transition-colors;
+        }
     </style>
 </head>
 <body class="bg-gray-100">
@@ -108,7 +153,7 @@
         <div v-if="loading" class="fixed inset-0 bg-white bg-opacity-75 z-50 flex items-center justify-center">
             <div class="text-center">
                 <div class="loading-spinner mx-auto mb-4"></div>
-                <p class="text-gray-600">Загрузка данных...</p>
+                <p class="text-gray-600">{{ loadingMessage || 'Загрузка данных...' }}</p>
             </div>
         </div>
 
@@ -723,21 +768,80 @@
                     </div>
                 </div>
 
-                <!-- Вкладка ИИ-Ассистент -->
+                <!-- Вкладка ИИ-Ассистент (УМНЫЙ) -->
                 <div v-show="currentTab === 'chat'" class="p-6">
-                    <h2 class="text-2xl font-bold mb-6">ИИ-Ассистент</h2>
+                    <h2 class="text-2xl font-bold mb-6">ИИ-Ассистент (DeepSeek)</h2>
+                    
+                    <!-- Кнопка сброса контекста -->
+                    <div class="flex justify-end mb-2">
+                        <button @click="resetChatContext" class="text-xs bg-gray-200 hover:bg-gray-300 px-3 py-1 rounded-full text-gray-700">
+                            <i class="fas fa-sync-alt mr-1"></i> Сбросить контекст
+                        </button>
+                    </div>
+                    
                     <div class="bg-gray-50 rounded-lg p-4">
+                        <!-- Контейнер сообщений -->
                         <div class="h-96 overflow-y-auto flex flex-col space-y-2 mb-4" ref="chatContainer">
                             <div v-for="(msg, index) in chatMessages" :key="index" 
                                  :class="msg.sender === 'bot' ? 'message-bot' : 'message-user'">
-                                {{ msg.text }}
+                                <div v-if="msg.sender === 'bot' && msg.loading" class="flex items-center space-x-2">
+                                    <div class="typing-indicator">
+                                        <span></span>
+                                        <span></span>
+                                        <span></span>
+                                    </div>
+                                    <span class="text-gray-500 text-sm">DeepSeek думает...</span>
+                                </div>
+                                <div v-else-if="msg.sender === 'bot' && msg.error" class="text-red-500">
+                                    <i class="fas fa-exclamation-triangle mr-1"></i>
+                                    {{ msg.text }}
+                                </div>
+                                <div v-else>
+                                    {{ msg.text }}
+                                </div>
                             </div>
                         </div>
+                        
+                        <!-- Быстрые подсказки (контекстные) -->
+                        <div class="flex flex-wrap gap-2 mb-3">
+                            <span class="text-xs text-gray-500 self-center mr-1">Быстрые вопросы:</span>
+                            <span @click="quickQuestion('Как мне сократить расходы на еду?')" class="suggestion-chip">
+                                <i class="fas fa-utensils mr-1"></i> Сократить расходы на еду
+                            </span>
+                            <span @click="quickQuestion('Как начать инвестировать с маленькой суммы?')" class="suggestion-chip">
+                                <i class="fas fa-chart-line mr-1"></i> Начать инвестировать
+                            </span>
+                            <span @click="quickQuestion('Сколько нужно откладывать на пенсию?')" class="suggestion-chip">
+                                <i class="fas fa-piggy-bank mr-1"></i> Накопления на пенсию
+                            </span>
+                            <span @click="quickQuestion('Как улучшить мой КФГ?')" class="suggestion-chip">
+                                <i class="fas fa-star mr-1"></i> Улучшить КФГ
+                            </span>
+                            <span @click="quickQuestion('Советы по созданию подушки безопасности')" class="suggestion-chip">
+                                <i class="fas fa-shield-alt mr-1"></i> Подушка безопасности
+                            </span>
+                        </div>
+                        
+                        <!-- Поле ввода -->
                         <div class="flex space-x-2">
-                            <textarea v-model="chatInput" @keyup.enter="sendMessage" rows="2" class="flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:border-purple-500" placeholder="Задайте вопрос ИИ-ассистенту..."></textarea>
-                            <button @click="sendMessage" class="gradient-bg text-white px-6 rounded-lg font-semibold hover:shadow-lg">
-                                <i class="fas fa-paper-plane"></i>
+                            <textarea v-model="chatInput" @keyup.enter="sendMessage" rows="2" 
+                                      class="flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:border-purple-500 resize-none" 
+                                      placeholder="Задайте вопрос ИИ-ассистенту... (Enter для отправки)"></textarea>
+                            <button @click="sendMessage" :disabled="aiLoading" 
+                                    class="gradient-bg text-white px-6 rounded-lg font-semibold hover:shadow-lg disabled:opacity-50">
+                                <i class="fas fa-paper-plane" :class="{'fa-spinner fa-spin': aiLoading}"></i>
                             </button>
+                        </div>
+                        
+                        <!-- Статус модели -->
+                        <div class="mt-2 text-xs text-gray-400 flex items-center justify-between">
+                            <span>
+                                <i class="fas fa-microchip mr-1"></i>
+                                Модель: DeepSeek Chat
+                            </span>
+                            <span v-if="aiModelInfo">
+                                {{ aiModelInfo }}
+                            </span>
                         </div>
                     </div>
                 </div>
@@ -1041,7 +1145,6 @@
         const { createApp, ref, reactive, computed, watch, onMounted, nextTick } = Vue;
 
         // 🔥 ИНИЦИАЛИЗАЦИЯ FIREBASE 🔥
-        // Ваш конфигурационный объект из консоли Firebase
         const firebaseConfig = {
             apiKey: "AIzaSyBoIf1-o2chwXIzWp7VBujZdqxqtYSu_4c",
             authDomain: "fingrade-f9eee.firebaseapp.com",
@@ -1051,22 +1154,20 @@
             appId: "1:492951301038:web:96b425064787c88df7b63f"
         };
 
-        // Инициализируем Firebase
         firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
         const db = firebase.firestore();
-
-        // Включаем постоянную аутентификацию (чтобы не выкидывало при перезагрузке)
         auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
 
         const app = createApp({
             setup() {
                 // Состояние приложения
                 const loading = ref(false);
+                const loadingMessage = ref('Загрузка данных...');
                 const currentTab = ref('profile');
                 const message = reactive({ show: false, text: '', type: 'success' });
                 
-                // Пользователи (теперь загружаем из Firestore)
+                // Пользователи
                 const users = ref([]);
                 const currentUser = ref(null);
                 
@@ -1127,11 +1228,19 @@
                 const searchResults = ref([]);
                 const searchPerformed = ref(false);
                 
+                // УМНЫЙ ЧАТ
                 const chatMessages = ref([
-                    { text: 'Привет! Я ваш ИИ-ассистент. Задайте мне вопрос о финансах или попросите совет по экономии.', sender: 'bot' }
+                    { text: 'Привет! Я ваш финансовый ассистент на базе DeepSeek. Задайте мне любой вопрос о личных финансах, инвестициях, экономии или планировании бюджета. Я проанализирую вашу ситуацию и дам персонализированные рекомендации!', sender: 'bot' }
                 ]);
                 const chatInput = ref('');
                 const chatContainer = ref(null);
+                const aiLoading = ref(false);
+                const aiModelInfo = ref('DeepSeek Chat v3');
+                const chatContext = ref([]);
+                
+                // API DeepSeek
+                const DEEPSEEK_API_KEY = 'sk-3d092e6f46f8437ebe9a4f39fa996977'; // Замените на ваш ключ
+                const DEEPSEEK_API_URL = 'https://api.deepseek.com/v1/chat/completions';
                 
                 const rewards = [
                     { id: 1, name: 'Бесплатный кофе', kfgRequired: 50, description: 'Скидка 50% на кофе', icon: 'fa-coffee' },
@@ -1392,7 +1501,7 @@
                     return 'месяцев';
                 }
 
-                // 🔥 МЕТОДЫ ДЛЯ РАБОТЫ С FIRESTORE 🔥
+                // 🔥 МЕТОДЫ FIRESTORE 🔥
                 
                 async function loadUsersFromFirestore() {
                     try {
@@ -1469,6 +1578,7 @@
                     }
                     
                     loading.value = true;
+                    loadingMessage.value = 'Регистрация...';
                     
                     try {
                         const loginCheck = await db.collection('users').doc(registerForm.login).get();
@@ -1543,6 +1653,7 @@
                     }
                     
                     loading.value = true;
+                    loadingMessage.value = 'Вход в систему...';
                     
                     try {
                         const userDoc = await db.collection('users').doc(loginForm.login).get();
@@ -1584,6 +1695,7 @@
                 
                 async function logout() {
                     loading.value = true;
+                    loadingMessage.value = 'Выход из системы...';
                     try {
                         await auth.signOut();
                         currentUser.value = null;
@@ -1604,6 +1716,7 @@
                     if (!currentUser.value) return;
                     
                     loading.value = true;
+                    loadingMessage.value = 'Сохранение расходов...';
                     
                     try {
                         currentUser.value.expenses = { ...expenses };
@@ -1634,6 +1747,7 @@
                     }
                     
                     loading.value = true;
+                    loadingMessage.value = 'Добавление цели...';
                     
                     try {
                         const newGoalObj = {
@@ -1662,6 +1776,7 @@
 
                 async function quickAddToGoal(index, amount) {
                     loading.value = true;
+                    loadingMessage.value = 'Добавление к цели...';
                     try {
                         goals.value[index].currentAmount += amount;
                         
@@ -1687,6 +1802,7 @@
                     }
                     
                     loading.value = true;
+                    loadingMessage.value = 'Добавление к цели...';
                     
                     try {
                         goals.value[selectedGoalIndex.value].currentAmount += addToGoalAmount.value;
@@ -1709,6 +1825,7 @@
                     if (selectedGoalIndexForRemove.value === null) return;
                     
                     loading.value = true;
+                    loadingMessage.value = 'Удаление цели...';
                     
                     try {
                         goals.value.splice(selectedGoalIndexForRemove.value, 1);
@@ -1744,6 +1861,7 @@
                     }
 
                     loading.value = true;
+                    loadingMessage.value = 'Сохранение дохода...';
                     
                     try {
                         currentUser.value.income = newIncomeValue.value;
@@ -1786,6 +1904,7 @@
 
                 async function sendFriendRequest(user) {
                     loading.value = true;
+                    loadingMessage.value = 'Отправка заявки...';
                     
                     try {
                         if (!friendRequests.value.includes(user.login)) {
@@ -1823,6 +1942,7 @@
 
                 async function acceptFriendRequest(request) {
                     loading.value = true;
+                    loadingMessage.value = 'Принятие заявки...';
                     
                     try {
                         const newFriend = {
@@ -1874,6 +1994,7 @@
 
                 async function rejectFriendRequest(request) {
                     loading.value = true;
+                    loadingMessage.value = 'Отклонение заявки...';
                     
                     try {
                         pendingRequests.value = pendingRequests.value.filter(login => login !== request.login);
@@ -1902,6 +2023,7 @@
 
                 async function removeFriend(friend) {
                     loading.value = true;
+                    loadingMessage.value = 'Удаление друга...';
                     
                     try {
                         friends.value = friends.value.filter(f => f.login !== friend.login);
@@ -1935,6 +2057,7 @@
                     }
                     
                     loading.value = true;
+                    loadingMessage.value = 'Смена аватара...';
                     
                     try {
                         currentUser.value.avatar = avatar.id;
@@ -1951,6 +2074,173 @@
                     }
                 }
 
+                // 🧠 УМНЫЙ ЧАТ С DEEPSEEK
+                async function sendMessage() {
+                    if (!chatInput.value.trim() || aiLoading.value) return;
+                    
+                    const userMessage = chatInput.value.trim();
+                    chatMessages.value.push({ text: userMessage, sender: 'user' });
+                    chatInput.value = '';
+                    
+                    // Добавляем индикатор загрузки
+                    const loadingIndex = chatMessages.value.length;
+                    chatMessages.value.push({ text: '', sender: 'bot', loading: true });
+                    
+                    // Прокрутка вниз
+                    await nextTick();
+                    if (chatContainer.value) {
+                        chatContainer.value.scrollTop = chatContainer.value.scrollHeight;
+                    }
+                    
+                    aiLoading.value = true;
+                    
+                    try {
+                        // Формируем контекст с финансовыми данными пользователя
+                        const userContext = buildUserContext();
+                        
+                        const response = await callDeepSeekAPI(userMessage, userContext);
+                        
+                        // Заменяем индикатор загрузки на ответ
+                        chatMessages.value.splice(loadingIndex, 1);
+                        chatMessages.value.push({ text: response, sender: 'bot' });
+                        
+                    } catch (error) {
+                        console.error('Ошибка DeepSeek API:', error);
+                        
+                        // Заменяем индикатор на сообщение об ошибке
+                        chatMessages.value.splice(loadingIndex, 1);
+                        chatMessages.value.push({ 
+                            text: 'Извините, произошла ошибка при обращении к AI. Пожалуйста, попробуйте позже.', 
+                            sender: 'bot',
+                            error: true 
+                        });
+                    } finally {
+                        aiLoading.value = false;
+                        
+                        await nextTick();
+                        if (chatContainer.value) {
+                            chatContainer.value.scrollTop = chatContainer.value.scrollHeight;
+                        }
+                    }
+                }
+
+                // Функция для формирования контекста пользователя
+                function buildUserContext() {
+                    if (!currentUser.value) return null;
+                    
+                    const context = {
+                        userInfo: {
+                            name: currentUser.value.name,
+                            income: currentUser.value.income,
+                            kfg: kfg.value,
+                            rating: getUserRating(currentUser.value)
+                        },
+                        expenses: {},
+                        goals: goals.value,
+                        financialHealth: {
+                            totalExpenses: totalExpenses.value,
+                            balance: balance.value,
+                            savingsRate: balancePercent.value + '%',
+                            foodExpensesPercent: foodPercent.value,
+                            entertainmentPercent: entertainmentPercent.value
+                        }
+                    };
+                    
+                    // Добавляем только ненулевые расходы
+                    Object.keys(expenses).forEach(key => {
+                        if (expenses[key] > 0) {
+                            context.expenses[categoryNames[key]] = expenses[key];
+                        }
+                    });
+                    
+                    return context;
+                }
+
+                // Вызов DeepSeek API
+                async function callDeepSeekAPI(userMessage, userContext = null) {
+                    // Системный промпт для финансового ассистента
+                    const systemPrompt = `Ты — профессиональный финансовый ассистент FinGrade. Твоя задача — давать персонализированные советы по управлению личными финансами, основываясь на данных пользователя.
+
+Ты должен:
+1. Анализировать финансовую ситуацию пользователя
+2. Давать конкретные, практические рекомендации
+3. Отвечать на русском языке
+4. Использовать дружелюбный, но профессиональный тон
+5. Учитывать российские финансовые реалии
+
+Важно: Если пользователь предоставил свои финансовые данные, используй их для персонализации ответа.`;
+
+                    // Формируем сообщения для API
+                    const messages = [
+                        { role: 'system', content: systemPrompt }
+                    ];
+                    
+                    // Добавляем контекст пользователя, если есть
+                    if (userContext) {
+                        messages.push({ 
+                            role: 'system', 
+                            content: `Данные пользователя: ${JSON.stringify(userContext, null, 2)}` 
+                        });
+                    }
+                    
+                    // Добавляем историю чата (последние 6 сообщений для контекста)
+                    const recentMessages = chatMessages.value.slice(-6);
+                    recentMessages.forEach(msg => {
+                        if (!msg.loading && !msg.error) {
+                            messages.push({
+                                role: msg.sender === 'user' ? 'user' : 'assistant',
+                                content: msg.text
+                            });
+                        }
+                    });
+                    
+                    // Добавляем текущее сообщение пользователя, если его еще нет в истории
+                    const lastMessage = messages[messages.length - 1];
+                    if (!lastMessage || lastMessage.role !== 'user' || lastMessage.content !== userMessage) {
+                        messages.push({ role: 'user', content: userMessage });
+                    }
+                    
+                    try {
+                        const response = await axios.post(DEEPSEEK_API_URL, {
+                            model: 'deepseek-chat',
+                            messages: messages,
+                            temperature: 0.7,
+                            max_tokens: 1000,
+                            top_p: 0.95,
+                            frequency_penalty: 0.3,
+                            presence_penalty: 0.3
+                        }, {
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${DEEPSEEK_API_KEY}`
+                            }
+                        });
+                        
+                        if (response.data && response.data.choices && response.data.choices.length > 0) {
+                            return response.data.choices[0].message.content;
+                        } else {
+                            throw new Error('Неожиданный ответ от API');
+                        }
+                    } catch (error) {
+                        console.error('DeepSeek API Error:', error.response?.data || error.message);
+                        throw error;
+                    }
+                }
+
+                // Сброс контекста чата
+                function resetChatContext() {
+                    chatMessages.value = [
+                        { text: 'Привет! Я ваш финансовый ассистент на базе DeepSeek. Задайте мне любой вопрос о личных финансах, инвестициях, экономии или планировании бюджета. Я проанализирую вашу ситуацию и дам персонализированные рекомендации!', sender: 'bot' }
+                    ];
+                    showMessage('Контекст чата сброшен', 'success');
+                }
+
+                // Быстрый вопрос по клику на чип
+                function quickQuestion(question) {
+                    chatInput.value = question;
+                    sendMessage();
+                }
+
                 // Остальные методы
                 let chart = null;
                 
@@ -1963,6 +2253,7 @@
 
                 async function checkAuthState() {
                     loading.value = true;
+                    loadingMessage.value = 'Проверка авторизации...';
                     
                     auth.onAuthStateChanged(async (user) => {
                         if (user) {
@@ -2046,35 +2337,6 @@
 
                 function getCategoryColor(category) {
                     return categoryColors[category] || '#CCCCCC';
-                }
-                
-                async function sendMessage() {
-                    if (!chatInput.value.trim()) return;
-                    
-                    chatMessages.value.push({ text: chatInput.value, sender: 'user' });
-                    chatInput.value = '';
-                    
-                    setTimeout(() => {
-                        if (chatContainer.value) chatContainer.value.scrollTop = chatContainer.value.scrollHeight;
-                    }, 100);
-                    
-                    setTimeout(() => {
-                        const responses = [
-                            "Отличный вопрос! Для экономии рекомендую вести учет всех расходов.",
-                            "Попробуйте правило 50/30/20: 50% на нужное, 30% на желания, 20% в копилку.",
-                            "Самый простой способ экономии - готовить дома и брать еду с собой.",
-                            "Используйте кэшбэк-сервисы и следите за акциями в магазинах.",
-                            "Отложите 10% дохода сразу после получения - так вы не потратите их.",
-                            "Проверьте, не платите ли вы за ненужные подписки."
-                        ];
-                        
-                        chatMessages.value.push({
-                            text: responses[Math.floor(Math.random() * responses.length)],
-                            sender: 'bot'
-                        });
-                        
-                        if (chatContainer.value) chatContainer.value.scrollTop = chatContainer.value.scrollHeight;
-                    }, 1000);
                 }
                 
                 function claimReward(reward) {
@@ -2164,6 +2426,7 @@
                 return {
                     // Состояние
                     loading,
+                    loadingMessage,
                     currentTab,
                     message,
                     currentUser,
@@ -2182,6 +2445,8 @@
                     chatMessages,
                     chatInput,
                     chatContainer,
+                    aiLoading,
+                    aiModelInfo,
                     rewards,
                     avatars,
                     tabs,
@@ -2253,7 +2518,12 @@
                         selectedGoalNameForRemove.value = '';
                     },
                     confirmRemoveGoal,
+                    
+                    // Чат методы
                     sendMessage,
+                    resetChatContext,
+                    quickQuestion,
+                    
                     claimReward,
                     exportData,
                     
