@@ -768,9 +768,9 @@
                     </div>
                 </div>
 
-                <!-- Вкладка ИИ-Ассистент (УМНЫЙ) -->
+                <!-- Вкладка ИИ-Ассистент (OpenRouter) -->
                 <div v-show="currentTab === 'chat'" class="p-6">
-                    <h2 class="text-2xl font-bold mb-6">ИИ-Ассистент (DeepSeek)</h2>
+                    <h2 class="text-2xl font-bold mb-6">ИИ-Ассистент (OpenRouter)</h2>
                     
                     <!-- Кнопка сброса контекста -->
                     <div class="flex justify-end mb-2">
@@ -790,7 +790,7 @@
                                         <span></span>
                                         <span></span>
                                     </div>
-                                    <span class="text-gray-500 text-sm">DeepSeek думает...</span>
+                                    <span class="text-gray-500 text-sm">Ассистент думает...</span>
                                 </div>
                                 <div v-else-if="msg.sender === 'bot' && msg.error" class="text-red-500">
                                     <i class="fas fa-exclamation-triangle mr-1"></i>
@@ -837,7 +837,7 @@
                         <div class="mt-2 text-xs text-gray-400 flex items-center justify-between">
                             <span>
                                 <i class="fas fa-microchip mr-1"></i>
-                                Модель: DeepSeek Chat
+                                Модель: Mistral 7B (бесплатная)
                             </span>
                             <span v-if="aiModelInfo">
                                 {{ aiModelInfo }}
@@ -1228,22 +1228,18 @@
                 const searchResults = ref([]);
                 const searchPerformed = ref(false);
                 
-                // УМНЫЙ ЧАТ
+                // 🧠 УМНЫЙ ЧАТ (OpenRouter с бесплатной моделью)
                 const chatMessages = ref([
-                    { text: 'Привет! Я ваш финансовый ассистент на базе DeepSeek. Задайте мне любой вопрос о личных финансах, инвестициях, экономии или планировании бюджета. Я проанализирую вашу ситуацию и дам персонализированные рекомендации!', sender: 'bot' }
+                    { text: 'Привет! Я ваш финансовый ассистент на базе OpenRouter (бесплатная модель Mistral 7B). Задайте мне любой вопрос о личных финансах, инвестициях, экономии или планировании бюджета. Я проанализирую вашу ситуацию и дам персонализированные рекомендации!', sender: 'bot' }
                 ]);
                 const chatInput = ref('');
                 const chatContainer = ref(null);
                 const aiLoading = ref(false);
-                const aiModelInfo = ref('DeepSeek Chat v3');
-                const chatContext = ref([]);
+                const aiModelInfo = ref('Mistral 7B Instruct (бесплатно)');
                 
-                // API DeepSeek
-                const DEEPSEEK_API_KEY = '// 🧠 УМНЫЙ ЧАТ С DEEPSEEK
-                // 🧠 УМНЫЙ ЧАТ С DEEPSEEK
-                const DEEPSEEK_API_KEY = 'sk-3d092e6f46f8437ebe9a4f39fa996977'; // Ваш новый ключ
-          
-                const DEEPSEEK_API_URL = 'https://api.deepseek.com/v1/chat/completions';
+                // OpenRouter API (используем ваш существующий ключ)
+                const OPENROUTER_API_KEY = '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';
+                const OPENROUTER_API_URL = 'https://openrouter.ai/api/v1/chat/completions';
                 
                 const rewards = [
                     { id: 1, name: 'Бесплатный кофе', kfgRequired: 50, description: 'Скидка 50% на кофе', icon: 'fa-coffee' },
@@ -2077,7 +2073,8 @@
                     }
                 }
 
-                // 🧠 УМНЫЙ ЧАТ С DEEPSEEK
+                // 🧠 ФУНКЦИИ УМНОГО ЧАТА (OpenRouter)
+                
                 async function sendMessage() {
                     if (!chatInput.value.trim() || aiLoading.value) return;
                     
@@ -2101,14 +2098,14 @@
                         // Формируем контекст с финансовыми данными пользователя
                         const userContext = buildUserContext();
                         
-                        const response = await callDeepSeekAPI(userMessage, userContext);
+                        const response = await callOpenRouterAPI(userMessage, userContext);
                         
                         // Заменяем индикатор загрузки на ответ
                         chatMessages.value.splice(loadingIndex, 1);
                         chatMessages.value.push({ text: response, sender: 'bot' });
                         
                     } catch (error) {
-                        console.error('Ошибка DeepSeek API:', error);
+                        console.error('Ошибка OpenRouter API:', error);
                         
                         // Заменяем индикатор на сообщение об ошибке
                         chatMessages.value.splice(loadingIndex, 1);
@@ -2159,8 +2156,8 @@
                     return context;
                 }
 
-                // Вызов DeepSeek API
-                async function callDeepSeekAPI(userMessage, userContext = null) {
+                // Вызов OpenRouter API (бесплатная модель Mistral 7B)
+                async function callOpenRouterAPI(userMessage, userContext = null) {
                     // Системный промпт для финансового ассистента
                     const systemPrompt = `Ты — профессиональный финансовый ассистент FinGrade. Твоя задача — давать персонализированные советы по управлению личными финансами, основываясь на данных пользователя.
 
@@ -2197,25 +2194,22 @@
                         }
                     });
                     
-                    // Добавляем текущее сообщение пользователя, если его еще нет в истории
-                    const lastMessage = messages[messages.length - 1];
-                    if (!lastMessage || lastMessage.role !== 'user' || lastMessage.content !== userMessage) {
-                        messages.push({ role: 'user', content: userMessage });
-                    }
+                    // Добавляем текущее сообщение пользователя
+                    messages.push({ role: 'user', content: userMessage });
                     
                     try {
-                        const response = await axios.post(DEEPSEEK_API_URL, {
-                            model: 'deepseek-chat',
+                        const response = await axios.post(OPENROUTER_API_URL, {
+                            model: 'mistralai/mistral-7b-instruct:free', // Бесплатная модель
                             messages: messages,
                             temperature: 0.7,
                             max_tokens: 1000,
-                            top_p: 0.95,
-                            frequency_penalty: 0.3,
-                            presence_penalty: 0.3
+                            top_p: 0.95
                         }, {
                             headers: {
                                 'Content-Type': 'application/json',
-                                'Authorization': `Bearer ${DEEPSEEK_API_KEY}`
+                                'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+                                'HTTP-Referer': window.location.origin,
+                                'X-Title': 'FinGrade'
                             }
                         });
                         
@@ -2225,7 +2219,12 @@
                             throw new Error('Неожиданный ответ от API');
                         }
                     } catch (error) {
-                        console.error('DeepSeek API Error:', error.response?.data || error.message);
+                        console.error('OpenRouter API Error:', error.response?.data || error.message);
+                        
+                        // Если ошибка 402 (требуется оплата), но у нас бесплатная модель
+                        if (error.response?.status === 402) {
+                            throw new Error('Бесплатная модель временно недоступна. Попробуйте позже.');
+                        }
                         throw error;
                     }
                 }
@@ -2233,7 +2232,7 @@
                 // Сброс контекста чата
                 function resetChatContext() {
                     chatMessages.value = [
-                        { text: 'Привет! Я ваш финансовый ассистент на базе DeepSeek. Задайте мне любой вопрос о личных финансах, инвестициях, экономии или планировании бюджета. Я проанализирую вашу ситуацию и дам персонализированные рекомендации!', sender: 'bot' }
+                        { text: 'Привет! Я ваш финансовый ассистент на базе OpenRouter (бесплатная модель Mistral 7B). Задайте мне любой вопрос о личных финансах, инвестициях, экономии или планировании бюджета. Я проанализирую вашу ситуацию и дам персонализированные рекомендации!', sender: 'bot' }
                     ];
                     showMessage('Контекст чата сброшен', 'success');
                 }
