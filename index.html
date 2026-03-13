@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+/<!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
@@ -220,7 +220,7 @@
                                 
                                 <div class="mb-4">
                                     <label class="block text-gray-700 font-medium mb-2">Доход в месяц</label>
-                                    <input v-model="registerForm.income" type="number" 
+                                    <input v-model="registerForm.income" type="number" min="0"
                                            class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-purple-500">
                                 </div>
                                 
@@ -708,7 +708,7 @@
                             </div>
                         </div>
                         
-                        <!-- Подсказки (без противоречий) -->
+                        <!-- Подсказки -->
                         <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3">
                             <div v-if="kfg < 50" class="bg-yellow-50 border-l-4 border-yellow-400 p-3 text-sm">
                                 <i class="fas fa-lightbulb text-yellow-600 mr-2"></i>
@@ -727,7 +727,7 @@
                                 <span class="text-purple-700">Максимальный КФГ! Вы достигли совершенства в финансовой грамотности.</span>
                             </div>
                             
-                            <!-- Условный совет по образованию (не показываем при КФГ = 100) -->
+                            <!-- Условный совет по образованию -->
                             <div v-if="expenses.education === 0 && kfg < 100" class="bg-purple-50 border-l-4 border-purple-400 p-3 text-sm">
                                 <i class="fas fa-graduation-cap text-purple-600 mr-2"></i>
                                 <span class="text-purple-700">Инвестиции в образование могли бы повысить ваш КФГ на 5 пунктов.</span>
@@ -755,7 +755,7 @@
                             </div>
                         </div>
                         
-                        <!-- Легенда с суммами (показываем только если есть расходы) -->
+                        <!-- Легенда с суммами -->
                         <div v-if="hasExpenses" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 mt-4">
                             <div v-for="(value, category) in filteredExpenses" :key="category" 
                                  v-if="value > 0"
@@ -802,7 +802,7 @@
                             </div>
                         </div>
                         
-                        <!-- Быстрые подсказки (контекстные) -->
+                        <!-- Быстрые подсказки -->
                         <div class="flex flex-wrap gap-2 mb-3">
                             <span class="text-xs text-gray-500 self-center mr-1">Быстрые вопросы:</span>
                             <span @click="quickQuestion('Как мне сократить расходы на еду?')" class="suggestion-chip">
@@ -850,7 +850,7 @@
                 <div v-show="currentTab === 'friends'" class="p-6">
                     <h2 class="text-2xl font-bold mb-6">Друзья и рейтинги</h2>
                     
-                    <!-- Рейтинговая таблица (включая текущего пользователя) -->
+                    <!-- Рейтинговая таблица -->
                     <div class="bg-gradient-to-r from-purple-600 to-indigo-600 rounded-lg p-4 mb-6 text-white">
                         <h3 class="text-lg font-semibold mb-3 text-white">🏆 Рейтинг КФГ (вы и ваши друзья)</h3>
                         <div class="space-y-2">
@@ -954,7 +954,7 @@
                         </div>
                     </div>
 
-                    <!-- Список друзей с их друзьями -->
+                    <!-- Список друзей -->
                     <h3 class="text-lg font-semibold mb-3">Мои друзья ({{ friends.length }})</h3>
                     
                     <div v-if="friends.length === 0" class="bg-gray-50 rounded-lg p-8 text-center text-gray-500">
@@ -1144,7 +1144,7 @@
     <script>
         const { createApp, ref, reactive, computed, watch, onMounted, nextTick } = Vue;
 
-        // 🔥 ИНИЦИАЛИЗАЦИЯ FIREBASE 🔥
+        // ИНИЦИАЛИЗАЦИЯ FIREBASE
         const firebaseConfig = {
             apiKey: "AIzaSyBoIf1-o2chwXIzWp7VBujZdqxqtYSu_4c",
             authDomain: "fingrade-f9eee.firebaseapp.com",
@@ -1228,7 +1228,7 @@
                 const searchResults = ref([]);
                 const searchPerformed = ref(false);
                 
-                // 🧠 УМНЫЙ ЧАТ (OpenRouter с бесплатной моделью)
+                // Чат
                 const chatMessages = ref([
                     { text: 'Привет! Я ваш финансовый ассистент на базе OpenRouter (бесплатная модель Mistral 7B). Задайте мне любой вопрос о личных финансах, инвестициях, экономии или планировании бюджета. Я проанализирую вашу ситуацию и дам персонализированные рекомендации!', sender: 'bot' }
                 ]);
@@ -1237,7 +1237,7 @@
                 const aiLoading = ref(false);
                 const aiModelInfo = ref('Mistral 7B Instruct (бесплатно)');
                 
-                // OpenRouter API (используем ваш существующий ключ)
+                // OpenRouter API
                 const OPENROUTER_API_KEY = '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';
                 const OPENROUTER_API_URL = 'https://openrouter.ai/api/v1/chat/completions';
                 
@@ -1314,26 +1314,91 @@
                     }).filter(req => req !== null);
                 });
 
+                // ИСПРАВЛЕННЫЙ РАСЧЕТ КФГ
+                const kfg = computed(() => {
+                    if (!currentUser.value) return 0;
+                    
+                    const hasAnyExpenses = Object.values(expenses).some(val => val > 0);
+                    if (!hasAnyExpenses) return 0;
+                    
+                    // Используем точные значения без округления в промежуточных расчетах
+                    const expenseRatio = totalExpenses.value / currentUser.value.income;
+                    let value = 100 - (expenseRatio * 100);
+                    
+                    const totalFood = (expenses.food || 0) + (expenses.cafe || 0);
+                    
+                    // Применяем штрафы и бонусы к точному значению
+                    if (expenses.entertainment > currentUser.value.income * 0.3) value -= 20;
+                    if (totalFood > currentUser.value.income * 0.5) value -= 15;
+                    if (expenses.subscriptions > currentUser.value.income * 0.1) value -= 10;
+                    if (expenses.education > 0) value += 5;
+                    if (balance.value > currentUser.value.income * 0.2) value += 10;
+                    
+                    // Округляем только финальный результат
+                    return Math.max(0, Math.min(100, Math.round(value)));
+                });
+
+                // Функция для расчета КФГ друга
+                function calculateKFG(user) {
+                    if (!user?.income || user.income === 0) return 0;
+                    
+                    const userExpenses = user.expenses || {};
+                    const hasAnyExpenses = Object.values(userExpenses).some(val => val > 0);
+                    if (!hasAnyExpenses) return 0;
+                    
+                    const totalUserExpenses = Object.values(userExpenses).reduce((a, b) => a + b, 0);
+                    
+                    // Используем точное значение
+                    let value = 100 - (totalUserExpenses / user.income * 100);
+                    
+                    const totalFood = (userExpenses.food || 0) + (userExpenses.cafe || 0);
+                    
+                    // Проверяем условия с правильными порогами
+                    if ((userExpenses.entertainment || 0) > user.income * 0.3) value -= 20;
+                    if (totalFood > user.income * 0.5) value -= 15;
+                    if ((userExpenses.subscriptions || 0) > user.income * 0.1) value -= 10;
+                    if (userExpenses.education > 0) value += 5;
+                    if ((user.income - totalUserExpenses) > user.income * 0.2) value += 10;
+                    
+                    return Math.max(0, Math.min(100, Math.round(value)));
+                }
+
+                // ИСПРАВЛЕННЫЙ ДЕТАЛЬНЫЙ РАСЧЕТ КФГ
                 const kfgCalculation = computed(() => {
                     const result = { baseValue: 0, penalties: [], bonuses: [] };
                     if (!currentUser.value || totalIncome.value === 0) return result;
                     
-                    result.baseValue = Math.round(100 - (totalExpenses.value / totalIncome.value * 100));
+                    // Используем те же точные значения, что и в основном расчете
+                    const expenseRatio = totalExpenses.value / totalIncome.value;
+                    result.baseValue = Math.round(100 - (expenseRatio * 100));
                     
+                    // Проверяем условия с правильными порогами и процентами
                     if (expenses.entertainment > totalIncome.value * 0.3) {
-                        result.penalties.push({ text: `Развлечения > 30% дохода (${entertainmentPercent.value}%)`, value: 20 });
+                        result.penalties.push({ 
+                            text: `Развлечения > 30% дохода (${Math.round(expenses.entertainment / totalIncome.value * 100)}%)`, 
+                            value: 20 
+                        });
                     }
                     if (foodTotal.value > totalIncome.value * 0.5) {
-                        result.penalties.push({ text: `Еда и кафе > 50% дохода (${foodPercent.value}%)`, value: 15 });
+                        result.penalties.push({ 
+                            text: `Еда и кафе > 50% дохода (${Math.round(foodTotal.value / totalIncome.value * 100)}%)`, 
+                            value: 15 
+                        });
                     }
                     if (expenses.subscriptions > totalIncome.value * 0.1) {
-                        result.penalties.push({ text: `Подписки > 10% дохода (${subscriptionsPercent.value}%)`, value: 10 });
+                        result.penalties.push({ 
+                            text: `Подписки > 10% дохода (${Math.round(expenses.subscriptions / totalIncome.value * 100)}%)`, 
+                            value: 10 
+                        });
                     }
                     if (expenses.education > 0) {
                         result.bonuses.push({ text: 'Инвестиции в образование', value: 5 });
                     }
                     if (balance.value > totalIncome.value * 0.2) {
-                        result.bonuses.push({ text: `Сбережения > 20% дохода (${balancePercent.value}%)`, value: 10 });
+                        result.bonuses.push({ 
+                            text: `Сбережения > 20% дохода (${Math.round(balance.value / totalIncome.value * 100)}%)`, 
+                            value: 10 
+                        });
                     }
                     
                     return result;
@@ -1348,54 +1413,6 @@
                         if (categoryNames[key]) filtered[key] = expenses[key];
                     });
                     return filtered;
-                });
-                
-                function calculateKFG(user) {
-                    if (!user?.income || user.income === 0) return 0;
-                    
-                    const userExpenses = user.expenses || {};
-                    const hasAnyExpenses = Object.values(userExpenses).some(val => val > 0);
-                    if (!hasAnyExpenses) return 0;
-                    
-                    const totalUserExpenses = Object.values(userExpenses).reduce((a, b) => a + b, 0);
-                    let value = 100 - (totalUserExpenses / user.income * 100);
-                    
-                    const totalFood = (userExpenses.food || 0) + (userExpenses.cafe || 0);
-                    if (userExpenses.entertainment > user.income * 0.3) value -= 20;
-                    if (totalFood > user.income * 0.5) value -= 15;
-                    if (userExpenses.subscriptions > user.income * 0.1) value -= 10;
-                    if (userExpenses.education > 0) value += 5;
-                    if ((user.income - totalUserExpenses) > user.income * 0.2) value += 10;
-                    
-                    return Math.max(0, Math.min(100, Math.round(value)));
-                }
-
-                const kfg = computed(() => {
-                    if (!currentUser.value) return 0;
-                    
-                    const hasAnyExpenses = Object.values(expenses).some(val => val > 0);
-                    if (!hasAnyExpenses) return 0;
-                    
-                    let value = 100 - (totalExpenses.value / currentUser.value.income * 100);
-                    
-                    const totalFood = (expenses.food || 0) + (expenses.cafe || 0);
-                    if (expenses.entertainment > currentUser.value.income * 0.3) value -= 20;
-                    if (totalFood > currentUser.value.income * 0.5) value -= 15;
-                    if (expenses.subscriptions > currentUser.value.income * 0.1) value -= 10;
-                    if (expenses.education > 0) value += 5;
-                    if (balance.value > currentUser.value.income * 0.2) value += 10;
-                    
-                    return Math.max(0, Math.min(100, Math.round(value)));
-                });
-
-                const unlockedAvatars = computed(() => {
-                    if (!currentUser.value) return [];
-                    const unlocked = [];
-                    avatars.forEach(avatar => {
-                        if (avatar.id === 1) unlocked.push(avatar.name);
-                        else if (kfg.value >= avatar.kfgRequired) unlocked.push(avatar.name);
-                    });
-                    return unlocked;
                 });
 
                 function getUserRating(user) {
@@ -1465,6 +1482,16 @@
                     return participants.sort((a, b) => b.kfg - a.kfg);
                 });
 
+                const unlockedAvatars = computed(() => {
+                    if (!currentUser.value) return [];
+                    const unlocked = [];
+                    avatars.forEach(avatar => {
+                        if (avatar.id === 1) unlocked.push(avatar.name);
+                        else if (kfg.value >= avatar.kfgRequired) unlocked.push(avatar.name);
+                    });
+                    return unlocked;
+                });
+
                 function isAvatarUnlocked(avatar) {
                     if (!currentUser.value) return false;
                     if (avatar.id === 1) return true;
@@ -1490,8 +1517,11 @@
                     return `Требуется КФГ ${avatar.kfgRequired}`;
                 }
 
+                // ИСПРАВЛЕННАЯ ФУНКЦИЯ ФОРМАТИРОВАНИЯ ДЕНЕГ
                 function formatMoney(amount) {
-                    return new Intl.NumberFormat('ru-RU').format(amount);
+                    if (isNaN(amount) || amount === null || amount === undefined) return '0';
+                    // Округляем до целого числа для отображения
+                    return new Intl.NumberFormat('ru-RU').format(Math.round(amount));
                 }
 
                 function getMonthWord(months) {
@@ -1500,7 +1530,7 @@
                     return 'месяцев';
                 }
 
-                // 🔥 МЕТОДЫ FIRESTORE 🔥
+                // Методы Firestore
                 
                 async function loadUsersFromFirestore() {
                     try {
@@ -1567,12 +1597,17 @@
                     }
                 }
 
-                // 🔥 МЕТОДЫ АВТОРИЗАЦИИ 🔥
+                // Методы авторизации
                 
                 async function handleRegister() {
                     if (!registerForm.name || !registerForm.surname || !registerForm.nickname || 
                         !registerForm.login || !registerForm.email || !registerForm.password || !registerForm.income) {
                         showMessage('Пожалуйста, заполните все поля', 'error');
+                        return;
+                    }
+                    
+                    if (registerForm.income < 0) {
+                        showMessage('Доход не может быть отрицательным', 'error');
                         return;
                     }
                     
@@ -1773,7 +1808,13 @@
                     }
                 }
 
+                // ИСПРАВЛЕННАЯ ФУНКЦИЯ БЫСТРОГО ДОБАВЛЕНИЯ К ЦЕЛИ
                 async function quickAddToGoal(index, amount) {
+                    if (amount <= 0) {
+                        showMessage('Сумма должна быть положительной', 'error');
+                        return;
+                    }
+                    
                     loading.value = true;
                     loadingMessage.value = 'Добавление к цели...';
                     try {
@@ -1901,7 +1942,20 @@
                     }));
                 }
 
+                // ИСПРАВЛЕННАЯ ФУНКЦИЯ ОТПРАВКИ ЗАЯВКИ В ДРУЗЬЯ
                 async function sendFriendRequest(user) {
+                    // Проверяем, не отправлена ли уже заявка
+                    if (friendRequests.value.includes(user.login)) {
+                        showMessage('Заявка уже отправлена', 'error');
+                        return;
+                    }
+                    
+                    // Проверяем, не является ли пользователь уже другом
+                    if (friends.value.some(f => f.login === user.login)) {
+                        showMessage('Этот пользователь уже в друзьях', 'error');
+                        return;
+                    }
+                    
                     loading.value = true;
                     loadingMessage.value = 'Отправка заявки...';
                     
@@ -2073,7 +2127,7 @@
                     }
                 }
 
-                // 🧠 ФУНКЦИИ УМНОГО ЧАТА (OpenRouter)
+                // Функции чата
                 
                 async function sendMessage() {
                     if (!chatInput.value.trim() || aiLoading.value) return;
@@ -2082,11 +2136,9 @@
                     chatMessages.value.push({ text: userMessage, sender: 'user' });
                     chatInput.value = '';
                     
-                    // Добавляем индикатор загрузки
                     const loadingIndex = chatMessages.value.length;
                     chatMessages.value.push({ text: '', sender: 'bot', loading: true });
                     
-                    // Прокрутка вниз
                     await nextTick();
                     if (chatContainer.value) {
                         chatContainer.value.scrollTop = chatContainer.value.scrollHeight;
@@ -2095,19 +2147,15 @@
                     aiLoading.value = true;
                     
                     try {
-                        // Формируем контекст с финансовыми данными пользователя
                         const userContext = buildUserContext();
-                        
                         const response = await callOpenRouterAPI(userMessage, userContext);
                         
-                        // Заменяем индикатор загрузки на ответ
                         chatMessages.value.splice(loadingIndex, 1);
                         chatMessages.value.push({ text: response, sender: 'bot' });
                         
                     } catch (error) {
                         console.error('Ошибка OpenRouter API:', error);
                         
-                        // Заменяем индикатор на сообщение об ошибке
                         chatMessages.value.splice(loadingIndex, 1);
                         chatMessages.value.push({ 
                             text: 'Извините, произошла ошибка при обращении к AI. Пожалуйста, попробуйте позже.', 
@@ -2124,7 +2172,6 @@
                     }
                 }
 
-                // Функция для формирования контекста пользователя
                 function buildUserContext() {
                     if (!currentUser.value) return null;
                     
@@ -2146,7 +2193,6 @@
                         }
                     };
                     
-                    // Добавляем только ненулевые расходы
                     Object.keys(expenses).forEach(key => {
                         if (expenses[key] > 0) {
                             context.expenses[categoryNames[key]] = expenses[key];
@@ -2156,9 +2202,7 @@
                     return context;
                 }
 
-                // Вызов OpenRouter API (бесплатная модель Mistral 7B)
                 async function callOpenRouterAPI(userMessage, userContext = null) {
-                    // Системный промпт для финансового ассистента
                     const systemPrompt = `Ты — профессиональный финансовый ассистент FinGrade. Твоя задача — давать персонализированные советы по управлению личными финансами, основываясь на данных пользователя.
 
 Ты должен:
@@ -2170,12 +2214,10 @@
 
 Важно: Если пользователь предоставил свои финансовые данные, используй их для персонализации ответа.`;
 
-                    // Формируем сообщения для API
                     const messages = [
                         { role: 'system', content: systemPrompt }
                     ];
                     
-                    // Добавляем контекст пользователя, если есть
                     if (userContext) {
                         messages.push({ 
                             role: 'system', 
@@ -2183,7 +2225,6 @@
                         });
                     }
                     
-                    // Добавляем историю чата (последние 6 сообщений для контекста)
                     const recentMessages = chatMessages.value.slice(-6);
                     recentMessages.forEach(msg => {
                         if (!msg.loading && !msg.error) {
@@ -2194,12 +2235,11 @@
                         }
                     });
                     
-                    // Добавляем текущее сообщение пользователя
                     messages.push({ role: 'user', content: userMessage });
                     
                     try {
                         const response = await axios.post(OPENROUTER_API_URL, {
-                            model: 'mistralai/mistral-7b-instruct:free', // Бесплатная модель
+                            model: 'mistralai/mistral-7b-instruct:free',
                             messages: messages,
                             temperature: 0.7,
                             max_tokens: 1000,
@@ -2221,7 +2261,6 @@
                     } catch (error) {
                         console.error('OpenRouter API Error:', error.response?.data || error.message);
                         
-                        // Если ошибка 402 (требуется оплата), но у нас бесплатная модель
                         if (error.response?.status === 402) {
                             throw new Error('Бесплатная модель временно недоступна. Попробуйте позже.');
                         }
@@ -2229,7 +2268,6 @@
                     }
                 }
 
-                // Сброс контекста чата
                 function resetChatContext() {
                     chatMessages.value = [
                         { text: 'Привет! Я ваш финансовый ассистент на базе OpenRouter (бесплатная модель Mistral 7B). Задайте мне любой вопрос о личных финансах, инвестициях, экономии или планировании бюджета. Я проанализирую вашу ситуацию и дам персонализированные рекомендации!', sender: 'bot' }
@@ -2237,13 +2275,12 @@
                     showMessage('Контекст чата сброшен', 'success');
                 }
 
-                // Быстрый вопрос по клику на чип
                 function quickQuestion(question) {
                     chatInput.value = question;
                     sendMessage();
                 }
 
-                // Остальные методы
+                // Графики
                 let chart = null;
                 
                 function showMessage(text, type) {
@@ -2469,7 +2506,6 @@
                     totalGoalsAmount,
                     totalSaved,
                     kfg,
-                    recommendations: computed(() => []),
                     unlockedAvatars,
                     friendsWithDetails,
                     ratingParticipants,
