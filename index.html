@@ -161,6 +161,41 @@
         .comparison-card {
             @apply bg-white rounded-lg p-4 shadow-sm hover:shadow-md transition;
         }
+
+        .mailru-login-btn {
+            background: #005FF9;
+            transition: all 0.3s ease;
+        }
+        
+        .mailru-login-btn:hover {
+            background: #0045b3;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 95, 249, 0.3);
+        }
+
+        .social-login-divider {
+            display: flex;
+            align-items: center;
+            text-align: center;
+            color: #6b7280;
+            font-size: 0.875rem;
+            margin: 1.5rem 0;
+        }
+
+        .social-login-divider::before,
+        .social-login-divider::after {
+            content: '';
+            flex: 1;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .social-login-divider::before {
+            margin-right: 0.75rem;
+        }
+
+        .social-login-divider::after {
+            margin-left: 0.75rem;
+        }
     </style>
 </head>
 <body class="bg-gray-100">
@@ -216,6 +251,21 @@
                 <div class="bg-white rounded-xl shadow-lg overflow-hidden">
                     <div class="p-6">
                         <h1 class="text-3xl font-bold text-center mb-8">Добро пожаловать в FinGrade</h1>
+                        
+                        <!-- Кнопка входа через Mail.ru -->
+                        <div class="mb-6">
+                            <button @click="loginWithMailRu" 
+                                    class="mailru-login-btn w-full text-white py-3 rounded-lg font-semibold flex items-center justify-center space-x-2">
+                                <i class="fas fa-envelope text-xl"></i>
+                                <span>Войти через Mail.ru</span>
+                            </button>
+                            <p class="text-xs text-center text-gray-500 mt-2">
+                                <i class="fas fa-info-circle mr-1"></i>
+                                Используйте ваш существующий аккаунт Mail.ru для быстрого входа
+                            </p>
+                        </div>
+
+                        <div class="social-login-divider">или используйте логин/email</div>
                         
                         <div class="grid md:grid-cols-2 gap-8">
                             <!-- Форма регистрации -->
@@ -1196,6 +1246,13 @@
         firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
         const db = firebase.firestore();
+        
+        // Настройка провайдера Mail.ru
+        const mailruProvider = new firebase.auth.OAuthProvider('mail.ru');
+        mailruProvider.setCustomParameters({
+            'language': 'ru'
+        });
+
         auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
 
         const app = createApp({
@@ -1795,7 +1852,95 @@
                     }
                 }
 
-                // ИСПРАВЛЕННЫЙ МЕТОД ВХОДА - РАБОТАЕТ И ПО ЛОГИНУ И ПО EMAIL
+                // НОВЫЙ МЕТОД: Вход через Mail.ru
+                async function loginWithMailRu() {
+                    loading.value = true;
+                    loadingMessage.value = 'Вход через Mail.ru...';
+                    
+                    try {
+                        const result = await auth.signInWithPopup(mailruProvider);
+                        const user = result.user;
+                        
+                        // Проверяем, существует ли пользователь в Firestore
+                        const emailQuery = await db.collection('users').where('email', '==', user.email).get();
+                        
+                        if (!emailQuery.empty) {
+                            // Пользователь уже есть в системе
+                            const userData = emailQuery.docs[0].data();
+                            await loadCurrentUserData(userData.login);
+                            showMessage('Добро пожаловать!', 'success');
+                        } else {
+                            // Создаем нового пользователя на основе данных Mail.ru
+                            const displayName = user.displayName || 'Пользователь Mail.ru';
+                            const nameParts = displayName.split(' ');
+                            const firstName = nameParts[0] || 'Пользователь';
+                            const lastName = nameParts.slice(1).join(' ') || '';
+                            
+                            // Генерируем уникальный логин на основе email
+                            const baseLogin = user.email.split('@')[0].replace(/[^a-zA-Z0-9]/g, '');
+                            let login = baseLogin;
+                            let counter = 1;
+                            
+                            // Проверяем уникальность логина
+                            while (true) {
+                                const loginCheck = await db.collection('users').doc(login).get();
+                                if (!loginCheck.exists) break;
+                                login = `${baseLogin}${counter}`;
+                                counter++;
+                            }
+                            
+                            // Генерируем уникальный никнейм
+                            const baseNickname = '@' + baseLogin;
+                            let nickname = baseNickname;
+                            counter = 1;
+                            
+                            while (true) {
+                                const nicknameQuery = await db.collection('users').where('nickname', '==', nickname).get();
+                                if (nicknameQuery.empty) break;
+                                nickname = `${baseNickname}${counter}`;
+                                counter++;
+                            }
+                            
+                            // Создаем нового пользователя
+                            const newUser = {
+                                name: firstName,
+                                surname: lastName,
+                                nickname: nickname,
+                                login: login,
+                                email: user.email,
+                                income: 0,
+                                avatar: 1,
+                                expenses: { ...initialExpenses },
+                                goals: [],
+                                friends: [],
+                                friendRequests: [],
+                                pendingRequests: [],
+                                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                            };
+                            
+                            await db.collection('users').doc(login).set(newUser);
+                            await loadCurrentUserData(login);
+                            showMessage('Добро пожаловать! Ваш профиль создан на основе данных Mail.ru', 'success');
+                        }
+                        
+                        await loadUsersFromFirestore();
+                        
+                    } catch (error) {
+                        console.error('Ошибка входа через Mail.ru:', error);
+                        
+                        if (error.code === 'auth/popup-closed-by-user') {
+                            showMessage('Вход отменен', 'info');
+                        } else if (error.code === 'auth/account-exists-with-different-credential') {
+                            showMessage('Аккаунт с таким email уже существует. Используйте другой способ входа.', 'error');
+                        } else {
+                            showMessage('Ошибка входа через Mail.ru: ' + error.message, 'error');
+                        }
+                    } finally {
+                        loading.value = false;
+                    }
+                }
+
+                // Метод входа (оригинальный)
                 async function handleLogin() {
                     if (!loginForm.login || !loginForm.password) {
                         showMessage('Заполните все поля', 'error');
@@ -2014,11 +2159,38 @@
                                     await loadCurrentUserData(userData.login);
                                 } else {
                                     // Если пользователь есть в Auth но нет в Firestore, создаем запись
+                                    const displayName = user.displayName || 'Пользователь';
+                                    const nameParts = displayName.split(' ');
+                                    const firstName = nameParts[0] || 'Пользователь';
+                                    const lastName = nameParts.slice(1).join(' ') || '';
+                                    
+                                    const baseLogin = user.email.split('@')[0].replace(/[^a-zA-Z0-9]/g, '');
+                                    let login = baseLogin;
+                                    let counter = 1;
+                                    
+                                    while (true) {
+                                        const loginCheck = await db.collection('users').doc(login).get();
+                                        if (!loginCheck.exists) break;
+                                        login = `${baseLogin}${counter}`;
+                                        counter++;
+                                    }
+                                    
+                                    const baseNickname = '@' + baseLogin;
+                                    let nickname = baseNickname;
+                                    counter = 1;
+                                    
+                                    while (true) {
+                                        const nicknameQuery = await db.collection('users').where('nickname', '==', nickname).get();
+                                        if (nicknameQuery.empty) break;
+                                        nickname = `${baseNickname}${counter}`;
+                                        counter++;
+                                    }
+                                    
                                     const newUser = {
-                                        name: user.displayName?.split(' ')[0] || 'Пользователь',
-                                        surname: user.displayName?.split(' ')[1] || '',
-                                        nickname: '@user_' + user.uid.slice(0, 6),
-                                        login: 'user_' + user.uid.slice(0, 8),
+                                        name: firstName,
+                                        surname: lastName,
+                                        nickname: nickname,
+                                        login: login,
                                         email: user.email,
                                         income: 0,
                                         avatar: 1,
@@ -2891,15 +3063,20 @@
                     showRemoveGoalModal,
                     selectedGoalNameForRemove,
                     
-                    // Методы
+                    // Методы авторизации
                     handleRegister,
                     handleLogin,
+                    loginWithMailRu, // Новый метод для Mail.ru
                     logout,
+                    
+                    // Друзья
                     searchFriends,
                     sendFriendRequest,
                     acceptFriendRequest,
                     rejectFriendRequest,
                     removeFriend,
+                    
+                    // Расходы и цели
                     saveExpenses,
                     addGoal,
                     openAddToGoalModal: (index) => {
@@ -2933,17 +3110,17 @@
                     resetChatContext,
                     quickQuestion,
                     
+                    // Награды и аватары
                     claimReward,
-                    exportData,
-                    
-                    // Вспомогательные
-                    getAvatarUrl,
-                    getAvatarName,
                     changeAvatar,
                     isAvatarUnlocked,
                     isAvatarAvailableForRegister,
                     selectRegisterAvatar,
                     getAvatarStatus,
+                    
+                    // Вспомогательные
+                    getAvatarUrl,
+                    getAvatarName,
                     getMonthWord,
                     getUserRating,
                     getUserRatingLevel,
@@ -2953,6 +3130,7 @@
                     editIncome,
                     closeIncomeModal,
                     saveIncome,
+                    exportData,
                     
                     // Методы аналитики
                     loadHistoricalData,
