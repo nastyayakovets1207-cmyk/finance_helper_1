@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover">
-    <title>FinGrade - Мобильная версия</title>
+    <title>FinGrade - Мобильная версия с DeepSeek AI</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -186,7 +186,7 @@
         /* iOS specific fixes */
         @supports (-webkit-touch-callout: none) {
             input, textarea, select, button {
-                font-size: 16px !important; /* Предотвращает зум на iOS */
+                font-size: 16px !important;
             }
             
             .fixed {
@@ -198,7 +198,7 @@
         /* Улучшенный touch интерфейс */
         button, .cursor-pointer {
             touch-action: manipulation;
-            min-height: 44px; /* Минимальный размер для тач-целей */
+            min-height: 44px;
         }
 
         /* Адаптивные отступы */
@@ -216,6 +216,51 @@
                 overflow-y: auto;
                 -webkit-overflow-scrolling: touch;
             }
+        }
+        
+        /* Стили для кода в сообщениях */
+        .message-bot pre {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 8px;
+            border-radius: 6px;
+            overflow-x: auto;
+            font-size: 12px;
+            margin: 8px 0;
+        }
+        
+        .message-bot code {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 2px 4px;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+        
+        .message-bot ul, .message-bot ol {
+            margin-left: 20px;
+            margin-top: 5px;
+            margin-bottom: 5px;
+        }
+        
+        .message-bot li {
+            margin-bottom: 2px;
+        }
+        
+        .message-bot p {
+            margin-bottom: 8px;
+        }
+        
+        .message-bot h3 {
+            font-weight: 600;
+            font-size: 1.1em;
+            margin: 10px 0 5px 0;
+            color: #4a5568;
+        }
+        
+        .message-bot strong {
+            font-weight: 600;
+            color: #2d3748;
         }
     </style>
 </head>
@@ -422,7 +467,7 @@
                     </button>
                 </div>
 
-                <!-- Контент вкладок с адаптивными отступами -->
+                <!-- Контент вкладок -->
                 <div class="p-4 sm:p-6">
                     <!-- Вкладка профиля -->
                     <div v-show="currentTab === 'profile'">
@@ -684,9 +729,9 @@
                         </div>
                     </div>
 
-                    <!-- Вкладка ИИ-Ассистент -->
+                    <!-- Вкладка ИИ-Ассистент с DeepSeek -->
                     <div v-show="currentTab === 'chat'">
-                        <h2 class="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">ИИ-Ассистент</h2>
+                        <h2 class="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">ИИ-Ассистент DeepSeek</h2>
                         
                         <div class="bg-gray-50 rounded-lg p-3 sm:p-4">
                             <!-- Контейнер сообщений -->
@@ -699,32 +744,37 @@
                                             <span></span>
                                             <span></span>
                                         </div>
-                                        <span class="text-gray-500 text-xs">Ассистент думает...</span>
+                                        <span class="text-gray-500 text-xs">DeepSeek анализирует...</span>
                                     </div>
                                     <div v-else-if="msg.sender === 'bot' && msg.error" class="text-red-500 text-sm">
                                         <i class="fas fa-exclamation-triangle mr-1"></i>
                                         {{ msg.text }}
                                     </div>
-                                    <div v-else class="text-sm sm:text-base break-words">
-                                        {{ msg.text }}
+                                    <div v-else class="text-sm sm:text-base break-words" v-html="formatBotMessage(msg.text, msg.sender)">
                                     </div>
                                 </div>
                             </div>
                             
-                            <!-- Быстрые подсказки (горизонтальный скролл на мобильных) -->
+                            <!-- Быстрые подсказки с контекстом -->
                             <div class="overflow-x-auto mb-3 pb-1" style="-webkit-overflow-scrolling: touch;">
                                 <div class="flex space-x-2" style="min-width: min-content;">
-                                    <span @click="quickQuestion('Как сократить расходы?')" class="suggestion-chip text-xs sm:text-sm whitespace-nowrap">
+                                    <span @click="quickQuestion('Как сократить расходы с моим доходом ' + formatMoney(totalIncome) + ' ₽?')" class="suggestion-chip text-xs sm:text-sm whitespace-nowrap">
                                         <i class="fas fa-utensils mr-1"></i> Сократить расходы
                                     </span>
-                                    <span @click="quickQuestion('Как начать инвестировать?')" class="suggestion-chip text-xs sm:text-sm whitespace-nowrap">
+                                    <span @click="quickQuestion('Как начать инвестировать с ' + formatMoney(balance) + ' ₽?')" class="suggestion-chip text-xs sm:text-sm whitespace-nowrap">
                                         <i class="fas fa-chart-line mr-1"></i> Инвестировать
                                     </span>
-                                    <span @click="quickQuestion('Как улучшить КФГ?')" class="suggestion-chip text-xs sm:text-sm whitespace-nowrap">
+                                    <span @click="quickQuestion('Как улучшить КФГ с ' + kfg + '? Мои расходы: ' + getExpensesSummary())" class="suggestion-chip text-xs sm:text-sm whitespace-nowrap">
                                         <i class="fas fa-star mr-1"></i> Улучшить КФГ
                                     </span>
-                                    <span @click="quickQuestion('Подушка безопасности')" class="suggestion-chip text-xs sm:text-sm whitespace-nowrap">
+                                    <span @click="quickQuestion('Как создать подушку безопасности? Мой доход: ' + formatMoney(totalIncome) + ' ₽')" class="suggestion-chip text-xs sm:text-sm whitespace-nowrap">
                                         <i class="fas fa-shield-alt mr-1"></i> Подушка
+                                    </span>
+                                    <span @click="quickQuestion('Анализ моих расходов по категориям: ' + getDetailedExpenses())" class="suggestion-chip text-xs sm:text-sm whitespace-nowrap">
+                                        <i class="fas fa-chart-pie mr-1"></i> Анализ расходов
+                                    </span>
+                                    <span @click="resetChatContext" class="suggestion-chip text-xs sm:text-sm whitespace-nowrap bg-red-100 text-red-700">
+                                        <i class="fas fa-redo-alt mr-1"></i> Сбросить контекст
                                     </span>
                                 </div>
                             </div>
@@ -733,11 +783,16 @@
                             <div class="flex space-x-2">
                                 <textarea v-model="chatInput" @keyup.enter="sendMessage" rows="1" 
                                           class="flex-1 px-3 sm:px-4 py-2 border rounded-lg focus:outline-none focus:border-purple-500 resize-none text-sm sm:text-base"
-                                          placeholder="Вопрос..."></textarea>
+                                          placeholder="Спросите DeepSeek о финансах..."></textarea>
                                 <button @click="sendMessage" :disabled="aiLoading" 
                                         class="gradient-bg text-white px-4 sm:px-6 rounded-lg font-semibold hover:shadow-lg disabled:opacity-50 min-w-[44px]">
                                     <i class="fas fa-paper-plane" :class="{'fa-spinner fa-spin': aiLoading}"></i>
                                 </button>
+                            </div>
+                            
+                            <!-- Информация о модели -->
+                            <div class="text-xs text-gray-500 mt-2 text-right">
+                                <i class="fas fa-robot mr-1"></i> DeepSeek AI • Контекст: {{ aiContextLength }} сообщений
                             </div>
                         </div>
                     </div>
@@ -926,7 +981,7 @@
             </div>
         </div>
 
-        <!-- Модальные окна с адаптивными размерами -->
+        <!-- Модальные окна -->
         <div v-if="showIncomeModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
             <div class="bg-white rounded-xl p-4 sm:p-6 max-w-md w-full modal-content">
                 <h3 class="text-lg sm:text-xl font-bold mb-4">Изменить доход</h3>
@@ -1000,6 +1055,10 @@
         const auth = firebase.auth();
         const db = firebase.firestore();
 
+        // Конфигурация DeepSeek API с вашим ключом
+        const DEEPSEEK_API_KEY = 'sk-d5aa9940c6724fb9991d46fabb3a299c';
+        const DEEPSEEK_API_URL = 'https://api.deepseek.com/v1/chat/completions';
+
         const app = createApp({
             setup() {
                 // Состояние
@@ -1046,14 +1105,18 @@
                 const searchResults = ref([]);
                 const searchPerformed = ref(false);
                 
-                // Чат
+                // Чат с DeepSeek
                 const chatMessages = ref([
-                    { text: 'Привет! Я ваш финансовый ассистент. Задайте вопрос!', sender: 'bot' }
+                    { text: 'Привет! Я DeepSeek AI, ваш финансовый ассистент. Я помогу вам с анализом расходов, советами по инвестированию и улучшению КФГ. Задайте вопрос!', sender: 'bot' }
                 ]);
                 const chatInput = ref('');
                 const chatContainer = ref(null);
                 const aiLoading = ref(false);
-                const aiModelInfo = ref('Mistral 7B');
+                
+                // История сообщений для контекста DeepSeek
+                const chatHistory = ref([
+                    { role: 'system', content: 'Вы DeepSeek AI, профессиональный финансовый ассистент в приложении FinGrade. Вы даете советы по личным финансам, помогаете анализировать расходы, предлагаете стратегии инвестирования и улучшения КФГ (коэффициента финансовой грамотности). Отвечайте подробно, но понятно. Используйте русский язык. Можете форматировать ответы с помощью markdown-like синтаксиса для улучшения читаемости.' }
+                ]);
                 
                 // Аналитика
                 const analyticsPeriod = ref('month');
@@ -1127,6 +1190,21 @@
                     if (balance.value > totalIncome.value * 0.2) value += 10;
                     
                     return Math.max(0, Math.min(100, Math.round(value)));
+                });
+
+                const friendsWithDetails = computed(() => {
+                    return friends.value.map(friend => {
+                        const fullUser = users.value.find(u => u.login === friend.login);
+                        if (fullUser) {
+                            return {
+                                ...friend,
+                                kfg: calculateKFG(fullUser),
+                                ratingLevel: getUserRatingLevel(fullUser),
+                                ratingName: getUserRating(fullUser)
+                            };
+                        }
+                        return friend;
+                    });
                 });
 
                 const pendingFriendRequests = computed(() => {
@@ -1240,6 +1318,9 @@
                     return { change, percentChange, previousValue: prevBalance };
                 });
 
+                // Длина контекста чата
+                const aiContextLength = computed(() => chatHistory.value.length - 1); // Исключаем system prompt
+
                 // Вспомогательные функции
                 function getUserRating(user) {
                     const userKFG = calculateKFG(user);
@@ -1349,6 +1430,184 @@
                     message.type = type;
                     message.show = true;
                     setTimeout(() => { message.show = false; }, 3000);
+                }
+
+                // Функции для форматирования сообщений
+                function formatBotMessage(text, sender) {
+                    if (sender !== 'bot') return text;
+                    
+                    // Простое форматирование: заменяем переносы строк на <br>
+                    // В реальном проекте можно добавить markdown парсер
+                    return text.replace(/\n/g, '<br>');
+                }
+
+                // Функции для контекста DeepSeek
+                function getExpensesSummary() {
+                    const categories = [];
+                    for (const [key, value] of Object.entries(expenses)) {
+                        if (value > 0 && categoryNames[key]) {
+                            categories.push(`${categoryNames[key]}: ${formatMoney(value)} ₽`);
+                        }
+                    }
+                    return categories.join(', ') || 'нет расходов';
+                }
+
+                function getDetailedExpenses() {
+                    let summary = '';
+                    for (const [key, value] of Object.entries(expenses)) {
+                        if (value > 0 && categoryNames[key]) {
+                            summary += `${categoryNames[key]}: ${formatMoney(value)} ₽ (${Math.round(value/totalExpenses.value*100)}%), `;
+                        }
+                    }
+                    return summary || 'нет расходов';
+                }
+
+                function getUserContext() {
+                    if (!currentUser.value) return '';
+                    
+                    return `
+Информация о пользователе:
+- Имя: ${currentUser.value.name} ${currentUser.value.surname}
+- Доход в месяц: ${formatMoney(totalIncome.value)} ₽
+- Расходы в месяц: ${formatMoney(totalExpenses.value)} ₽
+- Остаток: ${formatMoney(balance.value)} ₽
+- КФГ (коэффициент финансовой грамотности): ${kfg.value}
+- Рейтинг: ${getUserRating(currentUser.value)}
+- Детализация расходов: ${getDetailedExpenses()}
+- Количество финансовых целей: ${goals.value.length}
+- Количество друзей: ${friends.value.length}
+                    `;
+                }
+
+                // DeepSeek API функция
+                async function sendToDeepSeek(messages) {
+                    try {
+                        const response = await axios.post(DEEPSEEK_API_URL, {
+                            model: 'deepseek-chat',
+                            messages: messages,
+                            temperature: 0.7,
+                            max_tokens: 1000,
+                            top_p: 0.95,
+                            frequency_penalty: 0,
+                            presence_penalty: 0
+                        }, {
+                            headers: {
+                                'Authorization': `Bearer ${DEEPSEEK_API_KEY}`,
+                                'Content-Type': 'application/json'
+                            }
+                        });
+
+                        if (response.data && response.data.choices && response.data.choices.length > 0) {
+                            return response.data.choices[0].message.content;
+                        } else {
+                            throw new Error('Неожиданный ответ от API');
+                        }
+                    } catch (error) {
+                        console.error('DeepSeek API error:', error);
+                        if (error.response) {
+                            // Ошибка от API
+                            throw new Error(`Ошибка API: ${error.response.status} - ${error.response.data?.error?.message || 'Неизвестная ошибка'}`);
+                        } else if (error.request) {
+                            // Нет ответа
+                            throw new Error('Нет ответа от сервера DeepSeek');
+                        } else {
+                            // Другая ошибка
+                            throw new Error(error.message || 'Ошибка при обращении к DeepSeek');
+                        }
+                    }
+                }
+
+                // Функция отправки сообщения в чат
+                async function sendMessage() {
+                    if (!chatInput.value.trim() || aiLoading.value) return;
+                    
+                    const userMessage = chatInput.value.trim();
+                    chatMessages.value.push({ text: userMessage, sender: 'user' });
+                    
+                    // Добавляем в историю для DeepSeek
+                    chatHistory.value.push({ role: 'user', content: userMessage });
+                    
+                    chatInput.value = '';
+                    
+                    const loadingIndex = chatMessages.value.length;
+                    chatMessages.value.push({ text: '', sender: 'bot', loading: true });
+                    
+                    await nextTick();
+                    if (chatContainer.value) {
+                        chatContainer.value.scrollTop = chatContainer.value.scrollHeight;
+                    }
+                    
+                    aiLoading.value = true;
+                    
+                    try {
+                        // Подготавливаем сообщения для DeepSeek с контекстом пользователя
+                        const messagesForAI = [...chatHistory.value];
+                        
+                        // Добавляем системное сообщение с контекстом пользователя, если это первый запрос
+                        if (chatHistory.value.length === 1) { // Только system сообщение
+                            messagesForAI[0] = {
+                                role: 'system',
+                                content: chatHistory.value[0].content + '\n\n' + getUserContext()
+                            };
+                        }
+                        
+                        const aiResponse = await sendToDeepSeek(messagesForAI);
+                        
+                        // Убираем индикатор загрузки
+                        chatMessages.value.splice(loadingIndex, 1);
+                        
+                        // Добавляем ответ бота
+                        chatMessages.value.push({ text: aiResponse, sender: 'bot' });
+                        
+                        // Добавляем в историю
+                        chatHistory.value.push({ role: 'assistant', content: aiResponse });
+                        
+                        // Ограничиваем историю для сохранения контекста (последние 10 сообщений)
+                        if (chatHistory.value.length > 11) { // 1 system + 10 сообщений
+                            const systemMessage = chatHistory.value[0];
+                            chatHistory.value = [systemMessage, ...chatHistory.value.slice(-10)];
+                        }
+                        
+                    } catch (error) {
+                        console.error('Ошибка DeepSeek:', error);
+                        
+                        // Убираем индикатор загрузки
+                        chatMessages.value.splice(loadingIndex, 1);
+                        
+                        // Добавляем сообщение об ошибке
+                        chatMessages.value.push({ 
+                            text: `Извините, произошла ошибка: ${error.message}. Пожалуйста, попробуйте позже.`, 
+                            sender: 'bot', 
+                            error: true 
+                        });
+                    } finally {
+                        aiLoading.value = false;
+                        
+                        nextTick(() => {
+                            if (chatContainer.value) {
+                                chatContainer.value.scrollTop = chatContainer.value.scrollHeight;
+                            }
+                        });
+                    }
+                }
+
+                // Сброс контекста чата
+                function resetChatContext() {
+                    chatHistory.value = [
+                        { role: 'system', content: 'Вы DeepSeek AI, профессиональный финансовый ассистент в приложении FinGrade. Вы даете советы по личным финансам, помогаете анализировать расходы, предлагаете стратегии инвестирования и улучшения КФГ (коэффициента финансовой грамотности). Отвечайте подробно, но понятно. Используйте русский язык. Можете форматировать ответы с помощью markdown-like синтаксиса для улучшения читаемости.' }
+                    ];
+                    
+                    chatMessages.value = [
+                        { text: 'Привет! Я DeepSeek AI, ваш финансовый ассистент. Контекст сброшен. Задайте новый вопрос!', sender: 'bot' }
+                    ];
+                    
+                    showMessage('Контекст сброшен', 'success');
+                }
+
+                // Быстрый вопрос
+                function quickQuestion(question) {
+                    chatInput.value = question;
+                    sendMessage();
                 }
 
                 // Методы Firestore
@@ -1572,6 +1831,12 @@
                         friendRequests.value = [];
                         pendingRequests.value = [];
                         savedSnapshots.value = [];
+                        chatMessages.value = [
+                            { text: 'Привет! Я DeepSeek AI, ваш финансовый ассистент. Я помогу вам с анализом расходов, советами по инвестированию и улучшению КФГ. Задайте вопрос!', sender: 'bot' }
+                        ];
+                        chatHistory.value = [
+                            { role: 'system', content: 'Вы DeepSeek AI, профессиональный финансовый ассистент в приложении FinGrade. Вы даете советы по личным финансам, помогаете анализировать расходы, предлагаете стратегии инвестирования и улучшения КФГ (коэффициента финансовой грамотности). Отвечайте подробно, но понятно. Используйте русский язык. Можете форматировать ответы с помощью markdown-like синтаксиса для улучшения читаемости.' }
+                        ];
                         showMessage('Вы вышли', 'success');
                     } catch (error) {
                         showMessage('Ошибка при выходе', 'error');
@@ -1963,52 +2228,6 @@
                     }
                 }
 
-                // Чат
-                async function sendMessage() {
-                    if (!chatInput.value.trim() || aiLoading.value) return;
-                    
-                    const userMessage = chatInput.value.trim();
-                    chatMessages.value.push({ text: userMessage, sender: 'user' });
-                    chatInput.value = '';
-                    
-                    const loadingIndex = chatMessages.value.length;
-                    chatMessages.value.push({ text: '', sender: 'bot', loading: true });
-                    
-                    await nextTick();
-                    if (chatContainer.value) {
-                        chatContainer.value.scrollTop = chatContainer.value.scrollHeight;
-                    }
-                    
-                    aiLoading.value = true;
-                    
-                    setTimeout(() => {
-                        chatMessages.value.splice(loadingIndex, 1);
-                        chatMessages.value.push({ 
-                            text: 'Это демо-версия. В реальном приложении здесь будет ответ от ИИ.', 
-                            sender: 'bot' 
-                        });
-                        aiLoading.value = false;
-                        
-                        nextTick(() => {
-                            if (chatContainer.value) {
-                                chatContainer.value.scrollTop = chatContainer.value.scrollHeight;
-                            }
-                        });
-                    }, 1000);
-                }
-
-                function resetChatContext() {
-                    chatMessages.value = [
-                        { text: 'Привет! Я ваш финансовый ассистент. Задайте вопрос!', sender: 'bot' }
-                    ];
-                    showMessage('Контекст сброшен', 'success');
-                }
-
-                function quickQuestion(question) {
-                    chatInput.value = question;
-                    sendMessage();
-                }
-
                 function openAddToGoalModal(index) {
                     selectedGoalIndex.value = index;
                     selectedGoalName.value = goals.value[index].name;
@@ -2220,7 +2439,6 @@
                     chatInput,
                     chatContainer,
                     aiLoading,
-                    aiModelInfo,
                     rewards,
                     avatars,
                     tabs,
@@ -2244,6 +2462,8 @@
                     kfg,
                     ratingParticipants,
                     filteredExpenses,
+                    friendsWithDetails,
+                    aiContextLength,
                     
                     // Модальные окна
                     showIncomeModal,
@@ -2277,6 +2497,7 @@
                     sendMessage,
                     resetChatContext,
                     quickQuestion,
+                    formatBotMessage,
                     
                     // Награды
                     claimReward,
@@ -2300,7 +2521,11 @@
                     loadHistoricalData,
                     getComparisonClass,
                     getComparisonIcon,
-                    formatDate
+                    formatDate,
+                    
+                    // Контекст
+                    getExpensesSummary,
+                    getDetailedExpenses
                 };
             }
         });
