@@ -1853,93 +1853,129 @@
                 }
 
                 // НОВЫЙ МЕТОД: Вход через Mail.ru
-                async function loginWithMailRu() {
-                    loading.value = true;
-                    loadingMessage.value = 'Вход через Mail.ru...';
-                    
-                    try {
-                        const result = await auth.signInWithPopup(mailruProvider);
-                        const user = result.user;
-                        
-                        // Проверяем, существует ли пользователь в Firestore
-                        const emailQuery = await db.collection('users').where('email', '==', user.email).get();
-                        
-                        if (!emailQuery.empty) {
-                            // Пользователь уже есть в системе
-                            const userData = emailQuery.docs[0].data();
-                            await loadCurrentUserData(userData.login);
-                            showMessage('Добро пожаловать!', 'success');
-                        } else {
-                            // Создаем нового пользователя на основе данных Mail.ru
-                            const displayName = user.displayName || 'Пользователь Mail.ru';
-                            const nameParts = displayName.split(' ');
-                            const firstName = nameParts[0] || 'Пользователь';
-                            const lastName = nameParts.slice(1).join(' ') || '';
-                            
-                            // Генерируем уникальный логин на основе email
-                            const baseLogin = user.email.split('@')[0].replace(/[^a-zA-Z0-9]/g, '');
-                            let login = baseLogin;
-                            let counter = 1;
-                            
-                            // Проверяем уникальность логина
-                            while (true) {
-                                const loginCheck = await db.collection('users').doc(login).get();
-                                if (!loginCheck.exists) break;
-                                login = `${baseLogin}${counter}`;
-                                counter++;
-                            }
-                            
-                            // Генерируем уникальный никнейм
-                            const baseNickname = '@' + baseLogin;
-                            let nickname = baseNickname;
-                            counter = 1;
-                            
-                            while (true) {
-                                const nicknameQuery = await db.collection('users').where('nickname', '==', nickname).get();
-                                if (nicknameQuery.empty) break;
-                                nickname = `${baseNickname}${counter}`;
-                                counter++;
-                            }
-                            
-                            // Создаем нового пользователя
-                            const newUser = {
-                                name: firstName,
-                                surname: lastName,
-                                nickname: nickname,
-                                login: login,
-                                email: user.email,
-                                income: 0,
-                                avatar: 1,
-                                expenses: { ...initialExpenses },
-                                goals: [],
-                                friends: [],
-                                friendRequests: [],
-                                pendingRequests: [],
-                                createdAt: firebase.firestore.FieldValue.serverTimestamp()
-                            };
-                            
-                            await db.collection('users').doc(login).set(newUser);
-                            await loadCurrentUserData(login);
-                            showMessage('Добро пожаловать! Ваш профиль создан на основе данных Mail.ru', 'success');
-                        }
-                        
-                        await loadUsersFromFirestore();
-                        
-                    } catch (error) {
-                        console.error('Ошибка входа через Mail.ru:', error);
-                        
-                        if (error.code === 'auth/popup-closed-by-user') {
-                            showMessage('Вход отменен', 'info');
-                        } else if (error.code === 'auth/account-exists-with-different-credential') {
-                            showMessage('Аккаунт с таким email уже существует. Используйте другой способ входа.', 'error');
-                        } else {
-                            showMessage('Ошибка входа через Mail.ru: ' + error.message, 'error');
-                        }
-                    } finally {
-                        loading.value = false;
-                    }
-                }
+                // НОВЫЙ МЕТОД: Вход через Mail.ru с редиректом
+async function loginWithMailRu() {
+    loading.value = true;
+    loadingMessage.value = 'Перенаправление на Mail.ru...';
+    
+    try {
+        // Настраиваем провайдер с дополнительными параметрами
+        const provider = new firebase.auth.OAuthProvider('mail.ru');
+        provider.setCustomParameters({
+            'language': 'ru'
+        });
+        
+        // Используем редирект вместо popup
+        await auth.signInWithRedirect(provider);
+        // Пользователь будет перенаправлен на Mail.ru, а потом обратно
+    } catch (error) {
+        console.error('Ошибка входа через Mail.ru:', error);
+        showMessage('Ошибка входа через Mail.ru: ' + error.message, 'error');
+        loading.value = false;
+    }
+}
 
+// НОВЫЙ МЕТОД: Обработка результата редиректа
+async function handleRedirectResult() {
+    try {
+        const result = await auth.getRedirectResult();
+        
+        if (result.user) {
+            loading.value = true;
+            loadingMessage.value = 'Обработка данных...';
+            
+            // Пользователь успешно авторизовался
+            const user = result.user;
+            console.log('Успешный вход через Mail.ru:', user.email);
+            
+            // Проверяем, существует ли пользователь в Firestore
+            const emailQuery = await db.collection('users').where('email', '==', user.email).get();
+            
+            if (!emailQuery.empty) {
+                // Пользователь уже есть в системе
+                const userData = emailQuery.docs[0].data();
+                await loadCurrentUserData(userData.login);
+                showMessage('Добро пожаловать!', 'success');
+            } else {
+                // Создаем нового пользователя на основе данных Mail.ru
+                const displayName = user.displayName || 'Пользователь Mail.ru';
+                const nameParts = displayName.split(' ');
+                const firstName = nameParts[0] || 'Пользователь';
+                const lastName = nameParts.slice(1).join(' ') || '';
+                
+                // Генерируем уникальный логин
+                const baseLogin = user.email.split('@')[0].replace(/[^a-zA-Z0-9]/g, '');
+                let login = baseLogin;
+                let counter = 1;
+                
+                while (true) {
+                    const loginCheck = await db.collection('users').doc(login).get();
+                    if (!loginCheck.exists) break;
+                    login = `${baseLogin}${counter}`;
+                    counter++;
+                }
+                
+                // Генерируем уникальный никнейм
+                const baseNickname = '@' + baseLogin;
+                let nickname = baseNickname;
+                counter = 1;
+                
+                while (true) {
+                    const nicknameQuery = await db.collection('users').where('nickname', '==', nickname).get();
+                    if (nicknameQuery.empty) break;
+                    nickname = `${baseNickname}${counter}`;
+                    counter++;
+                }
+                
+                // Создаем нового пользователя
+                const newUser = {
+                    name: firstName,
+                    surname: lastName,
+                    nickname: nickname,
+                    login: login,
+                    email: user.email,
+                    income: 0,
+                    avatar: 1,
+                    expenses: { ...initialExpenses },
+                    goals: [],
+                    friends: [],
+                    friendRequests: [],
+                    pendingRequests: [],
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                };
+                
+                await db.collection('users').doc(login).set(newUser);
+                await loadCurrentUserData(login);
+                showMessage('Добро пожаловать! Ваш профиль создан на основе данных Mail.ru', 'success');
+            }
+            
+            await loadUsersFromFirestore();
+        }
+    } catch (error) {
+        console.error('Ошибка обработки редиректа:', error);
+        
+        // Игнорируем ошибку "no user signed in" - это нормально при первом заходе
+        if (error.code !== 'auth/no-current-user') {
+            showMessage('Ошибка при обработке входа: ' + error.message, 'error');
+        }
+    } finally {
+        loading.value = false;
+    }
+}
+
+// ДОБАВЬТЕ ВЫЗОВ В onMounted:
+onMounted(async () => {
+    await checkAuthState();
+    await handleRedirectResult(); // <-- Добавьте эту строку
+    
+    setTimeout(() => {
+        if (hasExpenses.value) initChart();
+    }, 100);
+    
+    if (currentUser.value) {
+        await loadHistoricalData();
+    }
+});
                 // Метод входа (оригинальный)
                 async function handleLogin() {
                     if (!loginForm.login || !loginForm.password) {
