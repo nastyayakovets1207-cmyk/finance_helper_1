@@ -1075,102 +1075,153 @@
         // ============================================
         // GigaChat API КОНФИГУРАЦИЯ
         // ============================================
-        const GIGACHAT_CLIENT_ID = '019d1f98-4484-7ff0-aa65-c9fc05db6107';
-        const GIGACHAT_CLIENT_SECRET = 'MDE5ZDFmOTgtNDQ4NC03ZmYwLWFhNjUtYzlmYzA1ZGI2MTA3OjYzMDY0OWEyLWUwYmQtNGZhOC1iMDY4LTU1ZjFkOWZmOTRlMQ==';
-        const GIGACHAT_SCOPE = 'GIGACHAT_API_PERS';
+        // ============================================
+// ИСПРАВЛЕННАЯ КОНФИГУРАЦИЯ GIGACHAT API
+// ============================================
 
-        // Хранилище токена
-        let cachedAccessToken = null;
-        let tokenExpiryTime = null;
+// Ваши данные
+const GIGACHAT_CLIENT_ID = '019d1f98-4484-7ff0-aa65-c9fc05db6107';
+const GIGACHAT_CLIENT_SECRET = 'MDE5ZDFmOTgtNDQ4NC03ZmYwLWFhNjUtYzlmYzA1ZGI2MTA3OjYzMDY0OWEyLWUwYmQtNGZhOC1iMDY4LTU1ZjFkOWZmOTRlMQ==';
+const GIGACHAT_SCOPE = 'GIGACHAT_API_PERS';
 
-        // Функция получения токена доступа GigaChat
-        async function getGigaChatToken() {
-            if (cachedAccessToken && tokenExpiryTime && Date.now() < tokenExpiryTime) {
-                return cachedAccessToken;
+// ПРАВИЛЬНЫЕ URL для GigaChat API (обновленные)
+const GIGACHAT_AUTH_URL = 'https://ngw.devices.sberbank.ru:9443/api/v2/oauth'; // ВАЖНО: используем HTTPS с портом 9443
+const GIGACHAT_API_URL = 'https://gigachat.devices.sberbank.ru/api/v1/chat/completions';
+
+// Хранилище токена
+let cachedAccessToken = null;
+let tokenExpiryTime = null;
+
+// Функция получения токена (с правильной авторизацией)
+async function getGigaChatToken() {
+    // Проверяем кэш
+    if (cachedAccessToken && tokenExpiryTime && Date.now() < tokenExpiryTime) {
+        return cachedAccessToken;
+    }
+    
+    try {
+        console.log('Получение токена GigaChat...');
+        
+        // Формируем Basic Auth правильно
+        // client_id:client_secret в base64
+        const authString = `${GIGACHAT_CLIENT_ID}:${GIGACHAT_CLIENT_SECRET}`;
+        const base64Auth = btoa(authString);
+        
+        // Параметры запроса
+        const params = new URLSearchParams();
+        params.append('scope', GIGACHAT_SCOPE);
+        
+        const response = await axios.post(
+            GIGACHAT_AUTH_URL,
+            params.toString(),
+            {
+                headers: {
+                    'Authorization': `Basic ${base64Auth}`,
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'Accept': 'application/json',
+                    'RqUID': crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2)
+                },
+                timeout: 15000
             }
+        );
+        
+        if (response.data?.access_token) {
+            cachedAccessToken = response.data.access_token;
+            // Токен живет 30 минут, обновляем через 25
+            tokenExpiryTime = Date.now() + (25 * 60 * 1000);
+            console.log('Токен успешно получен');
+            return cachedAccessToken;
+        } else {
+            throw new Error('Токен не получен: ' + JSON.stringify(response.data));
+        }
+    } catch (error) {
+        console.error('Ошибка авторизации GigaChat:', error);
+        
+        if (error.response) {
+            console.error('Статус:', error.response.status);
+            console.error('Данные:', error.response.data);
+            console.error('Заголовки:', error.response.headers);
             
-            try {
-                const response = await axios.post(
-                    'https://ngw.devices.sberbank.ru:9443/api/v2/oauth',
-                    `scope=${GIGACHAT_SCOPE}`,
-                    {
-                        headers: {
-                            'Authorization': `Basic ${GIGACHAT_CLIENT_SECRET}`,
-                            'Content-Type': 'application/x-www-form-urlencoded',
-                            'RqUID': crypto.randomUUID(),
-                            'Accept': 'application/json'
-                        },
-                        timeout: 10000
-                    }
-                );
-                
-                if (response.data?.access_token) {
-                    cachedAccessToken = response.data.access_token;
-                    tokenExpiryTime = Date.now() + (25 * 60 * 1000);
-                    return cachedAccessToken;
-                } else {
-                    throw new Error('Не удалось получить токен');
-                }
-            } catch (error) {
-                console.error('GigaChat auth error:', error);
-                if (error.response?.status === 401) {
-                    throw new Error('Неверный Client ID или Client Secret');
-                }
-                throw new Error('Ошибка авторизации GigaChat');
+            if (error.response.status === 401) {
+                throw new Error('Неверный Client ID или Client Secret');
+            } else if (error.response.status === 404) {
+                throw new Error('API endpoint не найден. Проверьте URL');
+            } else {
+                throw new Error(`Ошибка авторизации: ${error.response.status}`);
             }
+        } else if (error.code === 'ECONNABORTED') {
+            throw new Error('Таймаут подключения к GigaChat');
+        } else if (error.message.includes('CERT_AUTHORITY_INVALID')) {
+            throw new Error('Ошибка SSL сертификата. Возможно, требуется VPN или проблема с сетью');
+        } else {
+            throw new Error(`Ошибка сети: ${error.message}`);
         }
+    }
+}
 
-        // Функция отправки запроса к GigaChat
-        async function sendToGigaChat(messages) {
-            try {
-                const accessToken = await getGigaChatToken();
-                
-                const formattedMessages = messages.map(msg => ({
-                    role: msg.role === 'system' ? 'system' : 
-                          msg.role === 'assistant' ? 'assistant' : 'user',
-                    content: msg.content
-                }));
-                
-                const response = await axios.post(
-                    'https://gigachat.devices.sberbank.ru/api/v1/chat/completions',
-                    {
-                        model: 'GigaChat',
-                        messages: formattedMessages,
-                        temperature: 0.7,
-                        max_tokens: 2000,
-                        top_p: 0.95,
-                        stream: false,
-                        repetition_penalty: 1.0
-                    },
-                    {
-                        headers: {
-                            'Authorization': `Bearer ${accessToken}`,
-                            'Content-Type': 'application/json',
-                            'Accept': 'application/json'
-                        },
-                        timeout: 30000
-                    }
-                );
-                
-                if (response.data?.choices?.[0]?.message?.content) {
-                    return response.data.choices[0].message.content;
-                } else {
-                    throw new Error('Неожиданный формат ответа от GigaChat');
-                }
-            } catch (error) {
-                console.error('GigaChat API error:', error);
-                
-                if (error.response?.status === 401) {
-                    throw new Error('Ошибка авторизации. Проверьте API ключи');
-                } else if (error.response?.status === 429) {
-                    throw new Error('Превышен лимит запросов. Попробуйте позже');
-                } else if (error.code === 'ECONNABORTED') {
-                    throw new Error('Таймаут запроса. Проверьте интернет');
-                }
-                
-                throw new Error(error.response?.data?.message || 'Ошибка при обращении к GigaChat');
+// Отправка запроса к GigaChat
+async function sendToGigaChat(messages) {
+    try {
+        const accessToken = await getGigaChatToken();
+        
+        // Форматируем сообщения для GigaChat
+        const formattedMessages = messages.map(msg => ({
+            role: msg.role === 'system' ? 'system' : 
+                  msg.role === 'assistant' ? 'assistant' : 'user',
+            content: msg.content
+        }));
+        
+        console.log('Отправка запроса к GigaChat...');
+        
+        const response = await axios.post(
+            GIGACHAT_API_URL,
+            {
+                model: 'GigaChat',
+                messages: formattedMessages,
+                temperature: 0.7,
+                max_tokens: 2000,
+                top_p: 0.95,
+                stream: false,
+                repetition_penalty: 1.0
+            },
+            {
+                headers: {
+                    'Authorization': `Bearer ${accessToken}`,
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                timeout: 30000
             }
+        );
+        
+        if (response.data?.choices?.[0]?.message?.content) {
+            return response.data.choices[0].message.content;
+        } else {
+            throw new Error('Неожиданный формат ответа');
         }
+    } catch (error) {
+        console.error('GigaChat API error:', error);
+        
+        if (error.response) {
+            console.error('Статус:', error.response.status);
+            console.error('Данные:', error.response.data);
+            
+            if (error.response.status === 401) {
+                throw new Error('Ошибка авторизации. Токен истек или недействителен');
+            } else if (error.response.status === 429) {
+                throw new Error('Превышен лимит запросов');
+            } else if (error.response.status === 400) {
+                throw new Error('Неверный формат запроса');
+            } else {
+                throw new Error(`Ошибка API: ${error.response.status}`);
+            }
+        } else if (error.code === 'ECONNABORTED') {
+            throw new Error('Таймаут запроса к GigaChat');
+        } else {
+            throw new Error(`Ошибка: ${error.message}`);
+        }
+    }
+}
 
         const app = createApp({
             setup() {
