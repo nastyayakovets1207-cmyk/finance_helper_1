@@ -26,23 +26,6 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
-        .social-divider {
-            text-align: center;
-            margin: 20px 0;
-            position: relative;
-        }
-        .social-divider::before,
-        .social-divider::after {
-            content: '';
-            position: absolute;
-            top: 50%;
-            width: 40%;
-            height: 1px;
-            background: #e5e7eb;
-        }
-        .social-divider::before { left: 0; }
-        .social-divider::after { right: 0; }
-        .social-divider span { background: white; padding: 0 10px; position: relative; z-index: 1; color: #6b7280; }
     </style>
 </head>
 <body class="bg-gray-100">
@@ -77,36 +60,34 @@
             {{ message.text }}
         </div>
 
-        <!-- Форма входа (когда пользователь не авторизован) -->
+        <!-- Форма входа -->
         <div v-if="!currentUser" class="container mx-auto px-4 py-8 max-w-md">
             <div class="bg-white rounded-xl shadow-lg p-6">
                 <h1 class="text-2xl font-bold text-center mb-6">FinGrade</h1>
-                <p class="text-center text-gray-500 mb-6 text-sm">Финансовый помощник</p>
                 
-                <!-- Кнопка Google - ГЛАВНАЯ -->
+                <!-- Кнопка Google - РАБОТАЕТ! -->
                 <button @click="loginWithGoogle" 
                         class="google-btn w-full text-white py-3 rounded-lg font-semibold flex items-center justify-center space-x-2 mb-4">
                     <i class="fab fa-google text-xl"></i>
                     <span>Войти через Google</span>
                 </button>
                 
-                <div class="social-divider"><span>или</span></div>
+                <div class="text-center text-gray-400 text-sm my-4">или</div>
                 
                 <!-- Форма email/пароль -->
                 <div class="space-y-3">
-                    <input v-model="loginForm.login" type="text" placeholder="Логин или Email" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-purple-500">
-                    <input v-model="loginForm.password" type="password" placeholder="Пароль" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-purple-500">
-                    <button @click="handleLogin" class="gradient-bg w-full text-white py-2 rounded-lg font-semibold">Войти</button>
+                    <input v-model="loginForm.login" type="text" placeholder="Логин или Email" class="w-full px-4 py-2 border rounded-lg">
+                    <input v-model="loginForm.password" type="password" placeholder="Пароль" class="w-full px-4 py-2 border rounded-lg">
+                    <button @click="handleLogin" class="gradient-bg w-full text-white py-2 rounded-lg">Войти</button>
                 </div>
                 
                 <div class="text-center mt-4">
-                    <span class="text-gray-500 text-sm">Нет аккаунта? </span>
-                    <button @click="showRegister = !showRegister" class="text-purple-600 text-sm font-semibold">Зарегистрироваться</button>
+                    <button @click="showRegister = !showRegister" class="text-purple-600 text-sm">Зарегистрироваться</button>
                 </div>
                 
-                <!-- Форма регистрации (скрыта по умолчанию) -->
+                <!-- Форма регистрации -->
                 <div v-if="showRegister" class="mt-4 pt-4 border-t">
-                    <h2 class="font-bold mb-3 text-lg">Регистрация</h2>
+                    <h2 class="font-bold mb-3">Регистрация</h2>
                     <div class="space-y-2">
                         <input v-model="registerForm.name" type="text" placeholder="Имя" class="w-full px-4 py-2 border rounded-lg">
                         <input v-model="registerForm.surname" type="text" placeholder="Фамилия" class="w-full px-4 py-2 border rounded-lg">
@@ -114,23 +95,18 @@
                         <input v-model="registerForm.login" type="text" placeholder="Логин" class="w-full px-4 py-2 border rounded-lg">
                         <input v-model="registerForm.email" type="email" placeholder="Email" class="w-full px-4 py-2 border rounded-lg">
                         <input v-model="registerForm.password" type="password" placeholder="Пароль" class="w-full px-4 py-2 border rounded-lg">
-                        <input v-model.number="registerForm.income" type="number" placeholder="Доход в месяц (₽)" class="w-full px-4 py-2 border rounded-lg">
-                        <button @click="handleRegister" class="gradient-bg w-full text-white py-2 rounded-lg font-semibold">Зарегистрироваться</button>
+                        <input v-model.number="registerForm.income" type="number" placeholder="Доход в месяц" class="w-full px-4 py-2 border rounded-lg">
+                        <button @click="handleRegister" class="gradient-bg w-full text-white py-2 rounded-lg">Зарегистрироваться</button>
                     </div>
                 </div>
-                
-                <p class="text-xs text-center text-gray-400 mt-4">
-                    <i class="fas fa-shield-alt mr-1"></i>
-                    Ваши данные защищены Firebase
-                </p>
             </div>
         </div>
 
-        <!-- Основное приложение (после входа) -->
+        <!-- Основное приложение после входа -->
         <div v-else class="container mx-auto px-4 py-8 max-w-2xl">
             <div class="bg-white rounded-xl shadow-lg p-6">
                 <div class="flex items-center space-x-4 mb-6">
-                    <div class="w-16 h-16 rounded-full overflow-hidden bg-purple-100 flex items-center justify-center">
+                    <div class="w-16 h-16 rounded-full bg-purple-100 flex items-center justify-center">
                         <i class="fas fa-user text-3xl text-purple-600"></i>
                     </div>
                     <div>
@@ -144,6 +120,7 @@
                     <div class="bg-gray-50 p-4 rounded-lg text-center">
                         <p class="text-gray-600 text-sm">Доход</p>
                         <p class="text-2xl font-bold text-purple-600">{{ formatMoney(currentUser.income) }} ₽</p>
+                        <button @click="editIncome" class="text-xs text-purple-500 mt-1">Изменить</button>
                     </div>
                     <div class="bg-gray-50 p-4 rounded-lg text-center">
                         <p class="text-gray-600 text-sm">КФГ</p>
@@ -151,16 +128,21 @@
                     </div>
                 </div>
                 
-                <div class="bg-purple-50 p-4 rounded-lg mb-4">
-                    <p class="text-sm text-purple-700">
-                        <i class="fas fa-info-circle mr-2"></i>
-                        Ваш коэффициент финансовой грамотности (КФГ) рассчитывается на основе соотношения доходов и расходов.
-                    </p>
-                </div>
-                
-                <button @click="logout" class="w-full bg-red-500 text-white px-4 py-3 rounded-lg font-semibold hover:bg-red-600 transition">
-                    <i class="fas fa-sign-out-alt mr-2"></i>Выйти из аккаунта
+                <button @click="logout" class="w-full bg-red-500 text-white px-4 py-3 rounded-lg font-semibold hover:bg-red-600">
+                    Выйти
                 </button>
+            </div>
+        </div>
+
+        <!-- Модальное окно для изменения дохода -->
+        <div v-if="showIncomeModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div class="bg-white rounded-xl p-6 max-w-md w-full mx-4">
+                <h3 class="text-xl font-bold mb-4">Изменить доход</h3>
+                <input v-model.number="newIncomeValue" type="number" class="w-full px-4 py-2 border rounded-lg mb-4">
+                <div class="flex space-x-2">
+                    <button @click="saveIncome" class="gradient-bg text-white px-6 py-2 rounded-lg flex-1">Сохранить</button>
+                    <button @click="closeIncomeModal" class="bg-gray-300 px-6 py-2 rounded-lg flex-1">Отмена</button>
+                </div>
             </div>
         </div>
     </div>
@@ -178,16 +160,11 @@
             appId: "1:492951301038:web:96b425064787c88df7b63f"
         };
 
-        // Инициализация Firebase
         firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
         const db = firebase.firestore();
         
-        // Провайдер Google
         const googleProvider = new firebase.auth.GoogleAuthProvider();
-        googleProvider.setCustomParameters({
-            'prompt': 'select_account'
-        });
 
         const app = createApp({
             setup() {
@@ -195,6 +172,8 @@
                 const loadingMessage = ref('');
                 const currentUser = ref(null);
                 const showRegister = ref(false);
+                const showIncomeModal = ref(false);
+                const newIncomeValue = ref(0);
                 const message = reactive({ show: false, text: '', type: 'success' });
                 
                 const loginForm = reactive({ login: '', password: '' });
@@ -202,12 +181,12 @@
                     name: '', surname: '', nickname: '', login: '', email: '', password: '', income: 0
                 });
 
-                // Расчет КФГ (упрощенный для демо)
                 const kfg = computed(() => {
                     if (!currentUser.value) return 0;
                     let value = 50;
-                    if (currentUser.value.income > 50000) value += 20;
-                    if (currentUser.value.income > 100000) value += 10;
+                    if (currentUser.value.income > 30000) value += 20;
+                    if (currentUser.value.income > 50000) value += 15;
+                    if (currentUser.value.income > 100000) value += 15;
                     return Math.min(100, value);
                 });
 
@@ -222,37 +201,25 @@
                     return new Intl.NumberFormat('ru-RU').format(amount || 0);
                 }
 
-                // ============ ВХОД ЧЕРЕЗ GOOGLE ============
+                // Вход через Google
                 async function loginWithGoogle() {
                     loading.value = true;
-                    loadingMessage.value = 'Открываем окно входа...';
+                    loadingMessage.value = 'Открываем Google...';
                     
                     try {
-                        // Открываем popup с Google
                         const result = await auth.signInWithPopup(googleProvider);
                         const user = result.user;
                         
-                        console.log('Успешный вход:', user.email);
-                        loadingMessage.value = 'Проверяем пользователя...';
-                        
-                        // Ищем пользователя в Firestore по email
                         const emailQuery = await db.collection('users').where('email', '==', user.email).get();
                         
                         if (!emailQuery.empty) {
-                            // Пользователь уже существует
                             const userDoc = emailQuery.docs[0];
-                            const userData = userDoc.data();
-                            currentUser.value = { ...userData, login: userDoc.id };
-                            showMessage('Добро пожаловать, ' + userData.name + '!', 'success');
+                            currentUser.value = { ...userDoc.data(), login: userDoc.id };
+                            showMessage('Добро пожаловать!', 'success');
                         } else {
-                            // Создаем нового пользователя
-                            loadingMessage.value = 'Создаем профиль...';
-                            
                             const baseLogin = user.email.split('@')[0].replace(/[^a-zA-Z0-9]/g, '');
                             let login = baseLogin;
                             let counter = 1;
-                            
-                            // Проверяем уникальность логина
                             while (true) {
                                 const check = await db.collection('users').doc(login).get();
                                 if (!check.exists) break;
@@ -260,12 +227,9 @@
                                 counter++;
                             }
                             
-                            const firstName = user.displayName?.split(' ')[0] || 'Пользователь';
-                            const lastName = user.displayName?.split(' ').slice(1).join(' ') || '';
-                            
                             const newUser = {
-                                name: firstName,
-                                surname: lastName,
+                                name: user.displayName?.split(' ')[0] || 'Пользователь',
+                                surname: user.displayName?.split(' ').slice(1).join(' ') || '',
                                 nickname: '@' + baseLogin,
                                 login: login,
                                 email: user.email,
@@ -274,99 +238,69 @@
                                 expenses: {},
                                 goals: [],
                                 friends: [],
-                                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                                createdAt: new Date().toISOString()
                             };
                             
                             await db.collection('users').doc(login).set(newUser);
                             currentUser.value = newUser;
-                            showMessage('Профиль создан! Добро пожаловать!', 'success');
+                            showMessage('Профиль создан!', 'success');
                         }
-                        
                     } catch (error) {
-                        console.error('Ошибка входа через Google:', error);
-                        
-                        if (error.code === 'auth/popup-closed-by-user') {
-                            showMessage('Вы закрыли окно входа', 'error');
-                        } else if (error.code === 'auth/unauthorized-domain') {
-                            showMessage('Домен не авторизован. Добавьте localhost в Firebase Console', 'error');
-                        } else {
-                            showMessage('Ошибка: ' + error.message, 'error');
-                        }
+                        console.error(error);
+                        showMessage('Ошибка: ' + error.message, 'error');
                     } finally {
                         loading.value = false;
-                        loadingMessage.value = '';
                     }
                 }
 
-                // ============ ОБЫЧНЫЙ ВХОД ============
+                // Обычный вход
                 async function handleLogin() {
                     if (!loginForm.login || !loginForm.password) {
                         showMessage('Заполните все поля', 'error');
                         return;
                     }
                     loading.value = true;
-                    loadingMessage.value = 'Вход...';
-                    
                     try {
-                        // Пробуем найти пользователя по логину
                         const userDoc = await db.collection('users').doc(loginForm.login).get();
-                        
                         if (!userDoc.exists) {
                             showMessage('Пользователь не найден', 'error');
-                            loading.value = false;
                             return;
                         }
-                        
                         const userData = userDoc.data();
-                        
-                        // Вход через Firebase Auth
                         await auth.signInWithEmailAndPassword(userData.email, loginForm.password);
                         currentUser.value = { ...userData, login: loginForm.login };
                         showMessage('Добро пожаловать!', 'success');
-                        
                         loginForm.login = '';
                         loginForm.password = '';
-                        
                     } catch (error) {
-                        console.error(error);
                         showMessage('Неверный логин или пароль', 'error');
                     } finally {
                         loading.value = false;
                     }
                 }
 
-                // ============ РЕГИСТРАЦИЯ ============
+                // Регистрация
                 async function handleRegister() {
                     if (!registerForm.name || !registerForm.surname || !registerForm.nickname || 
                         !registerForm.login || !registerForm.email || !registerForm.password) {
                         showMessage('Заполните все поля', 'error');
                         return;
                     }
-                    
                     loading.value = true;
-                    loadingMessage.value = 'Регистрация...';
-                    
                     try {
-                        // Проверка уникальности логина
                         const loginCheck = await db.collection('users').doc(registerForm.login).get();
                         if (loginCheck.exists) {
                             showMessage('Логин уже существует', 'error');
-                            loading.value = false;
                             return;
                         }
-                        
-                        // Проверка уникальности никнейма
                         const nicknameQuery = await db.collection('users').where('nickname', '==', registerForm.nickname).get();
                         if (!nicknameQuery.empty) {
                             showMessage('Никнейм уже существует', 'error');
-                            loading.value = false;
                             return;
                         }
                         
-                        // Создаем пользователя в Firebase Auth
                         await auth.createUserWithEmailAndPassword(registerForm.email, registerForm.password);
                         
-                        // Создаем запись в Firestore
                         const newUser = {
                             name: registerForm.name,
                             surname: registerForm.surname,
@@ -378,14 +312,13 @@
                             expenses: {},
                             goals: [],
                             friends: [],
-                            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                            createdAt: new Date().toISOString()
                         };
                         
                         await db.collection('users').doc(registerForm.login).set(newUser);
                         currentUser.value = newUser;
                         showMessage('Регистрация успешна!', 'success');
                         
-                        // Очистка формы
                         registerForm.name = '';
                         registerForm.surname = '';
                         registerForm.nickname = '';
@@ -394,50 +327,59 @@
                         registerForm.password = '';
                         registerForm.income = 0;
                         showRegister.value = false;
-                        
                     } catch (error) {
-                        console.error(error);
-                        if (error.code === 'auth/email-already-in-use') {
-                            showMessage('Email уже используется', 'error');
-                        } else {
-                            showMessage('Ошибка: ' + error.message, 'error');
-                        }
+                        showMessage('Ошибка: ' + error.message, 'error');
                     } finally {
                         loading.value = false;
                     }
                 }
 
-                // ============ ВЫХОД ============
                 async function logout() {
                     loading.value = true;
-                    loadingMessage.value = 'Выход...';
                     try {
                         await auth.signOut();
                         currentUser.value = null;
-                        showMessage('Вы вышли из аккаунта', 'success');
+                        showMessage('Вы вышли', 'success');
                     } catch (error) {
-                        showMessage('Ошибка при выходе', 'error');
+                        showMessage('Ошибка', 'error');
                     } finally {
                         loading.value = false;
                     }
                 }
 
-                // ============ ПРОВЕРКА СОСТОЯНИЯ АВТОРИЗАЦИИ ============
+                function editIncome() {
+                    newIncomeValue.value = currentUser.value.income;
+                    showIncomeModal.value = true;
+                }
+
+                function closeIncomeModal() {
+                    showIncomeModal.value = false;
+                }
+
+                async function saveIncome() {
+                    loading.value = true;
+                    try {
+                        await db.collection('users').doc(currentUser.value.login).update({
+                            income: newIncomeValue.value
+                        });
+                        currentUser.value.income = newIncomeValue.value;
+                        showMessage('Доход обновлен!', 'success');
+                        closeIncomeModal();
+                    } catch (error) {
+                        showMessage('Ошибка', 'error');
+                    } finally {
+                        loading.value = false;
+                    }
+                }
+
                 onMounted(() => {
                     loading.value = true;
-                    loadingMessage.value = 'Проверка авторизации...';
-                    
                     auth.onAuthStateChanged(async (user) => {
                         if (user) {
-                            try {
-                                const emailQuery = await db.collection('users').where('email', '==', user.email).get();
-                                if (!emailQuery.empty) {
-                                    const userDoc = emailQuery.docs[0];
-                                    const userData = userDoc.data();
-                                    currentUser.value = { ...userData, login: userDoc.id };
-                                }
-                            } catch (error) {
-                                console.error('Ошибка загрузки пользователя:', error);
+                            const emailQuery = await db.collection('users').where('email', '==', user.email).get();
+                            if (!emailQuery.empty) {
+                                const userDoc = emailQuery.docs[0];
+                                currentUser.value = { ...userDoc.data(), login: userDoc.id };
                             }
                         }
                         loading.value = false;
@@ -449,6 +391,8 @@
                     loadingMessage,
                     currentUser,
                     showRegister,
+                    showIncomeModal,
+                    newIncomeValue,
                     message,
                     loginForm,
                     registerForm,
@@ -457,7 +401,10 @@
                     loginWithGoogle,
                     handleLogin,
                     handleRegister,
-                    logout
+                    logout,
+                    editIncome,
+                    closeIncomeModal,
+                    saveIncome
                 };
             }
         });
