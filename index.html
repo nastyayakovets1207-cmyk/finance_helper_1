@@ -26,7 +26,7 @@
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     
     <style>
-        /* Mobile-first стили */
+        /* Mobile-first стили - оставляем без изменений */
         * {
             -webkit-tap-highlight-color: transparent;
             -webkit-touch-callout: none;
@@ -39,12 +39,22 @@
         }
         
         .message-bot {
-            @apply bg-gray-100 text-gray-800 rounded-lg rounded-tl-none p-3 self-start;
+            background-color: #f3f4f6;
+            color: #1f2937;
+            border-radius: 0.75rem;
+            border-top-left-radius: 0;
+            padding: 0.75rem;
+            align-self: flex-start;
             max-width: min(80%, 300px);
         }
         
         .message-user {
-            @apply gradient-bg text-white rounded-lg rounded-tr-none p-3 self-end;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 0.75rem;
+            border-top-right-radius: 0;
+            padding: 0.75rem;
+            align-self: flex-end;
             max-width: min(80%, 300px);
         }
         
@@ -135,17 +145,22 @@
         }
 
         .suggestion-chip {
-            @apply px-3 py-1.5 bg-purple-100 text-purple-700 rounded-full text-sm cursor-pointer hover:bg-purple-200 transition-colors;
+            padding: 0.375rem 0.75rem;
+            background-color: #f3e8ff;
+            color: #7c3aed;
+            border-radius: 9999px;
+            font-size: 0.875rem;
+            cursor: pointer;
             white-space: nowrap;
         }
-
-        .trend-up { @apply text-green-600; }
-        .trend-down { @apply text-red-600; }
-        .trend-neutral { @apply text-gray-600; }
-
-        .comparison-card {
-            @apply bg-white rounded-lg p-4 shadow-sm hover:shadow-md transition;
+        
+        .suggestion-chip:hover {
+            background-color: #e9d5ff;
         }
+
+        .trend-up { color: #10b981; }
+        .trend-down { color: #ef4444; }
+        .trend-neutral { color: #6b7280; }
 
         .mobile-tab-bar {
             display: flex;
@@ -1026,9 +1041,19 @@
             appId: "1:492951301038:web:96b425064787c88df7b63f"
         };
 
-        firebase.initializeApp(firebaseConfig);
-        const auth = firebase.auth();
-        const db = firebase.firestore();
+        // Инициализация Firebase
+        let firebaseApp;
+        let auth;
+        let db;
+        
+        try {
+            firebaseApp = firebase.initializeApp(firebaseConfig);
+            auth = firebase.auth();
+            db = firebase.firestore();
+            console.log('Firebase инициализирован успешно');
+        } catch (error) {
+            console.error('Ошибка инициализации Firebase:', error);
+        }
 
         // Конфигурация DeepSeek API
         const DEEPSEEK_API_KEY = 'sk-d5aa9940c6724fb9991d46fabb3a299c';
@@ -1577,6 +1602,7 @@
                             loadedUsers.push({ id: doc.id, ...doc.data() });
                         });
                         users.value = loadedUsers;
+                        console.log('Загружено пользователей:', loadedUsers.length);
                     } catch (error) {
                         console.error('Ошибка загрузки пользователей:', error);
                     }
@@ -1664,7 +1690,7 @@
                 // Методы авторизации
                 async function handleRegister() {
                     if (!registerForm.name || !registerForm.surname || !registerForm.nickname || 
-                        !registerForm.login || !registerForm.email || !registerForm.password || !registerForm.income) {
+                        !registerForm.login || !registerForm.email || !registerForm.password) {
                         showMessage('Заполните все поля', 'error');
                         return;
                     }
@@ -1678,6 +1704,7 @@
                     loadingMessage.value = 'Регистрация...';
                     
                     try {
+                        // Проверяем, существует ли пользователь с таким логином
                         const loginCheck = await db.collection('users').doc(registerForm.login).get();
                         if (loginCheck.exists) {
                             showMessage('Логин уже существует', 'error');
@@ -1685,6 +1712,7 @@
                             return;
                         }
                         
+                        // Проверяем, существует ли пользователь с таким nickname
                         const nicknameQuery = await db.collection('users').where('nickname', '==', registerForm.nickname).get();
                         if (!nicknameQuery.empty) {
                             showMessage('Никнейм уже существует', 'error');
@@ -1692,11 +1720,23 @@
                             return;
                         }
                         
-                        await auth.createUserWithEmailAndPassword(
+                        // Проверяем, существует ли пользователь с таким email
+                        const emailQuery = await db.collection('users').where('email', '==', registerForm.email).get();
+                        if (!emailQuery.empty) {
+                            showMessage('Email уже используется', 'error');
+                            loading.value = false;
+                            return;
+                        }
+                        
+                        // Создаем пользователя в Firebase Authentication
+                        const userCredential = await auth.createUserWithEmailAndPassword(
                             registerForm.email,
                             registerForm.password
                         );
                         
+                        console.log('Пользователь создан в Auth:', userCredential.user.uid);
+                        
+                        // Создаем документ пользователя в Firestore
                         const newUser = {
                             name: registerForm.name,
                             surname: registerForm.surname,
@@ -1710,13 +1750,19 @@
                             friends: [],
                             friendRequests: [],
                             pendingRequests: [],
-                            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                            uid: userCredential.user.uid
                         };
                         
                         await db.collection('users').doc(registerForm.login).set(newUser);
+                        console.log('Данные пользователя сохранены в Firestore');
+                        
                         await loadCurrentUserData(registerForm.login);
+                        await loadUsersFromFirestore();
+                        
                         showMessage('Регистрация успешна!', 'success');
                         
+                        // Очищаем форму
                         registerForm.name = '';
                         registerForm.surname = '';
                         registerForm.nickname = '';
@@ -1745,32 +1791,49 @@
                     loadingMessage.value = 'Вход...';
                     
                     try {
-                        const userDoc = await db.collection('users').doc(loginForm.login).get();
+                        // Пробуем найти пользователя по логину или email
+                        let userDoc = await db.collection('users').doc(loginForm.login).get();
+                        let userEmail = loginForm.login;
                         
                         if (!userDoc.exists) {
-                            showMessage('Пользователь не найден', 'error');
-                            loading.value = false;
-                            return;
+                            // Если не нашли по логину, ищем по email
+                            const emailQuery = await db.collection('users').where('email', '==', loginForm.login).get();
+                            if (!emailQuery.empty) {
+                                const userData = emailQuery.docs[0].data();
+                                userEmail = userData.email;
+                                userDoc = await db.collection('users').doc(userData.login).get();
+                            } else {
+                                showMessage('Пользователь не найден', 'error');
+                                loading.value = false;
+                                return;
+                            }
+                        } else {
+                            userEmail = userDoc.data().email;
                         }
                         
-                        const userData = userDoc.data();
+                        // Авторизуемся через Firebase Authentication
+                        await auth.signInWithEmailAndPassword(userEmail, loginForm.password);
                         
-                        await auth.signInWithEmailAndPassword(
-                            userData.email,
-                            loginForm.password
-                        );
-                        
-                        await loadCurrentUserData(loginForm.login);
-                        await loadUsersFromFirestore();
-                        
-                        showMessage('Добро пожаловать!', 'success');
-                        
-                        loginForm.login = '';
-                        loginForm.password = '';
+                        // Загружаем данные пользователя
+                        const success = await loadCurrentUserData(userDoc.id);
+                        if (success) {
+                            await loadUsersFromFirestore();
+                            showMessage('Добро пожаловать!', 'success');
+                            loginForm.login = '';
+                            loginForm.password = '';
+                        } else {
+                            showMessage('Ошибка загрузки данных', 'error');
+                        }
                         
                     } catch (error) {
                         console.error('Ошибка входа:', error);
-                        showMessage('Неверный логин или пароль', 'error');
+                        if (error.code === 'auth/user-not-found') {
+                            showMessage('Пользователь не найден', 'error');
+                        } else if (error.code === 'auth/wrong-password') {
+                            showMessage('Неверный пароль', 'error');
+                        } else {
+                            showMessage('Ошибка входа: ' + (error.message || 'Проверьте данные'), 'error');
+                        }
                     } finally {
                         loading.value = false;
                     }
@@ -1796,6 +1859,7 @@
                         ];
                         showMessage('Вы вышли', 'success');
                     } catch (error) {
+                        console.error('Ошибка при выходе:', error);
                         showMessage('Ошибка при выходе', 'error');
                     } finally {
                         loading.value = false;
@@ -1822,6 +1886,7 @@
                         updateChart();
                         await loadHistoricalData();
                     } catch (error) {
+                        console.error('Ошибка сохранения:', error);
                         showMessage('Ошибка сохранения', 'error');
                     } finally {
                         loading.value = false;
@@ -1846,7 +1911,8 @@
                         const newGoalObj = {
                             name: newGoal.name,
                             targetAmount: newGoal.targetAmount,
-                            currentAmount: 0
+                            currentAmount: 0,
+                            createdAt: new Date().toISOString()
                         };
                         
                         goals.value.push(newGoalObj);
@@ -1860,6 +1926,7 @@
                         
                         showMessage('Цель добавлена!', 'success');
                     } catch (error) {
+                        console.error('Ошибка добавления цели:', error);
                         showMessage('Ошибка', 'error');
                     } finally {
                         loading.value = false;
@@ -1883,6 +1950,7 @@
                         
                         showMessage(`Добавлено ${formatMoney(amount)} ₽`, 'success');
                     } catch (error) {
+                        console.error('Ошибка добавления к цели:', error);
                         showMessage('Ошибка', 'error');
                     } finally {
                         loading.value = false;
@@ -1910,6 +1978,7 @@
                         showMessage(`Добавлено ${formatMoney(addToGoalAmount.value)} ₽`, 'success');
                         closeAddToGoalModal();
                     } catch (error) {
+                        console.error('Ошибка добавления к цели:', error);
                         showMessage('Ошибка', 'error');
                     } finally {
                         loading.value = false;
@@ -1932,6 +2001,7 @@
                         showMessage('Цель удалена', 'success');
                         closeRemoveGoalModal();
                     } catch (error) {
+                        console.error('Ошибка удаления цели:', error);
                         showMessage('Ошибка', 'error');
                     } finally {
                         loading.value = false;
@@ -1967,6 +2037,7 @@
                         showMessage('Доход обновлен!', 'success');
                         closeIncomeModal();
                     } catch (error) {
+                        console.error('Ошибка сохранения дохода:', error);
                         showMessage('Ошибка', 'error');
                     } finally {
                         loading.value = false;
@@ -1984,7 +2055,7 @@
                     const query = friendSearchQuery.value.toLowerCase().replace('@', '');
                     
                     searchResults.value = users.value.filter(u => 
-                        u.nickname.toLowerCase() === query && 
+                        (u.nickname.toLowerCase() === query || u.login.toLowerCase() === query) && 
                         u.login !== currentUser.value?.login &&
                         !friends.value.some(f => f.login === u.login) &&
                         !friendRequests.value.includes(u.login) &&
@@ -1993,6 +2064,10 @@
                         ...u,
                         kfg: calculateKFG(u)
                     }));
+                    
+                    if (searchResults.value.length === 0 && friendSearchQuery.value.trim()) {
+                        showMessage('Пользователь не найден', 'info');
+                    }
                 }
 
                 async function sendFriendRequest(user) {
@@ -2035,8 +2110,9 @@
                         friendSearchQuery.value = '';
                         searchPerformed.value = false;
                         
-                        showMessage(`Заявка отправлена`, 'success');
+                        showMessage(`Заявка отправлена пользователю ${user.nickname}`, 'success');
                     } catch (error) {
+                        console.error('Ошибка отправки заявки:', error);
                         showMessage('Ошибка', 'error');
                     } finally {
                         loading.value = false;
@@ -2064,13 +2140,15 @@
                         
                         if (friendDoc.exists) {
                             const friendFriends = friendDoc.data().friends || [];
-                            friendFriends.push({
-                                name: currentUser.value.name,
-                                surname: currentUser.value.surname,
-                                nickname: currentUser.value.nickname,
-                                login: currentUser.value.login,
-                                avatar: currentUser.value.avatar
-                            });
+                            if (!friendFriends.some(f => f.login === currentUser.value.login)) {
+                                friendFriends.push({
+                                    name: currentUser.value.name,
+                                    surname: currentUser.value.surname,
+                                    nickname: currentUser.value.nickname,
+                                    login: currentUser.value.login,
+                                    avatar: currentUser.value.avatar
+                                });
+                            }
                             
                             const friendRequestsList = (friendDoc.data().friendRequests || []).filter(
                                 login => login !== currentUser.value.login
@@ -2089,6 +2167,7 @@
                         
                         showMessage('Заявка принята', 'success');
                     } catch (error) {
+                        console.error('Ошибка принятия заявки:', error);
                         showMessage('Ошибка', 'error');
                     } finally {
                         loading.value = false;
@@ -2118,6 +2197,7 @@
                         
                         showMessage('Заявка отклонена', 'info');
                     } catch (error) {
+                        console.error('Ошибка отклонения заявки:', error);
                         showMessage('Ошибка', 'error');
                     } finally {
                         loading.value = false;
@@ -2147,6 +2227,7 @@
                         
                         showMessage('Друг удален', 'success');
                     } catch (error) {
+                        console.error('Ошибка удаления друга:', error);
                         showMessage('Ошибка', 'error');
                     } finally {
                         loading.value = false;
@@ -2169,8 +2250,9 @@
                             avatar: avatar.id
                         });
                         
-                        showMessage(`Аватар изменен!`, 'success');
+                        showMessage(`Аватар изменен на "${avatar.name}"!`, 'success');
                     } catch (error) {
+                        console.error('Ошибка смены аватара:', error);
                         showMessage('Ошибка', 'error');
                     } finally {
                         loading.value = false;
@@ -2181,7 +2263,7 @@
                     if (reward.kfgRequired <= kfg.value) {
                         showMessage(`Вы получили: ${reward.name}`, 'success');
                     } else {
-                        showMessage('Недостаточно КФГ', 'error');
+                        showMessage(`Недостаточно КФГ. Нужно ${reward.kfgRequired}`, 'error');
                     }
                 }
 
@@ -2340,11 +2422,21 @@
                     auth.onAuthStateChanged(async (user) => {
                         if (user) {
                             try {
-                                const emailQuery = await db.collection('users').where('email', '==', user.email).get();
-                                if (!emailQuery.empty) {
-                                    const userData = emailQuery.docs[0].data();
+                                // Ищем пользователя по uid или email
+                                let userQuery = await db.collection('users').where('uid', '==', user.uid).get();
+                                
+                                if (userQuery.empty) {
+                                    userQuery = await db.collection('users').where('email', '==', user.email).get();
+                                }
+                                
+                                if (!userQuery.empty) {
+                                    const userData = userQuery.docs[0].data();
                                     await loadCurrentUserData(userData.login);
                                     await loadUsersFromFirestore();
+                                    console.log('Пользователь авторизован:', userData.nickname);
+                                } else {
+                                    console.log('Пользователь авторизован в Auth, но не найден в Firestore');
+                                    await auth.signOut();
                                 }
                             } catch (error) {
                                 console.error('Ошибка восстановления сессии:', error);
@@ -2352,8 +2444,6 @@
                         }
                         loading.value = false;
                     });
-                    
-                    setTimeout(() => { loading.value = false; }, 2000);
                 }
 
                 onMounted(async () => {
