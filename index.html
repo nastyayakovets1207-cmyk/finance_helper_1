@@ -38,6 +38,16 @@
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         }
         
+        /* Стили для кнопки Google */
+        .google-btn {
+            background: #4285F4;
+            transition: all 0.3s ease;
+        }
+        .google-btn:hover {
+            background: #3367D6;
+            transform: translateY(-2px);
+        }
+        
         .message-bot {
             background-color: #f3f4f6;
             color: #1f2937;
@@ -417,7 +427,7 @@
                                 </div>
                             </div>
                             
-                            <!-- Форма входа -->
+                            <!-- Форма входа с добавленной кнопкой Google -->
                             <div class="bg-gray-50 rounded-xl p-4 sm:p-6">
                                 <h2 class="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 text-purple-600">Вход</h2>
                                 
@@ -438,6 +448,25 @@
                                             class="w-full gradient-bg text-white py-3 rounded-lg font-semibold hover:shadow-lg text-base">
                                         <i class="fas fa-sign-in-alt mr-2"></i>Войти
                                     </button>
+                                    
+                                    <div class="relative my-4">
+                                        <div class="absolute inset-0 flex items-center">
+                                            <div class="w-full border-t border-gray-300"></div>
+                                        </div>
+                                        <div class="relative flex justify-center text-sm">
+                                            <span class="px-2 bg-gray-50 text-gray-500">Или войдите через</span>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Кнопка входа через Google -->
+                                    <button @click="loginWithGoogle" 
+                                            class="google-btn w-full text-white py-3 rounded-lg font-semibold flex items-center justify-center">
+                                        <i class="fab fa-google text-xl mr-3"></i>
+                                        Google
+                                    </button>
+                                    <p class="text-xs text-gray-500 text-center mt-2">
+                                        Войдите с помощью вашего Google аккаунта
+                                    </p>
                                 </div>
                             </div>
                         </div>
@@ -466,7 +495,7 @@
                     </button>
                 </div>
 
-                <!-- Контент вкладок -->
+                <!-- Контент вкладок (весь остальной код остается без изменений) -->
                 <div class="p-4 sm:p-6">
                     <!-- Вкладка профиля -->
                     <div v-show="currentTab === 'profile'">
@@ -1054,6 +1083,12 @@
         } catch (error) {
             console.error('Ошибка инициализации Firebase:', error);
         }
+
+        // Google Provider
+        const googleProvider = new firebase.auth.GoogleAuthProvider();
+        googleProvider.setCustomParameters({
+            prompt: 'select_account'
+        });
 
         // Конфигурация DeepSeek API
         const DEEPSEEK_API_KEY = 'sk-d5aa9940c6724fb9991d46fabb3a299c';
@@ -1684,6 +1719,90 @@
                         
                     } catch (error) {
                         console.error('Ошибка сохранения снапшота:', error);
+                    }
+                }
+
+                // ============= ВХОД ЧЕРЕЗ GOOGLE =============
+                async function loginWithGoogle() {
+                    loading.value = true;
+                    loadingMessage.value = 'Вход через Google...';
+                    
+                    try {
+                        const result = await auth.signInWithPopup(googleProvider);
+                        const user = result.user;
+                        
+                        console.log('Google авторизация успешна:', user.email);
+                        
+                        // Проверяем, существует ли пользователь в Firestore
+                        const emailQuery = await db.collection('users').where('email', '==', user.email).get();
+                        
+                        if (!emailQuery.empty) {
+                            // Пользователь уже есть
+                            const userData = emailQuery.docs[0].data();
+                            await loadCurrentUserData(userData.login);
+                            showMessage('Добро пожаловать!', 'success');
+                        } else {
+                            // Создаем нового пользователя
+                            const firstName = user.displayName?.split(' ')[0] || 'Пользователь';
+                            const lastName = user.displayName?.split(' ').slice(1).join(' ') || '';
+                            
+                            // Генерируем уникальный логин
+                            const baseLogin = user.email.split('@')[0].replace(/[^a-zA-Z0-9]/g, '');
+                            let login = baseLogin;
+                            let counter = 1;
+                            
+                            while (true) {
+                                const loginCheck = await db.collection('users').doc(login).get();
+                                if (!loginCheck.exists) break;
+                                login = `${baseLogin}${counter}`;
+                                counter++;
+                            }
+                            
+                            // Генерируем уникальный никнейм
+                            const baseNickname = '@' + baseLogin;
+                            let nickname = baseNickname;
+                            counter = 1;
+                            
+                            while (true) {
+                                const nicknameQuery = await db.collection('users').where('nickname', '==', nickname).get();
+                                if (nicknameQuery.empty) break;
+                                nickname = `${baseNickname}${counter}`;
+                                counter++;
+                            }
+                            
+                            const newUser = {
+                                name: firstName,
+                                surname: lastName,
+                                nickname: nickname,
+                                login: login,
+                                email: user.email,
+                                income: 0,
+                                avatar: 1,
+                                expenses: { ...initialExpenses },
+                                goals: [],
+                                friends: [],
+                                friendRequests: [],
+                                pendingRequests: [],
+                                uid: user.uid,
+                                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                            };
+                            
+                            await db.collection('users').doc(login).set(newUser);
+                            await loadCurrentUserData(login);
+                            showMessage('Добро пожаловать! Профиль создан через Google', 'success');
+                        }
+                        
+                        await loadUsersFromFirestore();
+                        
+                    } catch (error) {
+                        console.error('Ошибка входа через Google:', error);
+                        if (error.code === 'auth/popup-closed-by-user') {
+                            showMessage('Вход отменен', 'info');
+                        } else {
+                            showMessage('Ошибка входа через Google: ' + (error.message || 'Попробуйте позже'), 'error');
+                        }
+                    } finally {
+                        loading.value = false;
                     }
                 }
 
@@ -2526,6 +2645,7 @@
                     selectedGoalNameForRemove,
                     handleRegister,
                     handleLogin,
+                    loginWithGoogle,
                     logout,
                     searchFriends,
                     sendFriendRequest,
