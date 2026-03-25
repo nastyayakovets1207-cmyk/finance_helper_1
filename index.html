@@ -26,7 +26,6 @@
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     
     <style>
-        /* Mobile-first стили */
         * {
             -webkit-tap-highlight-color: transparent;
             -webkit-touch-callout: none;
@@ -142,10 +141,6 @@
         .trend-up { @apply text-green-600; }
         .trend-down { @apply text-red-600; }
         .trend-neutral { @apply text-gray-600; }
-
-        .comparison-card {
-            @apply bg-white rounded-lg p-4 shadow-sm hover:shadow-md transition;
-        }
 
         .mobile-tab-bar {
             display: flex;
@@ -451,7 +446,6 @@
 
         <!-- Основной контейнер (для авторизованных пользователей) -->
         <div v-else class="container mx-auto px-4 py-4 sm:py-8">
-            <!-- Мобильные табы -->
             <div class="bg-white rounded-xl shadow-lg overflow-hidden">
                 <div class="mobile-tab-bar border-b">
                     <button v-for="tab in tabs" :key="tab.id" 
@@ -469,7 +463,6 @@
                     </button>
                 </div>
 
-                <!-- Контент вкладок -->
                 <div class="p-4 sm:p-6">
                     <!-- Вкладка профиля -->
                     <div v-show="currentTab === 'profile'">
@@ -1569,7 +1562,7 @@
                     sendMessage();
                 }
 
-                // ============= VK AUTH FUNCTIONS =============
+                // ============= VK AUTH FUNCTIONS (исправленная версия) =============
                 function generateRandomString(length = 32) {
                     const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
                     let text = '';
@@ -1597,15 +1590,17 @@
                         const state = generateRandomString();
                         saveState(state);
                         
-                        const authUrl = new URL('https://id.vk.com/authorize');
-                        authUrl.searchParams.append('client_id', VK_APP_ID);
-                        authUrl.searchParams.append('redirect_uri', VK_REDIRECT_URI);
-                        authUrl.searchParams.append('response_type', 'code');
-                        authUrl.searchParams.append('state', state);
-                        authUrl.searchParams.append('scope', 'email');
-                        authUrl.searchParams.append('v', '5.131');
+                        const authUrl = 'https://oauth.vk.com/authorize?' + new URLSearchParams({
+                            client_id: VK_APP_ID,
+                            redirect_uri: VK_REDIRECT_URI,
+                            display: 'page',
+                            scope: 'email',
+                            response_type: 'token',
+                            v: '5.131',
+                            state: state
+                        }).toString();
                         
-                        window.location.href = authUrl.toString();
+                        window.location.href = authUrl;
                         
                     } catch (error) {
                         console.error('VK login error:', error);
@@ -1615,87 +1610,219 @@
                 }
 
                 async function handleVKCallback() {
-                    const urlParams = new URLSearchParams(window.location.search);
-                    const code = urlParams.get('code');
-                    const state = urlParams.get('state');
-                    const error = urlParams.get('error');
+                    let hash = window.location.hash.substring(1);
                     
-                    if (error) {
-                        showMessage(`Ошибка авторизации VK: ${error}`, 'error');
-                        window.history.replaceState({}, document.title, window.location.pathname);
-                        return false;
-                    }
-                    
-                    if (code && state) {
-                        loading.value = true;
-                        loadingMessage.value = 'Завершение авторизации...';
+                    if (!hash && window.location.search) {
+                        const urlParams = new URLSearchParams(window.location.search);
+                        const code = urlParams.get('code');
+                        const error = urlParams.get('error');
                         
-                        try {
-                            if (!verifyState(state)) {
-                                throw new Error('Невалидный state параметр');
-                            }
-                            
-                            const tokenResponse = await axios.get('https://id.vk.com/oauth2/auth', {
-                                params: {
-                                    grant_type: 'authorization_code',
-                                    client_id: VK_APP_ID,
-                                    code: code,
-                                    redirect_uri: VK_REDIRECT_URI
-                                }
-                            });
-                            
-                            const { access_token, user_id } = tokenResponse.data;
-                            
-                            const userInfoResponse = await axios.get('https://id.vk.com/oauth2/user_info', {
-                                params: {
-                                    access_token: access_token,
-                                    v: '5.131'
-                                }
-                            });
-                            
-                            const vkUser = userInfoResponse.data.user;
-                            
-                            const userLogin = `vk_${user_id}`;
-                            const userDoc = await db.collection('users').doc(userLogin).get();
-                            
-                            if (userDoc.exists) {
-                                await loadCurrentUserData(userLogin);
-                                showMessage('Добро пожаловать!', 'success');
-                            } else {
-                                const newUser = {
-                                    name: vkUser.first_name,
-                                    surname: vkUser.last_name || '',
-                                    nickname: vkUser.nickname || `vk_${user_id}`,
-                                    login: userLogin,
-                                    email: vkUser.email || `${user_id}@vk.com`,
-                                    income: 0,
-                                    avatar: 1,
-                                    expenses: { ...initialExpenses },
-                                    goals: [],
-                                    friends: [],
-                                    friendRequests: [],
-                                    pendingRequests: [],
-                                    vkId: user_id,
-                                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
-                                };
-                                
-                                await db.collection('users').doc(userLogin).set(newUser);
-                                await loadCurrentUserData(userLogin);
-                                showMessage('Аккаунт создан через VK!', 'success');
-                            }
-                            
-                            await loadUsersFromFirestore();
-                            
-                            window.history.replaceState({}, document.title, window.location.pathname);
-                            return true;
-                            
-                        } catch (error) {
-                            console.error('VK callback error:', error);
-                            showMessage('Ошибка завершения авторизации VK', 'error');
+                        if (error) {
+                            showMessage(`Ошибка авторизации VK: ${error}`, 'error');
                             window.history.replaceState({}, document.title, window.location.pathname);
                             return false;
-                        } finally {
-                            loading.value = false;
+                        }
+                        
+                        if (code) {
+                            loading.value = true;
+                            loadingMessage.value = 'Обмен кода на токен...';
+                            
+                            try {
+                                const tokenResponse = await axios.get('https://oauth.vk.com/access_token', {
+                                    params: {
+                                        client_id: VK_APP_ID,
+                                        redirect_uri: VK_REDIRECT_URI,
+                                        code: code
+                                    }
+                                });
+                                
+                                if (tokenResponse.data.error) {
+                                    throw new Error(tokenResponse.data.error_description || tokenResponse.data.error);
+                                }
+                                
+                                const { access_token, user_id, email } = tokenResponse.data;
+                                
+                                const userInfoResponse = await axios.get('https://api.vk.com/method/users.get', {
+                                    params: {
+                                        user_ids: user_id,
+                                        access_token: access_token,
+                                        v: '5.131',
+                                        fields: 'first_name,last_name,nickname,photo_100'
+                                    }
+                                });
+                                
+                                if (userInfoResponse.data.error) {
+                                    throw new Error(userInfoResponse.data.error.error_msg);
+                                }
+                                
+                                const vkUser = userInfoResponse.data.response[0];
+                                const userLogin = `vk_${user_id}`;
+                                const userDoc = await db.collection('users').doc(userLogin).get();
+                                
+                                if (userDoc.exists) {
+                                    await loadCurrentUserData(userLogin);
+                                    showMessage('Добро пожаловать!', 'success');
+                                } else {
+                                    const newUser = {
+                                        name: vkUser.first_name,
+                                        surname: vkUser.last_name || '',
+                                        nickname: vkUser.nickname || `vk_${user_id}`,
+                                        login: userLogin,
+                                        email: email || `${user_id}@vk.com`,
+                                        income: 0,
+                                        avatar: 1,
+                                        expenses: { ...initialExpenses },
+                                        goals: [],
+                                        friends: [],
+                                        friendRequests: [],
+                                        pendingRequests: [],
+                                        vkId: user_id,
+                                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                                    };
+                                    
+                                    await db.collection('users').doc(userLogin).set(newUser);
+                                    await loadCurrentUserData(userLogin);
+                                    showMessage('Аккаунт создан через VK!', 'success');
+                                }
+                                
+                                await loadUsersFromFirestore();
+                                window.history.replaceState({}, document.title, window.location.pathname);
+                                return true;
+                                
+                            } catch (error) {
+                                console.error('VK token exchange error:', error);
+                                showMessage('Ошибка обмена кода на токен', 'error');
+                                window.history.replaceState({}, document.title, window.location.pathname);
+                                return false;
+                            } finally {
+                                loading.value = false;
+                            }
+                        }
+                    }
+                    
+                    if (hash) {
+                        const hashParams = new URLSearchParams(hash);
+                        const accessToken = hashParams.get('access_token');
+                        const state = hashParams.get('state');
+                        const error = hashParams.get('error');
+                        
+                        if (error) {
+                            showMessage(`Ошибка авторизации VK: ${error}`, 'error');
+                            window.history.replaceState({}, document.title, window.location.pathname);
+                            return false;
+                        }
+                        
+                        if (accessToken && state) {
+                            loading.value = true;
+                            loadingMessage.value = 'Завершение авторизации...';
+                            
+                            try {
+                                if (!verifyState(state)) {
+                                    throw new Error('Невалидный state параметр');
+                                }
+                                
+                                const userId = hashParams.get('user_id');
+                                
+                                if (!userId) {
+                                    const userInfoResponse = await axios.get('https://api.vk.com/method/users.get', {
+                                        params: {
+                                            access_token: accessToken,
+                                            v: '5.131',
+                                            fields: 'first_name,last_name,nickname,photo_100'
+                                        }
+                                    });
+                                    
+                                    if (userInfoResponse.data.error) {
+                                        throw new Error(userInfoResponse.data.error.error_msg);
+                                    }
+                                    
+                                    const vkUser = userInfoResponse.data.response[0];
+                                    const vkUserId = vkUser.id;
+                                    
+                                    const userLogin = `vk_${vkUserId}`;
+                                    const userDoc = await db.collection('users').doc(userLogin).get();
+                                    
+                                    if (userDoc.exists) {
+                                        await loadCurrentUserData(userLogin);
+                                        showMessage('Добро пожаловать!', 'success');
+                                    } else {
+                                        const newUser = {
+                                            name: vkUser.first_name,
+                                            surname: vkUser.last_name || '',
+                                            nickname: vkUser.nickname || `vk_${vkUserId}`,
+                                            login: userLogin,
+                                            email: `${vkUserId}@vk.com`,
+                                            income: 0,
+                                            avatar: 1,
+                                            expenses: { ...initialExpenses },
+                                            goals: [],
+                                            friends: [],
+                                            friendRequests: [],
+                                            pendingRequests: [],
+                                            vkId: vkUserId,
+                                            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                                        };
+                                        
+                                        await db.collection('users').doc(userLogin).set(newUser);
+                                        await loadCurrentUserData(userLogin);
+                                        showMessage('Аккаунт создан через VK!', 'success');
+                                    }
+                                    
+                                    await loadUsersFromFirestore();
+                                    
+                                } else {
+                                    const userLogin = `vk_${userId}`;
+                                    const userDoc = await db.collection('users').doc(userLogin).get();
+                                    
+                                    if (userDoc.exists) {
+                                        await loadCurrentUserData(userLogin);
+                                        showMessage('Добро пожаловать!', 'success');
+                                    } else {
+                                        const userInfoResponse = await axios.get('https://api.vk.com/method/users.get', {
+                                            params: {
+                                                user_ids: userId,
+                                                access_token: accessToken,
+                                                v: '5.131',
+                                                fields: 'first_name,last_name,nickname,photo_100'
+                                            }
+                                        });
+                                        
+                                        const vkUser = userInfoResponse.data.response[0];
+                                        
+                                        const newUser = {
+                                            name: vkUser.first_name,
+                                            surname: vkUser.last_name || '',
+                                            nickname: vkUser.nickname || `vk_${userId}`,
+                                            login: userLogin,
+                                            email: `${userId}@vk.com`,
+                                            income: 0,
+                                            avatar: 1,
+                                            expenses: { ...initialExpenses },
+                                            goals: [],
+                                            friends: [],
+                                            friendRequests: [],
+                                            pendingRequests: [],
+                                            vkId: userId,
+                                            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                                        };
+                                        
+                                        await db.collection('users').doc(userLogin).set(newUser);
+                                        await loadCurrentUserData(userLogin);
+                                        showMessage('Аккаунт создан через VK!', 'success');
+                                    }
+                                }
+                                
+                                window.history.replaceState({}, document.title, window.location.pathname);
+                                return true;
+                                
+                            } catch (error) {
+                                console.error('VK callback error:', error);
+                                showMessage('Ошибка завершения авторизации VK: ' + (error.message || 'Неизвестная ошибка'), 'error');
+                                window.history.replaceState({}, document.title, window.location.pathname);
+                                return false;
+                            } finally {
+                                loading.value = false;
+                            }
                         }
                     }
                     
