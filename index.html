@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover">
-    <title>FinGrade - Мобильная версия с DeepSeek AI</title>
+    <title>FinGrade - Мобильная версия с GigaChat AI</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -26,7 +26,7 @@
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     
     <style>
-        /* Mobile-first стили - оставляем без изменений */
+        /* Mobile-first стили */
         * {
             -webkit-tap-highlight-color: transparent;
             -webkit-touch-callout: none;
@@ -38,7 +38,6 @@
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         }
         
-        /* Стили для кнопки Google */
         .google-btn {
             background: #4285F4;
             transition: all 0.3s ease;
@@ -322,7 +321,7 @@
             {{ message.text }}
         </div>
 
-        <!-- Формы авторизации -->
+        <!-- Формы авторизации (оставляем без изменений) -->
         <div v-if="!currentUser" class="container mx-auto px-4 py-4 sm:py-8">
             <div class="max-w-4xl mx-auto">
                 <div class="bg-white rounded-xl shadow-lg overflow-hidden">
@@ -427,7 +426,7 @@
                                 </div>
                             </div>
                             
-                            <!-- Форма входа с добавленной кнопкой Google -->
+                            <!-- Форма входа -->
                             <div class="bg-gray-50 rounded-xl p-4 sm:p-6">
                                 <h2 class="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 text-purple-600">Вход</h2>
                                 
@@ -458,15 +457,11 @@
                                         </div>
                                     </div>
                                     
-                                    <!-- Кнопка входа через Google -->
                                     <button @click="loginWithGoogle" 
                                             class="google-btn w-full text-white py-3 rounded-lg font-semibold flex items-center justify-center">
                                         <i class="fab fa-google text-xl mr-3"></i>
                                         Google
                                     </button>
-                                    <p class="text-xs text-gray-500 text-center mt-2">
-                                        Войдите с помощью вашего Google аккаунта
-                                    </p>
                                 </div>
                             </div>
                         </div>
@@ -477,7 +472,6 @@
 
         <!-- Основной контейнер (для авторизованных пользователей) -->
         <div v-else class="container mx-auto px-4 py-4 sm:py-8">
-            <!-- Мобильные табы -->
             <div class="bg-white rounded-xl shadow-lg overflow-hidden">
                 <div class="mobile-tab-bar border-b">
                     <button v-for="tab in tabs" :key="tab.id" 
@@ -495,7 +489,6 @@
                     </button>
                 </div>
 
-                <!-- Контент вкладок (весь остальной код остается без изменений) -->
                 <div class="p-4 sm:p-6">
                     <!-- Вкладка профиля -->
                     <div v-show="currentTab === 'profile'">
@@ -760,9 +753,9 @@
                         </div>
                     </div>
 
-                    <!-- Вкладка ИИ-Ассистент с DeepSeek -->
+                    <!-- Вкладка ИИ-Ассистент с GigaChat -->
                     <div v-show="currentTab === 'chat'">
-                        <h2 class="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">ИИ-Ассистент DeepSeek</h2>
+                        <h2 class="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">ИИ-Ассистент GigaChat</h2>
                         
                         <div class="bg-gray-50 rounded-lg p-3 sm:p-4">
                             <div class="h-96 overflow-y-auto flex flex-col space-y-2 mb-3 sm:mb-4 p-2" ref="chatContainer" style="-webkit-overflow-scrolling: touch;">
@@ -774,7 +767,7 @@
                                             <span></span>
                                             <span></span>
                                         </div>
-                                        <span class="text-gray-500 text-xs">DeepSeek анализирует...</span>
+                                        <span class="text-gray-500 text-xs">GigaChat анализирует...</span>
                                     </div>
                                     <div v-else-if="msg.sender === 'bot' && msg.error" class="text-red-500 text-sm">
                                         <i class="fas fa-exclamation-triangle mr-1"></i>
@@ -811,7 +804,7 @@
                             <div class="flex space-x-2">
                                 <textarea v-model="chatInput" @keyup.enter="sendMessage" rows="1" 
                                           class="flex-1 px-3 sm:px-4 py-2 border rounded-lg focus:outline-none focus:border-purple-500 resize-none text-sm sm:text-base"
-                                          placeholder="Спросите DeepSeek о финансах..."></textarea>
+                                          placeholder="Спросите GigaChat о финансах..."></textarea>
                                 <button @click="sendMessage" :disabled="aiLoading" 
                                         class="gradient-bg text-white px-4 sm:px-6 rounded-lg font-semibold hover:shadow-lg disabled:opacity-50 min-w-[44px]">
                                     <i class="fas fa-paper-plane" :class="{'fa-spinner fa-spin': aiLoading}"></i>
@@ -819,7 +812,7 @@
                             </div>
                             
                             <div class="text-xs text-gray-500 mt-2 text-right">
-                                <i class="fas fa-robot mr-1"></i> DeepSeek AI • Контекст: {{ aiContextLength }} сообщений
+                                <i class="fas fa-robot mr-1"></i> GigaChat AI • Контекст: {{ aiContextLength }} сообщений
                             </div>
                         </div>
                     </div>
@@ -1090,9 +1083,91 @@
             prompt: 'select_account'
         });
 
-        // Конфигурация DeepSeek API
-        const DEEPSEEK_API_KEY = 'sk-d5aa9940c6724fb9991d46fabb3a299c';
-        const DEEPSEEK_API_URL = 'https://api.deepseek.com/v1/chat/completions';
+        // Конфигурация GigaChat API
+        const GIGACHAT_AUTH_URL = 'https://ngw.devices.sberbank.ru:9443/api/v2/oauth';
+        const GIGACHAT_API_URL = 'https://gigachat.devices.sberbank.ru/api/v1/chat/completions';
+        const AUTHORIZATION_KEY = 'Basic MDE5ZDFmOTgtNDQ4NC03ZmYwLWFhNjUtYzlmYzA1ZGI2MTA3OjYzMDY0OWEyLWUwYmQtNGZhOC1iMDY4LTU1ZjFkOWZmOTRlMQ==';
+        const SCOPE = 'GIGACHAT_API_PERS';
+        const RQUID = crypto.randomUUID ? crypto.randomUUID() : 'b189f96a-b968-4970-a3c1-a86e2fd26cbf';
+
+        let cachedAccessToken = null;
+        let tokenExpiryTime = null;
+
+        // Функция получения Access Token для GigaChat
+        async function getGigaChatAccessToken() {
+            // Проверяем, не истек ли текущий токен (30 минут)
+            if (cachedAccessToken && tokenExpiryTime && Date.now() < tokenExpiryTime) {
+                return cachedAccessToken;
+            }
+
+            try {
+                const response = await axios.post(GIGACHAT_AUTH_URL, 
+                    new URLSearchParams({ scope: SCOPE }), 
+                    {
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                            'Accept': 'application/json',
+                            'RqUID': RQUID,
+                            'Authorization': AUTHORIZATION_KEY
+                        }
+                    }
+                );
+
+                if (response.data && response.data.access_token) {
+                    cachedAccessToken = response.data.access_token;
+                    // Токен действует 30 минут, устанавливаем время истечения на 28 минут для запаса
+                    tokenExpiryTime = Date.now() + (28 * 60 * 1000);
+                    console.log('GigaChat токен получен успешно');
+                    return cachedAccessToken;
+                } else {
+                    throw new Error('Не удалось получить токен доступа');
+                }
+            } catch (error) {
+                console.error('Ошибка получения токена GigaChat:', error);
+                if (error.response) {
+                    throw new Error(`Ошибка авторизации GigaChat: ${error.response.status} - ${error.response.data?.message || 'Неизвестная ошибка'}`);
+                }
+                throw new Error('Не удалось подключиться к серверу GigaChat');
+            }
+        }
+
+        // Функция отправки запроса к GigaChat
+        async function sendToGigaChat(messages) {
+            const accessToken = await getGigaChatAccessToken();
+            
+            try {
+                const response = await axios.post(GIGACHAT_API_URL, {
+                    model: 'GigaChat',
+                    messages: messages,
+                    temperature: 0.7,
+                    max_tokens: 1000,
+                    top_p: 0.95,
+                    frequency_penalty: 0,
+                    presence_penalty: 0
+                }, {
+                    headers: {
+                        'Authorization': `Bearer ${accessToken}`,
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    }
+                });
+
+                if (response.data && response.data.choices && response.data.choices.length > 0) {
+                    return response.data.choices[0].message.content;
+                } else {
+                    throw new Error('Неожиданный ответ от GigaChat API');
+                }
+            } catch (error) {
+                console.error('GigaChat API error:', error);
+                if (error.response) {
+                    throw new Error(`Ошибка GigaChat: ${error.response.status} - ${error.response.data?.error?.message || 'Неизвестная ошибка'}`);
+                } else if (error.request) {
+                    throw new Error('Нет ответа от сервера GigaChat');
+                } else {
+                    throw new Error(error.message || 'Ошибка при обращении к GigaChat');
+                }
+            }
+        }
 
         const app = createApp({
             setup() {
@@ -1140,16 +1215,16 @@
                 const searchResults = ref([]);
                 const searchPerformed = ref(false);
                 
-                // Чат с DeepSeek
+                // Чат с GigaChat
                 const chatMessages = ref([
-                    { text: 'Привет! Я DeepSeek AI, ваш финансовый ассистент. Я помогу вам с анализом расходов, советами по инвестированию и улучшению КФГ. Задайте вопрос!', sender: 'bot' }
+                    { text: 'Привет! Я GigaChat AI, ваш финансовый ассистент. Я помогу вам с анализом расходов, советами по инвестированию и улучшению КФГ. Задайте вопрос!', sender: 'bot' }
                 ]);
                 const chatInput = ref('');
                 const chatContainer = ref(null);
                 const aiLoading = ref(false);
                 
                 const chatHistory = ref([
-                    { role: 'system', content: 'Вы DeepSeek AI, профессиональный финансовый ассистент в приложении FinGrade. Вы даете советы по личным финансам, помогаете анализировать расходы, предлагаете стратегии инвестирования и улучшения КФГ (коэффициента финансовой грамотности). Отвечайте подробно, но понятно. Используйте русский язык. Можете форматировать ответы с помощью markdown-like синтаксиса для улучшения читаемости.' }
+                    { role: 'system', content: 'Вы GigaChat AI, профессиональный финансовый ассистент в приложении FinGrade. Вы даете советы по личным финансам, помогаете анализировать расходы, предлагаете стратегии инвестирования и улучшения КФГ (коэффициента финансовой грамотности). Отвечайте подробно, но понятно. Используйте русский язык. Можете форматировать ответы с помощью markdown-like синтаксиса для улучшения читаемости.' }
                 ]);
                 
                 // Аналитика
@@ -1516,41 +1591,7 @@
                     `;
                 }
 
-                // DeepSeek API функция
-                async function sendToDeepSeek(messages) {
-                    try {
-                        const response = await axios.post(DEEPSEEK_API_URL, {
-                            model: 'deepseek-chat',
-                            messages: messages,
-                            temperature: 0.7,
-                            max_tokens: 1000,
-                            top_p: 0.95,
-                            frequency_penalty: 0,
-                            presence_penalty: 0
-                        }, {
-                            headers: {
-                                'Authorization': `Bearer ${DEEPSEEK_API_KEY}`,
-                                'Content-Type': 'application/json'
-                            }
-                        });
-
-                        if (response.data && response.data.choices && response.data.choices.length > 0) {
-                            return response.data.choices[0].message.content;
-                        } else {
-                            throw new Error('Неожиданный ответ от API');
-                        }
-                    } catch (error) {
-                        console.error('DeepSeek API error:', error);
-                        if (error.response) {
-                            throw new Error(`Ошибка API: ${error.response.status} - ${error.response.data?.error?.message || 'Неизвестная ошибка'}`);
-                        } else if (error.request) {
-                            throw new Error('Нет ответа от сервера DeepSeek');
-                        } else {
-                            throw new Error(error.message || 'Ошибка при обращении к DeepSeek');
-                        }
-                    }
-                }
-
+                // Функция отправки сообщения в GigaChat
                 async function sendMessage() {
                     if (!chatInput.value.trim() || aiLoading.value) return;
                     
@@ -1581,7 +1622,7 @@
                             };
                         }
                         
-                        const aiResponse = await sendToDeepSeek(messagesForAI);
+                        const aiResponse = await sendToGigaChat(messagesForAI);
                         
                         chatMessages.value.splice(loadingIndex, 1);
                         chatMessages.value.push({ text: aiResponse, sender: 'bot' });
@@ -1593,7 +1634,7 @@
                         }
                         
                     } catch (error) {
-                        console.error('Ошибка DeepSeek:', error);
+                        console.error('Ошибка GigaChat:', error);
                         chatMessages.value.splice(loadingIndex, 1);
                         chatMessages.value.push({ 
                             text: `Извините, произошла ошибка: ${error.message}. Пожалуйста, попробуйте позже.`, 
@@ -1613,11 +1654,11 @@
 
                 function resetChatContext() {
                     chatHistory.value = [
-                        { role: 'system', content: 'Вы DeepSeek AI, профессиональный финансовый ассистент в приложении FinGrade. Вы даете советы по личным финансам, помогаете анализировать расходы, предлагаете стратегии инвестирования и улучшения КФГ (коэффициента финансовой грамотности). Отвечайте подробно, но понятно. Используйте русский язык. Можете форматировать ответы с помощью markdown-like синтаксиса для улучшения читаемости.' }
+                        { role: 'system', content: 'Вы GigaChat AI, профессиональный финансовый ассистент в приложении FinGrade. Вы даете советы по личным финансам, помогаете анализировать расходы, предлагаете стратегии инвестирования и улучшения КФГ (коэффициента финансовой грамотности). Отвечайте подробно, но понятно. Используйте русский язык. Можете форматировать ответы с помощью markdown-like синтаксиса для улучшения читаемости.' }
                     ];
                     
                     chatMessages.value = [
-                        { text: 'Привет! Я DeepSeek AI, ваш финансовый ассистент. Контекст сброшен. Задайте новый вопрос!', sender: 'bot' }
+                        { text: 'Привет! Я GigaChat AI, ваш финансовый ассистент. Контекст сброшен. Задайте новый вопрос!', sender: 'bot' }
                     ];
                     
                     showMessage('Контекст сброшен', 'success');
@@ -1628,7 +1669,7 @@
                     sendMessage();
                 }
 
-                // Методы Firestore
+                // Методы Firestore (оставляем без изменений из оригинального кода)
                 async function loadUsersFromFirestore() {
                     try {
                         const usersSnapshot = await db.collection('users').get();
@@ -1722,7 +1763,6 @@
                     }
                 }
 
-                // ============= ВХОД ЧЕРЕЗ GOOGLE =============
                 async function loginWithGoogle() {
                     loading.value = true;
                     loadingMessage.value = 'Вход через Google...';
@@ -1733,20 +1773,16 @@
                         
                         console.log('Google авторизация успешна:', user.email);
                         
-                        // Проверяем, существует ли пользователь в Firestore
                         const emailQuery = await db.collection('users').where('email', '==', user.email).get();
                         
                         if (!emailQuery.empty) {
-                            // Пользователь уже есть
                             const userData = emailQuery.docs[0].data();
                             await loadCurrentUserData(userData.login);
                             showMessage('Добро пожаловать!', 'success');
                         } else {
-                            // Создаем нового пользователя
                             const firstName = user.displayName?.split(' ')[0] || 'Пользователь';
                             const lastName = user.displayName?.split(' ').slice(1).join(' ') || '';
                             
-                            // Генерируем уникальный логин
                             const baseLogin = user.email.split('@')[0].replace(/[^a-zA-Z0-9]/g, '');
                             let login = baseLogin;
                             let counter = 1;
@@ -1758,7 +1794,6 @@
                                 counter++;
                             }
                             
-                            // Генерируем уникальный никнейм
                             const baseNickname = '@' + baseLogin;
                             let nickname = baseNickname;
                             counter = 1;
@@ -1806,7 +1841,6 @@
                     }
                 }
 
-                // Методы авторизации
                 async function handleRegister() {
                     if (!registerForm.name || !registerForm.surname || !registerForm.nickname || 
                         !registerForm.login || !registerForm.email || !registerForm.password) {
@@ -1823,7 +1857,6 @@
                     loadingMessage.value = 'Регистрация...';
                     
                     try {
-                        // Проверяем, существует ли пользователь с таким логином
                         const loginCheck = await db.collection('users').doc(registerForm.login).get();
                         if (loginCheck.exists) {
                             showMessage('Логин уже существует', 'error');
@@ -1831,7 +1864,6 @@
                             return;
                         }
                         
-                        // Проверяем, существует ли пользователь с таким nickname
                         const nicknameQuery = await db.collection('users').where('nickname', '==', registerForm.nickname).get();
                         if (!nicknameQuery.empty) {
                             showMessage('Никнейм уже существует', 'error');
@@ -1839,7 +1871,6 @@
                             return;
                         }
                         
-                        // Проверяем, существует ли пользователь с таким email
                         const emailQuery = await db.collection('users').where('email', '==', registerForm.email).get();
                         if (!emailQuery.empty) {
                             showMessage('Email уже используется', 'error');
@@ -1847,7 +1878,6 @@
                             return;
                         }
                         
-                        // Создаем пользователя в Firebase Authentication
                         const userCredential = await auth.createUserWithEmailAndPassword(
                             registerForm.email,
                             registerForm.password
@@ -1855,7 +1885,6 @@
                         
                         console.log('Пользователь создан в Auth:', userCredential.user.uid);
                         
-                        // Создаем документ пользователя в Firestore
                         const newUser = {
                             name: registerForm.name,
                             surname: registerForm.surname,
@@ -1881,7 +1910,6 @@
                         
                         showMessage('Регистрация успешна!', 'success');
                         
-                        // Очищаем форму
                         registerForm.name = '';
                         registerForm.surname = '';
                         registerForm.nickname = '';
@@ -1910,12 +1938,10 @@
                     loadingMessage.value = 'Вход...';
                     
                     try {
-                        // Пробуем найти пользователя по логину или email
                         let userDoc = await db.collection('users').doc(loginForm.login).get();
                         let userEmail = loginForm.login;
                         
                         if (!userDoc.exists) {
-                            // Если не нашли по логину, ищем по email
                             const emailQuery = await db.collection('users').where('email', '==', loginForm.login).get();
                             if (!emailQuery.empty) {
                                 const userData = emailQuery.docs[0].data();
@@ -1930,10 +1956,8 @@
                             userEmail = userDoc.data().email;
                         }
                         
-                        // Авторизуемся через Firebase Authentication
                         await auth.signInWithEmailAndPassword(userEmail, loginForm.password);
                         
-                        // Загружаем данные пользователя
                         const success = await loadCurrentUserData(userDoc.id);
                         if (success) {
                             await loadUsersFromFirestore();
@@ -1971,10 +1995,10 @@
                         pendingRequests.value = [];
                         savedSnapshots.value = [];
                         chatMessages.value = [
-                            { text: 'Привет! Я DeepSeek AI, ваш финансовый ассистент. Я помогу вам с анализом расходов, советами по инвестированию и улучшению КФГ. Задайте вопрос!', sender: 'bot' }
+                            { text: 'Привет! Я GigaChat AI, ваш финансовый ассистент. Я помогу вам с анализом расходов, советами по инвестированию и улучшению КФГ. Задайте вопрос!', sender: 'bot' }
                         ];
                         chatHistory.value = [
-                            { role: 'system', content: 'Вы DeepSeek AI, профессиональный финансовый ассистент в приложении FinGrade. Вы даете советы по личным финансам, помогаете анализировать расходы, предлагаете стратегии инвестирования и улучшения КФГ (коэффициента финансовой грамотности). Отвечайте подробно, но понятно. Используйте русский язык. Можете форматировать ответы с помощью markdown-like синтаксиса для улучшения читаемости.' }
+                            { role: 'system', content: 'Вы GigaChat AI, профессиональный финансовый ассистент в приложении FinGrade. Вы даете советы по личным финансам, помогаете анализировать расходы, предлагаете стратегии инвестирования и улучшения КФГ (коэффициента финансовой грамотности). Отвечайте подробно, но понятно. Используйте русский язык. Можете форматировать ответы с помощью markdown-like синтаксиса для улучшения читаемости.' }
                         ];
                         showMessage('Вы вышли', 'success');
                     } catch (error) {
@@ -2541,7 +2565,6 @@
                     auth.onAuthStateChanged(async (user) => {
                         if (user) {
                             try {
-                                // Ищем пользователя по uid или email
                                 let userQuery = await db.collection('users').where('uid', '==', user.uid).get();
                                 
                                 if (userQuery.empty) {
