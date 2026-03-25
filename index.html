@@ -38,31 +38,13 @@
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         }
         
-        /* Стили для кнопок соцсетей */
+        /* Стили для кнопки Google */
         .google-btn {
             background: #4285F4;
             transition: all 0.3s ease;
         }
         .google-btn:hover {
             background: #3367D6;
-            transform: translateY(-2px);
-        }
-        
-        .mailru-btn {
-            background: #005FF9;
-            transition: all 0.3s ease;
-        }
-        .mailru-btn:hover {
-            background: #0045b3;
-            transform: translateY(-2px);
-        }
-        
-        .vk-btn {
-            background: #4680C2;
-            transition: all 0.3s ease;
-        }
-        .vk-btn:hover {
-            background: #2a5f8a;
             transform: translateY(-2px);
         }
         
@@ -445,7 +427,7 @@
                                 </div>
                             </div>
                             
-                            <!-- Форма входа с добавленными кнопками Google, Mail.ru, VK -->
+                            <!-- Форма входа с добавленной кнопкой Google -->
                             <div class="bg-gray-50 rounded-xl p-4 sm:p-6">
                                 <h2 class="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 text-purple-600">Вход</h2>
                                 
@@ -482,23 +464,8 @@
                                         <i class="fab fa-google text-xl mr-3"></i>
                                         Google
                                     </button>
-                                    
-                                    <!-- Кнопка входа через Mail.ru -->
-                                    <button @click="loginWithMailRu" 
-                                            class="mailru-btn w-full text-white py-3 rounded-lg font-semibold flex items-center justify-center">
-                                        <i class="fas fa-envelope text-xl mr-3"></i>
-                                        Mail.ru
-                                    </button>
-                                    
-                                    <!-- Кнопка входа через VK -->
-                                    <button @click="loginWithVK" 
-                                            class="vk-btn w-full text-white py-3 rounded-lg font-semibold flex items-center justify-center">
-                                        <i class="fab fa-vk text-xl mr-3"></i>
-                                        VK
-                                    </button>
-                                    
                                     <p class="text-xs text-gray-500 text-center mt-2">
-                                        Войдите с помощью вашего аккаунта Google, Mail.ru или VK
+                                        Войдите с помощью вашего Google аккаунта
                                     </p>
                                 </div>
                             </div>
@@ -1122,20 +1089,10 @@
         googleProvider.setCustomParameters({
             prompt: 'select_account'
         });
-        
-        // Mail.ru Provider
-        const mailruProvider = new firebase.auth.OAuthProvider('mail.ru');
-        mailruProvider.setCustomParameters({
-            language: 'ru'
-        });
 
         // Конфигурация DeepSeek API
         const DEEPSEEK_API_KEY = 'sk-d5aa9940c6724fb9991d46fabb3a299c';
         const DEEPSEEK_API_URL = 'https://api.deepseek.com/v1/chat/completions';
-        
-        // VK Configuration
-        const VK_APP_ID = '54505733';
-        const VK_REDIRECT_URI = 'https://nastyayakovets1207-cmyk.github.io/finance_helper_1/';
 
         const app = createApp({
             setup() {
@@ -1671,299 +1628,6 @@
                     sendMessage();
                 }
 
-                // ============= VK AUTH FUNCTIONS =============
-                function generateRandomString(length = 32) {
-                    const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-                    let text = '';
-                    for (let i = 0; i < length; i++) {
-                        text += possible.charAt(Math.floor(Math.random() * possible.length));
-                    }
-                    return text;
-                }
-
-                function saveState(state) {
-                    localStorage.setItem('vk_oauth_state', state);
-                }
-
-                function verifyState(state) {
-                    const savedState = localStorage.getItem('vk_oauth_state');
-                    localStorage.removeItem('vk_oauth_state');
-                    return savedState === state;
-                }
-
-                async function loginWithVK() {
-                    loading.value = true;
-                    loadingMessage.value = 'Перенаправление в VK...';
-                    
-                    try {
-                        const state = generateRandomString();
-                        saveState(state);
-                        
-                        const authUrl = new URL('https://id.vk.com/authorize');
-                        authUrl.searchParams.append('client_id', VK_APP_ID);
-                        authUrl.searchParams.append('redirect_uri', VK_REDIRECT_URI);
-                        authUrl.searchParams.append('response_type', 'code');
-                        authUrl.searchParams.append('state', state);
-                        authUrl.searchParams.append('scope', 'email');
-                        authUrl.searchParams.append('v', '5.131');
-                        
-                        window.location.href = authUrl.toString();
-                        
-                    } catch (error) {
-                        console.error('VK login error:', error);
-                        showMessage('Ошибка инициализации входа через VK', 'error');
-                        loading.value = false;
-                    }
-                }
-
-                async function handleVKCallback() {
-                    const urlParams = new URLSearchParams(window.location.search);
-                    const code = urlParams.get('code');
-                    const state = urlParams.get('state');
-                    const error = urlParams.get('error');
-                    
-                    if (error) {
-                        showMessage(`Ошибка авторизации VK: ${error}`, 'error');
-                        window.history.replaceState({}, document.title, window.location.pathname);
-                        return false;
-                    }
-                    
-                    if (code && state) {
-                        loading.value = true;
-                        loadingMessage.value = 'Завершение авторизации...';
-                        
-                        try {
-                            if (!verifyState(state)) {
-                                throw new Error('Невалидный state параметр');
-                            }
-                            
-                            const tokenResponse = await axios.get('https://id.vk.com/oauth2/auth', {
-                                params: {
-                                    grant_type: 'authorization_code',
-                                    client_id: VK_APP_ID,
-                                    code: code,
-                                    redirect_uri: VK_REDIRECT_URI
-                                }
-                            });
-                            
-                            const { access_token, user_id } = tokenResponse.data;
-                            
-                            const userInfoResponse = await axios.get('https://id.vk.com/oauth2/user_info', {
-                                params: {
-                                    access_token: access_token,
-                                    v: '5.131'
-                                }
-                            });
-                            
-                            const vkUser = userInfoResponse.data.user;
-                            
-                            const userLogin = `vk_${user_id}`;
-                            const userDoc = await db.collection('users').doc(userLogin).get();
-                            
-                            if (userDoc.exists) {
-                                await loadCurrentUserData(userLogin);
-                                showMessage('Добро пожаловать!', 'success');
-                            } else {
-                                const newUser = {
-                                    name: vkUser.first_name,
-                                    surname: vkUser.last_name || '',
-                                    nickname: vkUser.nickname || `vk_${user_id}`,
-                                    login: userLogin,
-                                    email: vkUser.email || `${user_id}@vk.com`,
-                                    income: 0,
-                                    avatar: 1,
-                                    expenses: { ...initialExpenses },
-                                    goals: [],
-                                    friends: [],
-                                    friendRequests: [],
-                                    pendingRequests: [],
-                                    vkId: user_id,
-                                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
-                                };
-                                
-                                await db.collection('users').doc(userLogin).set(newUser);
-                                await loadCurrentUserData(userLogin);
-                                showMessage('Аккаунт создан через VK!', 'success');
-                            }
-                            
-                            await loadUsersFromFirestore();
-                            
-                            window.history.replaceState({}, document.title, window.location.pathname);
-                            return true;
-                            
-                        } catch (error) {
-                            console.error('VK callback error:', error);
-                            showMessage('Ошибка завершения авторизации VK', 'error');
-                            window.history.replaceState({}, document.title, window.location.pathname);
-                            return false;
-                        } finally {
-                            loading.value = false;
-                        }
-                    }
-                    
-                    return false;
-                }
-
-                // ============= GOOGLE AUTH =============
-                async function loginWithGoogle() {
-                    loading.value = true;
-                    loadingMessage.value = 'Вход через Google...';
-                    
-                    try {
-                        const result = await auth.signInWithPopup(googleProvider);
-                        const user = result.user;
-                        
-                        console.log('Google авторизация успешна:', user.email);
-                        
-                        const emailQuery = await db.collection('users').where('email', '==', user.email).get();
-                        
-                        if (!emailQuery.empty) {
-                            const userData = emailQuery.docs[0].data();
-                            await loadCurrentUserData(userData.login);
-                            showMessage('Добро пожаловать!', 'success');
-                        } else {
-                            const firstName = user.displayName?.split(' ')[0] || 'Пользователь';
-                            const lastName = user.displayName?.split(' ').slice(1).join(' ') || '';
-                            
-                            const baseLogin = user.email.split('@')[0].replace(/[^a-zA-Z0-9]/g, '');
-                            let login = baseLogin;
-                            let counter = 1;
-                            
-                            while (true) {
-                                const loginCheck = await db.collection('users').doc(login).get();
-                                if (!loginCheck.exists) break;
-                                login = `${baseLogin}${counter}`;
-                                counter++;
-                            }
-                            
-                            const baseNickname = '@' + baseLogin;
-                            let nickname = baseNickname;
-                            counter = 1;
-                            
-                            while (true) {
-                                const nicknameQuery = await db.collection('users').where('nickname', '==', nickname).get();
-                                if (nicknameQuery.empty) break;
-                                nickname = `${baseNickname}${counter}`;
-                                counter++;
-                            }
-                            
-                            const newUser = {
-                                name: firstName,
-                                surname: lastName,
-                                nickname: nickname,
-                                login: login,
-                                email: user.email,
-                                income: 0,
-                                avatar: 1,
-                                expenses: { ...initialExpenses },
-                                goals: [],
-                                friends: [],
-                                friendRequests: [],
-                                pendingRequests: [],
-                                uid: user.uid,
-                                createdAt: firebase.firestore.FieldValue.serverTimestamp()
-                            };
-                            
-                            await db.collection('users').doc(login).set(newUser);
-                            await loadCurrentUserData(login);
-                            showMessage('Добро пожаловать! Профиль создан через Google', 'success');
-                        }
-                        
-                        await loadUsersFromFirestore();
-                        
-                    } catch (error) {
-                        console.error('Ошибка входа через Google:', error);
-                        if (error.code === 'auth/popup-closed-by-user') {
-                            showMessage('Вход отменен', 'info');
-                        } else {
-                            showMessage('Ошибка входа через Google: ' + (error.message || 'Попробуйте позже'), 'error');
-                        }
-                    } finally {
-                        loading.value = false;
-                    }
-                }
-
-                // ============= MAIL.RU AUTH =============
-                async function loginWithMailRu() {
-                    loading.value = true;
-                    loadingMessage.value = 'Вход через Mail.ru...';
-                    
-                    try {
-                        const result = await auth.signInWithPopup(mailruProvider);
-                        const user = result.user;
-                        
-                        console.log('Mail.ru авторизация успешна:', user.email);
-                        
-                        const emailQuery = await db.collection('users').where('email', '==', user.email).get();
-                        
-                        if (!emailQuery.empty) {
-                            const userData = emailQuery.docs[0].data();
-                            await loadCurrentUserData(userData.login);
-                            showMessage('Добро пожаловать!', 'success');
-                        } else {
-                            const displayName = user.displayName || 'Пользователь Mail.ru';
-                            const nameParts = displayName.split(' ');
-                            const firstName = nameParts[0] || 'Пользователь';
-                            const lastName = nameParts.slice(1).join(' ') || '';
-                            
-                            const baseLogin = user.email.split('@')[0].replace(/[^a-zA-Z0-9]/g, '');
-                            let login = baseLogin;
-                            let counter = 1;
-                            
-                            while (true) {
-                                const loginCheck = await db.collection('users').doc(login).get();
-                                if (!loginCheck.exists) break;
-                                login = `${baseLogin}${counter}`;
-                                counter++;
-                            }
-                            
-                            const baseNickname = '@' + baseLogin;
-                            let nickname = baseNickname;
-                            counter = 1;
-                            
-                            while (true) {
-                                const nicknameQuery = await db.collection('users').where('nickname', '==', nickname).get();
-                                if (nicknameQuery.empty) break;
-                                nickname = `${baseNickname}${counter}`;
-                                counter++;
-                            }
-                            
-                            const newUser = {
-                                name: firstName,
-                                surname: lastName,
-                                nickname: nickname,
-                                login: login,
-                                email: user.email,
-                                income: 0,
-                                avatar: 1,
-                                expenses: { ...initialExpenses },
-                                goals: [],
-                                friends: [],
-                                friendRequests: [],
-                                pendingRequests: [],
-                                uid: user.uid,
-                                createdAt: firebase.firestore.FieldValue.serverTimestamp()
-                            };
-                            
-                            await db.collection('users').doc(login).set(newUser);
-                            await loadCurrentUserData(login);
-                            showMessage('Добро пожаловать! Профиль создан через Mail.ru', 'success');
-                        }
-                        
-                        await loadUsersFromFirestore();
-                        
-                    } catch (error) {
-                        console.error('Ошибка входа через Mail.ru:', error);
-                        if (error.code === 'auth/popup-closed-by-user') {
-                            showMessage('Вход отменен', 'info');
-                        } else {
-                            showMessage('Ошибка входа через Mail.ru: ' + (error.message || 'Попробуйте позже'), 'error');
-                        }
-                    } finally {
-                        loading.value = false;
-                    }
-                }
-
                 // Методы Firestore
                 async function loadUsersFromFirestore() {
                     try {
@@ -2058,6 +1722,90 @@
                     }
                 }
 
+                // ============= ВХОД ЧЕРЕЗ GOOGLE =============
+                async function loginWithGoogle() {
+                    loading.value = true;
+                    loadingMessage.value = 'Вход через Google...';
+                    
+                    try {
+                        const result = await auth.signInWithPopup(googleProvider);
+                        const user = result.user;
+                        
+                        console.log('Google авторизация успешна:', user.email);
+                        
+                        // Проверяем, существует ли пользователь в Firestore
+                        const emailQuery = await db.collection('users').where('email', '==', user.email).get();
+                        
+                        if (!emailQuery.empty) {
+                            // Пользователь уже есть
+                            const userData = emailQuery.docs[0].data();
+                            await loadCurrentUserData(userData.login);
+                            showMessage('Добро пожаловать!', 'success');
+                        } else {
+                            // Создаем нового пользователя
+                            const firstName = user.displayName?.split(' ')[0] || 'Пользователь';
+                            const lastName = user.displayName?.split(' ').slice(1).join(' ') || '';
+                            
+                            // Генерируем уникальный логин
+                            const baseLogin = user.email.split('@')[0].replace(/[^a-zA-Z0-9]/g, '');
+                            let login = baseLogin;
+                            let counter = 1;
+                            
+                            while (true) {
+                                const loginCheck = await db.collection('users').doc(login).get();
+                                if (!loginCheck.exists) break;
+                                login = `${baseLogin}${counter}`;
+                                counter++;
+                            }
+                            
+                            // Генерируем уникальный никнейм
+                            const baseNickname = '@' + baseLogin;
+                            let nickname = baseNickname;
+                            counter = 1;
+                            
+                            while (true) {
+                                const nicknameQuery = await db.collection('users').where('nickname', '==', nickname).get();
+                                if (nicknameQuery.empty) break;
+                                nickname = `${baseNickname}${counter}`;
+                                counter++;
+                            }
+                            
+                            const newUser = {
+                                name: firstName,
+                                surname: lastName,
+                                nickname: nickname,
+                                login: login,
+                                email: user.email,
+                                income: 0,
+                                avatar: 1,
+                                expenses: { ...initialExpenses },
+                                goals: [],
+                                friends: [],
+                                friendRequests: [],
+                                pendingRequests: [],
+                                uid: user.uid,
+                                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                            };
+                            
+                            await db.collection('users').doc(login).set(newUser);
+                            await loadCurrentUserData(login);
+                            showMessage('Добро пожаловать! Профиль создан через Google', 'success');
+                        }
+                        
+                        await loadUsersFromFirestore();
+                        
+                    } catch (error) {
+                        console.error('Ошибка входа через Google:', error);
+                        if (error.code === 'auth/popup-closed-by-user') {
+                            showMessage('Вход отменен', 'info');
+                        } else {
+                            showMessage('Ошибка входа через Google: ' + (error.message || 'Попробуйте позже'), 'error');
+                        }
+                    } finally {
+                        loading.value = false;
+                    }
+                }
+
                 // Методы авторизации
                 async function handleRegister() {
                     if (!registerForm.name || !registerForm.surname || !registerForm.nickname || 
@@ -2075,6 +1823,7 @@
                     loadingMessage.value = 'Регистрация...';
                     
                     try {
+                        // Проверяем, существует ли пользователь с таким логином
                         const loginCheck = await db.collection('users').doc(registerForm.login).get();
                         if (loginCheck.exists) {
                             showMessage('Логин уже существует', 'error');
@@ -2082,6 +1831,7 @@
                             return;
                         }
                         
+                        // Проверяем, существует ли пользователь с таким nickname
                         const nicknameQuery = await db.collection('users').where('nickname', '==', registerForm.nickname).get();
                         if (!nicknameQuery.empty) {
                             showMessage('Никнейм уже существует', 'error');
@@ -2089,6 +1839,7 @@
                             return;
                         }
                         
+                        // Проверяем, существует ли пользователь с таким email
                         const emailQuery = await db.collection('users').where('email', '==', registerForm.email).get();
                         if (!emailQuery.empty) {
                             showMessage('Email уже используется', 'error');
@@ -2096,6 +1847,7 @@
                             return;
                         }
                         
+                        // Создаем пользователя в Firebase Authentication
                         const userCredential = await auth.createUserWithEmailAndPassword(
                             registerForm.email,
                             registerForm.password
@@ -2103,6 +1855,7 @@
                         
                         console.log('Пользователь создан в Auth:', userCredential.user.uid);
                         
+                        // Создаем документ пользователя в Firestore
                         const newUser = {
                             name: registerForm.name,
                             surname: registerForm.surname,
@@ -2128,6 +1881,7 @@
                         
                         showMessage('Регистрация успешна!', 'success');
                         
+                        // Очищаем форму
                         registerForm.name = '';
                         registerForm.surname = '';
                         registerForm.nickname = '';
@@ -2156,10 +1910,12 @@
                     loadingMessage.value = 'Вход...';
                     
                     try {
+                        // Пробуем найти пользователя по логину или email
                         let userDoc = await db.collection('users').doc(loginForm.login).get();
                         let userEmail = loginForm.login;
                         
                         if (!userDoc.exists) {
+                            // Если не нашли по логину, ищем по email
                             const emailQuery = await db.collection('users').where('email', '==', loginForm.login).get();
                             if (!emailQuery.empty) {
                                 const userData = emailQuery.docs[0].data();
@@ -2174,8 +1930,10 @@
                             userEmail = userDoc.data().email;
                         }
                         
+                        // Авторизуемся через Firebase Authentication
                         await auth.signInWithEmailAndPassword(userEmail, loginForm.password);
                         
+                        // Загружаем данные пользователя
                         const success = await loadCurrentUserData(userDoc.id);
                         if (success) {
                             await loadUsersFromFirestore();
@@ -2783,6 +2541,7 @@
                     auth.onAuthStateChanged(async (user) => {
                         if (user) {
                             try {
+                                // Ищем пользователя по uid или email
                                 let userQuery = await db.collection('users').where('uid', '==', user.uid).get();
                                 
                                 if (userQuery.empty) {
@@ -2807,11 +2566,7 @@
                 }
 
                 onMounted(async () => {
-                    const handled = await handleVKCallback();
-                    
-                    if (!handled) {
-                        await checkAuthState();
-                    }
+                    await checkAuthState();
                     
                     setTimeout(() => {
                         if (hasExpenses.value) initChart();
@@ -2891,8 +2646,6 @@
                     handleRegister,
                     handleLogin,
                     loginWithGoogle,
-                    loginWithMailRu,
-                    loginWithVK,
                     logout,
                     searchFriends,
                     sendFriendRequest,
