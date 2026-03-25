@@ -246,15 +246,6 @@
             font-weight: 600;
             color: #2d3748;
         }
-        
-        .google-btn {
-            background: #4285F4;
-            transition: all 0.3s ease;
-        }
-        .google-btn:hover {
-            background: #3367D6;
-            transform: translateY(-2px);
-        }
     </style>
 </head>
 <body class="bg-gray-100">
@@ -442,13 +433,13 @@
                                         </div>
                                     </div>
                                     
-                                    <button @click="loginWithGoogle" 
-                                            class="google-btn w-full text-white py-3 rounded-lg font-semibold flex items-center justify-center">
-                                        <i class="fab fa-google text-xl mr-3"></i>
-                                        Google
+                                    <button @click="loginWithVK" 
+                                            class="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition text-base flex items-center justify-center">
+                                        <i class="fab fa-vk text-xl mr-3"></i>
+                                        ВКонтакте
                                     </button>
                                     <p class="text-xs text-gray-500 text-center mt-2">
-                                        Нажмите для входа через Google
+                                        Нажимая кнопку, вы перейдете на сайт VK для авторизации
                                     </p>
                                 </div>
                             </div>
@@ -478,7 +469,7 @@
                     </button>
                 </div>
 
-                <!-- Контент вкладок (весь код остается без изменений) -->
+                <!-- Контент вкладок -->
                 <div class="p-4 sm:p-6">
                     <!-- Вкладка профиля -->
                     <div v-show="currentTab === 'profile'">
@@ -1049,9 +1040,10 @@
         const DEEPSEEK_API_KEY = 'sk-d5aa9940c6724fb9991d46fabb3a299c';
         const DEEPSEEK_API_URL = 'https://api.deepseek.com/v1/chat/completions';
         
-        // Google Provider
-        const googleProvider = new firebase.auth.GoogleAuthProvider();
-        googleProvider.setCustomParameters({ prompt: 'select_account' });
+        // ============= VK CONFIGURATION =============
+        const VK_APP_ID = '54505733';
+        const VK_REDIRECT_URI = 'https://nastyayakovets1207-cmyk.github.io/finance_helper_1/';
+        // ============================================
 
         const app = createApp({
             setup() {
@@ -1577,81 +1569,139 @@
                     sendMessage();
                 }
 
-                // ============= GOOGLE AUTH =============
-                async function loginWithGoogle() {
+                // ============= VK AUTH FUNCTIONS =============
+                function generateRandomString(length = 32) {
+                    const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+                    let text = '';
+                    for (let i = 0; i < length; i++) {
+                        text += possible.charAt(Math.floor(Math.random() * possible.length));
+                    }
+                    return text;
+                }
+
+                function saveState(state) {
+                    localStorage.setItem('vk_oauth_state', state);
+                }
+
+                function verifyState(state) {
+                    const savedState = localStorage.getItem('vk_oauth_state');
+                    localStorage.removeItem('vk_oauth_state');
+                    return savedState === state;
+                }
+
+                async function loginWithVK() {
                     loading.value = true;
-                    loadingMessage.value = 'Вход через Google...';
+                    loadingMessage.value = 'Перенаправление в VK...';
                     
                     try {
-                        const result = await auth.signInWithPopup(googleProvider);
-                        const user = result.user;
+                        const state = generateRandomString();
+                        saveState(state);
                         
-                        const emailQuery = await db.collection('users').where('email', '==', user.email).get();
+                        const authUrl = new URL('https://id.vk.com/authorize');
+                        authUrl.searchParams.append('client_id', VK_APP_ID);
+                        authUrl.searchParams.append('redirect_uri', VK_REDIRECT_URI);
+                        authUrl.searchParams.append('response_type', 'code');
+                        authUrl.searchParams.append('state', state);
+                        authUrl.searchParams.append('scope', 'email');
+                        authUrl.searchParams.append('v', '5.131');
                         
-                        if (!emailQuery.empty) {
-                            const userData = emailQuery.docs[0].data();
-                            await loadCurrentUserData(userData.login);
-                            showMessage('Добро пожаловать!', 'success');
-                        } else {
-                            const firstName = user.displayName?.split(' ')[0] || 'Пользователь';
-                            const lastName = user.displayName?.split(' ').slice(1).join(' ') || '';
-                            
-                            const baseLogin = user.email.split('@')[0].replace(/[^a-zA-Z0-9]/g, '');
-                            let login = baseLogin;
-                            let counter = 1;
-                            
-                            while (true) {
-                                const loginCheck = await db.collection('users').doc(login).get();
-                                if (!loginCheck.exists) break;
-                                login = `${baseLogin}${counter}`;
-                                counter++;
-                            }
-                            
-                            const baseNickname = '@' + baseLogin;
-                            let nickname = baseNickname;
-                            counter = 1;
-                            
-                            while (true) {
-                                const nicknameQuery = await db.collection('users').where('nickname', '==', nickname).get();
-                                if (nicknameQuery.empty) break;
-                                nickname = `${baseNickname}${counter}`;
-                                counter++;
-                            }
-                            
-                            const newUser = {
-                                name: firstName,
-                                surname: lastName,
-                                nickname: nickname,
-                                login: login,
-                                email: user.email,
-                                income: 0,
-                                avatar: 1,
-                                expenses: { ...initialExpenses },
-                                goals: [],
-                                friends: [],
-                                friendRequests: [],
-                                pendingRequests: [],
-                                createdAt: firebase.firestore.FieldValue.serverTimestamp()
-                            };
-                            
-                            await db.collection('users').doc(login).set(newUser);
-                            await loadCurrentUserData(login);
-                            showMessage('Добро пожаловать! Профиль создан', 'success');
-                        }
-                        
-                        await loadUsersFromFirestore();
+                        window.location.href = authUrl.toString();
                         
                     } catch (error) {
-                        console.error('Ошибка входа через Google:', error);
-                        if (error.code === 'auth/popup-closed-by-user') {
-                            showMessage('Вход отменен', 'info');
-                        } else {
-                            showMessage('Ошибка входа через Google: ' + error.message, 'error');
-                        }
-                    } finally {
+                        console.error('VK login error:', error);
+                        showMessage('Ошибка инициализации входа через VK', 'error');
                         loading.value = false;
                     }
                 }
+
+                async function handleVKCallback() {
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const code = urlParams.get('code');
+                    const state = urlParams.get('state');
+                    const error = urlParams.get('error');
+                    
+                    if (error) {
+                        showMessage(`Ошибка авторизации VK: ${error}`, 'error');
+                        window.history.replaceState({}, document.title, window.location.pathname);
+                        return false;
+                    }
+                    
+                    if (code && state) {
+                        loading.value = true;
+                        loadingMessage.value = 'Завершение авторизации...';
+                        
+                        try {
+                            if (!verifyState(state)) {
+                                throw new Error('Невалидный state параметр');
+                            }
+                            
+                            const tokenResponse = await axios.get('https://id.vk.com/oauth2/auth', {
+                                params: {
+                                    grant_type: 'authorization_code',
+                                    client_id: VK_APP_ID,
+                                    code: code,
+                                    redirect_uri: VK_REDIRECT_URI
+                                }
+                            });
+                            
+                            const { access_token, user_id } = tokenResponse.data;
+                            
+                            const userInfoResponse = await axios.get('https://id.vk.com/oauth2/user_info', {
+                                params: {
+                                    access_token: access_token,
+                                    v: '5.131'
+                                }
+                            });
+                            
+                            const vkUser = userInfoResponse.data.user;
+                            
+                            const userLogin = `vk_${user_id}`;
+                            const userDoc = await db.collection('users').doc(userLogin).get();
+                            
+                            if (userDoc.exists) {
+                                await loadCurrentUserData(userLogin);
+                                showMessage('Добро пожаловать!', 'success');
+                            } else {
+                                const newUser = {
+                                    name: vkUser.first_name,
+                                    surname: vkUser.last_name || '',
+                                    nickname: vkUser.nickname || `vk_${user_id}`,
+                                    login: userLogin,
+                                    email: vkUser.email || `${user_id}@vk.com`,
+                                    income: 0,
+                                    avatar: 1,
+                                    expenses: { ...initialExpenses },
+                                    goals: [],
+                                    friends: [],
+                                    friendRequests: [],
+                                    pendingRequests: [],
+                                    vkId: user_id,
+                                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                                };
+                                
+                                await db.collection('users').doc(userLogin).set(newUser);
+                                await loadCurrentUserData(userLogin);
+                                showMessage('Аккаунт создан через VK!', 'success');
+                            }
+                            
+                            await loadUsersFromFirestore();
+                            
+                            window.history.replaceState({}, document.title, window.location.pathname);
+                            return true;
+                            
+                        } catch (error) {
+                            console.error('VK callback error:', error);
+                            showMessage('Ошибка завершения авторизации VK', 'error');
+                            window.history.replaceState({}, document.title, window.location.pathname);
+                            return false;
+                        } finally {
+                            loading.value = false;
+                        }
+                    }
+                    
+                    return false;
+                }
+                // ============================================
 
                 // Методы Firestore
                 async function loadUsersFromFirestore() {
@@ -2442,7 +2492,11 @@
                 }
 
                 onMounted(async () => {
-                    await checkAuthState();
+                    const handled = await handleVKCallback();
+                    
+                    if (!handled) {
+                        await checkAuthState();
+                    }
                     
                     setTimeout(() => {
                         if (hasExpenses.value) initChart();
@@ -2510,7 +2564,6 @@
                     selectedGoalNameForRemove,
                     handleRegister,
                     handleLogin,
-                    loginWithGoogle,
                     logout,
                     searchFriends,
                     sendFriendRequest,
@@ -2530,6 +2583,7 @@
                     resetChatContext,
                     quickQuestion,
                     formatBotMessage,
+                    loginWithVK,
                     claimReward,
                     getAvatarUrl,
                     getAvatarName,
