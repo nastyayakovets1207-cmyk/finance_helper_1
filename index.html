@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover">
-    <title>FinGrade - Мобильная версия с DeepSeek AI</title>
+    <title>FinGrade - Финансовый помощник</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -22,66 +22,43 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
     
-    <!-- Axios для API запросов -->
+    <!-- Axios -->
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     
     <style>
-        /* Mobile-first стили */
         * {
             -webkit-tap-highlight-color: transparent;
-            -webkit-touch-callout: none;
-            -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
         }
-
+        
         .gradient-bg {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         }
         
+        .google-btn { background: #4285F4; transition: all 0.3s ease; }
+        .google-btn:hover { background: #3367D6; transform: translateY(-2px); }
+        
+        .mailru-btn { background: #005FF9; transition: all 0.3s ease; }
+        .mailru-btn:hover { background: #0045b3; transform: translateY(-2px); }
+        
         .message-bot {
-            @apply bg-gray-100 text-gray-800 rounded-lg rounded-tl-none p-3 self-start;
-            max-width: min(80%, 300px);
+            background: #f3f4f6;
+            padding: 10px 14px;
+            border-radius: 18px;
+            border-bottom-left-radius: 4px;
+            max-width: 80%;
+            align-self: flex-start;
         }
         
         .message-user {
-            @apply gradient-bg text-white rounded-lg rounded-tr-none p-3 self-end;
-            max-width: min(80%, 300px);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 10px 14px;
+            border-radius: 18px;
+            border-bottom-right-radius: 4px;
+            max-width: 80%;
+            align-self: flex-end;
         }
         
-        .avatar-selected {
-            @apply ring-4 ring-purple-500;
-        }
-
-        .avatar-locked {
-            filter: grayscale(100%);
-            opacity: 0.5;
-        }
-
-        .goal-progress {
-            transition: width 0.3s ease;
-        }
-
-        .rating-1 { background: linear-gradient(135deg, #cd7f32 0%, #b87333 100%); }
-        .rating-2 { background: linear-gradient(135deg, #c0c0c0 0%, #a8a8a8 100%); }
-        .rating-3 { background: linear-gradient(135deg, #ffd700 0%, #ffb347 100%); }
-        .rating-4 { background: linear-gradient(135deg, #e5e4e2 0%, #d3d3d3 100%); }
-        .rating-5 { background: linear-gradient(135deg, #50c878 0%, #2e8b57 100%); }
-
-        .current-user-row {
-            background: linear-gradient(135deg, #667eea40 0%, #764ba240 100%);
-            border-left: 4px solid #667eea;
-        }
-
-        .friend-request-badge {
-            animation: pulse 2s infinite;
-        }
-
-        @keyframes pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-            100% { transform: scale(1); }
-        }
-
         .loading-spinner {
             border: 3px solid #f3f3f3;
             border-top: 3px solid #667eea;
@@ -90,70 +67,54 @@
             height: 40px;
             animation: spin 1s linear infinite;
         }
-
+        
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
-
+        
         .typing-indicator {
             display: flex;
             align-items: center;
-            column-gap: 6px;
+            gap: 4px;
         }
-
+        
         .typing-indicator span {
-            height: 8px;
             width: 8px;
+            height: 8px;
             background: #7c3aed;
             border-radius: 50%;
-            display: block;
-            opacity: 0.4;
+            animation: pulse 1.2s infinite;
         }
-
-        .typing-indicator span:nth-child(1) {
-            animation: pulse-dot 1.2s infinite;
+        
+        .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
+        .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+        
+        @keyframes pulse {
+            0%, 60%, 100% { opacity: 0.4; transform: scale(1); }
+            30% { opacity: 1; transform: scale(1.3); }
         }
-
-        .typing-indicator span:nth-child(2) {
-            animation: pulse-dot 1.2s infinite 0.2s;
-        }
-
-        .typing-indicator span:nth-child(3) {
-            animation: pulse-dot 1.2s infinite 0.4s;
-        }
-
-        @keyframes pulse-dot {
-            0%, 60%, 100% {
-                transform: scale(1);
-                opacity: 0.4;
-            }
-            30% {
-                transform: scale(1.3);
-                opacity: 1;
-            }
-        }
-
+        
         .suggestion-chip {
-            @apply px-3 py-1.5 bg-purple-100 text-purple-700 rounded-full text-sm cursor-pointer hover:bg-purple-200 transition-colors;
+            padding: 6px 12px;
+            background: #ede9fe;
+            color: #7c3aed;
+            border-radius: 20px;
+            font-size: 12px;
+            cursor: pointer;
             white-space: nowrap;
+            transition: all 0.2s;
         }
-
-        .trend-up { @apply text-green-600; }
-        .trend-down { @apply text-red-600; }
-        .trend-neutral { @apply text-gray-600; }
-
-        .comparison-card {
-            @apply bg-white rounded-lg p-4 shadow-sm hover:shadow-md transition;
+        
+        .suggestion-chip:hover {
+            background: #ddd6fe;
         }
-
+        
         .mobile-tab-bar {
             display: flex;
             overflow-x: auto;
-            -webkit-overflow-scrolling: touch;
-            scrollbar-width: none;
             white-space: nowrap;
-            padding: 0 8px;
+            scrollbar-width: none;
         }
         
         .mobile-tab-bar::-webkit-scrollbar {
@@ -161,287 +122,127 @@
         }
         
         .mobile-tab-item {
-            flex: 0 0 auto;
             padding: 12px 16px;
             font-size: 14px;
+            flex-shrink: 0;
         }
-
+        
         .expenses-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
             gap: 12px;
         }
-
-        @supports (-webkit-touch-callout: none) {
-            input, textarea, select, button {
-                font-size: 16px !important;
-            }
-            
-            .fixed {
-                position: fixed;
-                -webkit-transform: translateZ(0);
-            }
+        
+        .rating-1 { background: linear-gradient(135deg, #cd7f32, #b87333); }
+        .rating-2 { background: linear-gradient(135deg, #c0c0c0, #a8a8a8); }
+        .rating-3 { background: linear-gradient(135deg, #ffd700, #ffb347); }
+        .rating-4 { background: linear-gradient(135deg, #e5e4e2, #d3d3d3); }
+        .rating-5 { background: linear-gradient(135deg, #50c878, #2e8b57); }
+        
+        .current-user-row {
+            background: linear-gradient(135deg, #667eea40, #764ba240);
+            border-left: 4px solid #667eea;
         }
-
-        button, .cursor-pointer {
-            touch-action: manipulation;
-            min-height: 44px;
+        
+        .goal-progress {
+            transition: width 0.3s;
         }
-
-        .container {
-            padding-left: max(16px, env(safe-area-inset-left));
-            padding-right: max(16px, env(safe-area-inset-right));
-        }
-
+        
         @media (max-width: 640px) {
-            .modal-content {
-                width: 90%;
-                margin: 0 auto;
-                max-height: 90vh;
-                overflow-y: auto;
-                -webkit-overflow-scrolling: touch;
+            .container {
+                padding-left: 16px;
+                padding-right: 16px;
             }
-        }
-        
-        .message-bot pre {
-            background: #2d3748;
-            color: #e2e8f0;
-            padding: 8px;
-            border-radius: 6px;
-            overflow-x: auto;
-            font-size: 12px;
-            margin: 8px 0;
-        }
-        
-        .message-bot code {
-            background: #2d3748;
-            color: #e2e8f0;
-            padding: 2px 4px;
-            border-radius: 4px;
-            font-size: 12px;
-        }
-        
-        .message-bot ul, .message-bot ol {
-            margin-left: 20px;
-            margin-top: 5px;
-            margin-bottom: 5px;
-        }
-        
-        .message-bot li {
-            margin-bottom: 2px;
-        }
-        
-        .message-bot p {
-            margin-bottom: 8px;
-        }
-        
-        .message-bot h3 {
-            font-weight: 600;
-            font-size: 1.1em;
-            margin: 10px 0 5px 0;
-            color: #4a5568;
-        }
-        
-        .message-bot strong {
-            font-weight: 600;
-            color: #2d3748;
         }
     </style>
 </head>
 <body class="bg-gray-100">
     <div id="app">
-        <!-- Индикатор загрузки -->
-        <div v-if="loading" class="fixed inset-0 bg-white bg-opacity-75 z-50 flex items-center justify-center" style="backdrop-filter: blur(5px);">
-            <div class="text-center px-6">
+        <!-- Загрузка -->
+        <div v-if="loading" class="fixed inset-0 bg-white bg-opacity-75 z-50 flex items-center justify-center">
+            <div class="text-center">
                 <div class="loading-spinner mx-auto mb-4"></div>
-                <p class="text-gray-600 text-sm sm:text-base">{{ loadingMessage || 'Загрузка данных...' }}</p>
+                <p class="text-gray-600">{{ loadingMessage }}</p>
             </div>
         </div>
 
-        <!-- Навигация -->
-        <nav class="gradient-bg text-white shadow-lg sticky top-0 z-40" style="padding-top: env(safe-area-inset-top);">
+        <!-- Шапка -->
+        <nav class="gradient-bg text-white shadow-lg sticky top-0 z-40">
             <div class="container mx-auto px-4 py-3">
-                <div class="flex items-center justify-between">
+                <div class="flex justify-between items-center">
                     <div class="flex items-center space-x-2">
-                        <i class="fas fa-chart-line text-xl sm:text-2xl"></i>
-                        <span class="text-lg sm:text-xl font-bold">FinGrade</span>
+                        <i class="fas fa-chart-line text-xl"></i>
+                        <span class="text-xl font-bold">FinGrade</span>
                     </div>
-                    <div class="flex items-center space-x-3">
-                        <div v-if="currentUser" class="flex items-center space-x-2">
-                            <div class="relative">
-                                <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-full overflow-hidden border-2 border-white">
-                                    <img :src="getAvatarUrl(currentUser.avatar)" :alt="currentUser.name" class="w-full h-full object-cover">
-                                </div>
-                                <div v-if="pendingFriendRequests.length > 0" 
-                                     class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full min-w-[18px] h-[18px] flex items-center justify-center friend-request-badge px-1">
-                                    {{ pendingFriendRequests.length }}
-                                </div>
-                            </div>
-                            <span class="text-sm hidden sm:inline">{{ currentUser.nickname }}</span>
-                            <span class="text-xs bg-white text-purple-600 px-2 py-1 rounded-full">{{ getUserRating(currentUser) }}</span>
-                        </div>
-                        <button v-if="currentUser" @click="logout" class="bg-red-500 text-white px-3 py-2 rounded-lg text-sm hover:bg-red-600">
-                            <i class="fas fa-sign-out-alt sm:mr-2"></i>
-                            <span class="hidden sm:inline">Выйти</span>
-                        </button>
+                    <div v-if="currentUser" class="flex items-center space-x-3">
+                        <span class="text-sm hidden sm:inline">{{ currentUser.nickname }}</span>
+                        <button @click="logout" class="bg-red-500 px-3 py-1.5 rounded-lg text-sm hover:bg-red-600 transition">Выйти</button>
                     </div>
                 </div>
             </div>
         </nav>
 
-        <!-- Сообщения -->
+        <!-- Сообщение -->
         <div v-if="message.show" :class="['fixed top-20 right-4 z-50 p-3 rounded-lg shadow-lg text-white text-sm max-w-[90%]', 
-            message.type === 'success' ? 'bg-green-500' : message.type === 'error' ? 'bg-red-500' : 'bg-blue-500']"
-             style="top: calc(env(safe-area-inset-top) + 80px);">
+            message.type === 'success' ? 'bg-green-500' : message.type === 'error' ? 'bg-red-500' : 'bg-blue-500']">
             <i :class="['fas mr-2', message.type === 'success' ? 'fa-check-circle' : message.type === 'error' ? 'fa-exclamation-circle' : 'fa-info-circle']"></i>
             {{ message.text }}
         </div>
 
-        <!-- Формы авторизации -->
-        <div v-if="!currentUser" class="container mx-auto px-4 py-4 sm:py-8">
-            <div class="max-w-4xl mx-auto">
+        <!-- Формы входа/регистрации -->
+        <div v-if="!currentUser" class="container mx-auto px-4 py-8">
+            <div class="max-w-md mx-auto">
                 <div class="bg-white rounded-xl shadow-lg overflow-hidden">
-                    <div class="p-4 sm:p-6">
-                        <h1 class="text-2xl sm:text-3xl font-bold text-center mb-6 sm:mb-8">Добро пожаловать в FinGrade</h1>
+                    <div class="p-6">
+                        <h1 class="text-2xl font-bold text-center mb-6">FinGrade</h1>
+                        <p class="text-center text-gray-500 text-sm mb-6">Финансовый помощник</p>
                         
-                        <div class="grid md:grid-cols-2 gap-6 sm:gap-8">
-                            <!-- Форма регистрации -->
-                            <div class="bg-gray-50 rounded-xl p-4 sm:p-6">
-                                <h2 class="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 text-purple-600">Регистрация</h2>
-                                
-                                <div class="space-y-3 sm:space-y-4">
-                                    <div>
-                                        <label class="block text-gray-700 font-medium mb-1 text-sm">Имя</label>
-                                        <input v-model="registerForm.name" type="text" 
-                                               class="w-full px-3 sm:px-4 py-2 border rounded-lg focus:outline-none focus:border-purple-500 text-base">
-                                    </div>
-                                    
-                                    <div>
-                                        <label class="block text-gray-700 font-medium mb-1 text-sm">Фамилия</label>
-                                        <input v-model="registerForm.surname" type="text" 
-                                               class="w-full px-3 sm:px-4 py-2 border rounded-lg focus:outline-none focus:border-purple-500 text-base">
-                                    </div>
-                                    
-                                    <div>
-                                        <label class="block text-gray-700 font-medium mb-1 text-sm">Доход в месяц</label>
-                                        <input v-model="registerForm.income" type="number" min="0"
-                                               class="w-full px-3 sm:px-4 py-2 border rounded-lg focus:outline-none focus:border-purple-500 text-base">
-                                    </div>
-                                    
-                                    <div>
-                                        <label class="block text-gray-700 font-medium mb-1 text-sm">Никнейм</label>
-                                        <input v-model="registerForm.nickname" type="text" 
-                                               class="w-full px-3 sm:px-4 py-2 border rounded-lg focus:outline-none focus:border-purple-500 text-base"
-                                               placeholder="@username">
-                                        <p class="text-xs text-gray-500 mt-1">Должен быть уникальным</p>
-                                    </div>
-                                    
-                                    <div>
-                                        <label class="block text-gray-700 font-medium mb-1 text-sm">Email</label>
-                                        <input v-model="registerForm.email" type="email" 
-                                               class="w-full px-3 sm:px-4 py-2 border rounded-lg focus:outline-none focus:border-purple-500 text-base"
-                                               placeholder="user@example.com">
-                                    </div>
-                                    
-                                    <div>
-                                        <label class="block text-gray-700 font-medium mb-1 text-sm">Логин</label>
-                                        <input v-model="registerForm.login" type="text" 
-                                               class="w-full px-3 sm:px-4 py-2 border rounded-lg focus:outline-none focus:border-purple-500 text-base">
-                                    </div>
-                                    
-                                    <div>
-                                        <label class="block text-gray-700 font-medium mb-1 text-sm">Пароль</label>
-                                        <input v-model="registerForm.password" type="password" 
-                                               class="w-full px-3 sm:px-4 py-2 border rounded-lg focus:outline-none focus:border-purple-500 text-base">
-                                    </div>
-
-                                    <div>
-                                        <label class="block text-gray-700 font-medium mb-2 text-sm">Расходы по категориям</label>
-                                        <p class="text-xs text-gray-500 mb-2">Заполните хотя бы одну категорию</p>
-                                        
-                                        <div class="grid grid-cols-2 gap-2">
-                                            <div v-for="(value, category) in registerForm.expenses" :key="category" class="mb-2">
-                                                <label class="block text-xs text-gray-600 mb-1">
-                                                    <i :class="['mr-1', categoryIcons[category]]"></i>
-                                                    {{ categoryNames[category] }}
-                                                </label>
-                                                <input v-model.number="registerForm.expenses[category]" type="number" min="0" 
-                                                       class="w-full px-2 py-1 text-sm border rounded-lg focus:outline-none focus:border-purple-500">
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div>
-                                        <label class="block text-gray-700 font-medium mb-2 text-sm">Выберите аватар</label>
-                                        <div class="grid grid-cols-5 gap-1 sm:gap-2">
-                                            <div v-for="avatar in avatars" :key="avatar.id" 
-                                                 @click="selectRegisterAvatar(avatar)"
-                                                 class="relative cursor-pointer rounded-lg overflow-hidden border-2"
-                                                 :class="[
-                                                     registerForm.avatar === avatar.id ? 'border-purple-500' : 'border-transparent',
-                                                     !isAvatarAvailableForRegister(avatar) ? 'cursor-not-allowed' : ''
-                                                 ]">
-                                                <img :src="getAvatarUrl(avatar.id)" 
-                                                     :class="['w-full h-auto', !isAvatarAvailableForRegister(avatar) ? 'avatar-locked' : '']">
-                                                <div v-if="!isAvatarAvailableForRegister(avatar)" 
-                                                     class="absolute inset-0 bg-black bg-opacity-30 flex items-center justify-center">
-                                                    <i class="fas fa-lock text-white text-sm"></i>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <p class="text-xs text-gray-500 mt-2">
-                                            <i class="fas fa-info-circle mr-1"></i>
-                                            При регистрации доступен только аватар "Новичок".
-                                        </p>
-                                    </div>
-                                    
-                                    <button @click="handleRegister" 
-                                            class="w-full gradient-bg text-white py-3 rounded-lg font-semibold hover:shadow-lg text-base">
-                                        <i class="fas fa-user-plus mr-2"></i>Зарегистрироваться
-                                    </button>
-                                </div>
+                        <!-- Google вход -->
+                        <button @click="loginWithGoogle" 
+                                class="google-btn w-full text-white py-3 rounded-lg font-semibold flex items-center justify-center space-x-2 mb-3">
+                            <i class="fab fa-google text-xl"></i>
+                            <span>Войти через Google</span>
+                        </button>
+                        
+                        <!-- Mail.ru вход -->
+                        <button @click="loginWithMailRu" 
+                                class="mailru-btn w-full text-white py-3 rounded-lg font-semibold flex items-center justify-center space-x-2 mb-4">
+                            <i class="fas fa-envelope text-xl"></i>
+                            <span>Войти через Mail.ru</span>
+                        </button>
+                        
+                        <div class="relative my-4">
+                            <div class="absolute inset-0 flex items-center">
+                                <div class="w-full border-t border-gray-300"></div>
                             </div>
-                            
-                            <!-- Форма входа -->
-                            <div class="bg-gray-50 rounded-xl p-4 sm:p-6">
-                                <h2 class="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 text-purple-600">Вход</h2>
-                                
-                                <div class="space-y-3 sm:space-y-4">
-                                    <div>
-                                        <label class="block text-gray-700 font-medium mb-1 text-sm">Логин или Email</label>
-                                        <input v-model="loginForm.login" type="text" 
-                                               class="w-full px-3 sm:px-4 py-2 border rounded-lg focus:outline-none focus:border-purple-500 text-base">
-                                    </div>
-                                    
-                                    <div>
-                                        <label class="block text-gray-700 font-medium mb-1 text-sm">Пароль</label>
-                                        <input v-model="loginForm.password" type="password" 
-                                               class="w-full px-3 sm:px-4 py-2 border rounded-lg focus:outline-none focus:border-purple-500 text-base">
-                                    </div>
-                                    
-                                    <button @click="handleLogin" 
-                                            class="w-full gradient-bg text-white py-3 rounded-lg font-semibold hover:shadow-lg text-base">
-                                        <i class="fas fa-sign-in-alt mr-2"></i>Войти
-                                    </button>
-                                    
-                                    <div class="relative my-4">
-                                        <div class="absolute inset-0 flex items-center">
-                                            <div class="w-full border-t border-gray-300"></div>
-                                        </div>
-                                        <div class="relative flex justify-center text-sm">
-                                            <span class="px-2 bg-gray-50 text-gray-500">Или войдите через</span>
-                                        </div>
-                                    </div>
-                                    
-                                    <button @click="loginWithVK" 
-                                            class="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition text-base flex items-center justify-center">
-                                        <i class="fab fa-vk text-xl mr-3"></i>
-                                        ВКонтакте
-                                    </button>
-                                    <p class="text-xs text-gray-500 text-center mt-2">
-                                        Нажимая кнопку, вы перейдете на сайт VK для авторизации
-                                    </p>
-                                </div>
+                            <div class="relative flex justify-center text-sm">
+                                <span class="px-2 bg-white text-gray-500">или</span>
+                            </div>
+                        </div>
+                        
+                        <!-- Форма входа -->
+                        <div class="space-y-3">
+                            <input v-model="loginForm.login" type="text" placeholder="Логин или Email" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-purple-500">
+                            <input v-model="loginForm.password" type="password" placeholder="Пароль" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-purple-500">
+                            <button @click="handleLogin" class="gradient-bg w-full text-white py-2 rounded-lg font-semibold">Войти</button>
+                        </div>
+                        
+                        <div class="text-center mt-4">
+                            <button @click="showRegister = !showRegister" class="text-purple-600 text-sm">Нет аккаунта? Зарегистрироваться</button>
+                        </div>
+                        
+                        <!-- Форма регистрации -->
+                        <div v-if="showRegister" class="mt-4 pt-4 border-t">
+                            <h2 class="font-bold mb-3">Регистрация</h2>
+                            <div class="space-y-2">
+                                <input v-model="registerForm.name" type="text" placeholder="Имя" class="w-full px-4 py-2 border rounded-lg">
+                                <input v-model="registerForm.surname" type="text" placeholder="Фамилия" class="w-full px-4 py-2 border rounded-lg">
+                                <input v-model="registerForm.nickname" type="text" placeholder="Никнейм (@username)" class="w-full px-4 py-2 border rounded-lg">
+                                <input v-model="registerForm.login" type="text" placeholder="Логин" class="w-full px-4 py-2 border rounded-lg">
+                                <input v-model="registerForm.email" type="email" placeholder="Email" class="w-full px-4 py-2 border rounded-lg">
+                                <input v-model="registerForm.password" type="password" placeholder="Пароль" class="w-full px-4 py-2 border rounded-lg">
+                                <input v-model.number="registerForm.income" type="number" placeholder="Доход в месяц (₽)" class="w-full px-4 py-2 border rounded-lg">
+                                <button @click="handleRegister" class="gradient-bg w-full text-white py-2 rounded-lg font-semibold">Зарегистрироваться</button>
                             </div>
                         </div>
                     </div>
@@ -449,514 +250,203 @@
             </div>
         </div>
 
-        <!-- Основной контейнер (для авторизованных пользователей) -->
-        <div v-else class="container mx-auto px-4 py-4 sm:py-8">
-            <!-- Мобильные табы -->
+        <!-- Основное приложение (после входа) -->
+        <div v-else class="container mx-auto px-4 py-4">
+            <!-- Табы -->
             <div class="bg-white rounded-xl shadow-lg overflow-hidden">
                 <div class="mobile-tab-bar border-b">
                     <button v-for="tab in tabs" :key="tab.id" 
                             @click="currentTab = tab.id"
-                            :class="['mobile-tab-item flex items-center',
-                                     currentTab === tab.id 
-                                         ? 'text-purple-600 border-b-2 border-purple-600' 
-                                         : 'text-gray-500 hover:text-gray-700']">
-                        <i :class="['mr-2 text-base', tab.icon]"></i>
+                            :class="['mobile-tab-item', currentTab === tab.id ? 'text-purple-600 border-b-2 border-purple-600' : 'text-gray-500']">
+                        <i :class="[tab.icon, 'mr-2']"></i>
                         <span class="hidden sm:inline">{{ tab.name }}</span>
-                        <span v-if="tab.id === 'friends' && pendingFriendRequests.length > 0" 
-                              class="ml-2 bg-red-500 text-white text-xs rounded-full px-2 py-0.5">
-                            {{ pendingFriendRequests.length }}
-                        </span>
                     </button>
                 </div>
 
-                <!-- Контент вкладок -->
-                <div class="p-4 sm:p-6">
-                    <!-- Вкладка профиля -->
+                <div class="p-4">
+                    <!-- Профиль -->
                     <div v-show="currentTab === 'profile'">
-                        <h2 class="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">Мой профиль</h2>
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-                            <div class="bg-gray-50 rounded-xl p-4 sm:p-6">
-                                <h3 class="text-lg font-semibold mb-3 sm:mb-4">Личная информация</h3>
-                                <div class="space-y-3">
-                                    <div class="flex items-center space-x-4 pb-2 border-b">
-                                        <div class="w-12 h-12 sm:w-16 sm:h-16 rounded-full overflow-hidden flex-shrink-0">
-                                            <img :src="getAvatarUrl(currentUser.avatar)" :alt="currentUser.name" class="w-full h-full object-cover">
-                                        </div>
-                                        <div class="min-w-0">
-                                            <span class="text-gray-600 text-sm">Аватар:</span>
-                                            <span class="font-semibold block truncate">{{ getAvatarName(currentUser.avatar) }}</span>
-                                        </div>
-                                    </div>
-                                    <div class="flex justify-between items-center pb-2 border-b">
-                                        <span class="text-gray-600 text-sm">Имя:</span>
-                                        <span class="font-semibold text-sm truncate ml-2">{{ currentUser.name }} {{ currentUser.surname }}</span>
-                                    </div>
-                                    <div class="flex justify-between items-center pb-2 border-b">
-                                        <span class="text-gray-600 text-sm">Никнейм:</span>
-                                        <span class="font-semibold text-purple-600 text-sm truncate ml-2">{{ currentUser.nickname }}</span>
-                                    </div>
-                                    <div class="flex justify-between items-center pb-2 border-b">
-                                        <span class="text-gray-600 text-sm">КФГ:</span>
-                                        <span class="font-semibold text-purple-600">{{ kfg }}</span>
-                                    </div>
-                                    <div class="flex justify-between items-center pb-2 border-b">
-                                        <span class="text-gray-600 text-sm">Рейтинг:</span>
-                                        <span class="font-semibold text-xs px-2 py-1 rounded-full text-white" :class="'rating-' + getUserRatingLevel(currentUser)">
-                                            {{ getUserRating(currentUser) }}
-                                        </span>
-                                    </div>
+                        <h2 class="text-xl font-bold mb-4">Мой профиль</h2>
+                        <div class="bg-gray-50 rounded-xl p-4">
+                            <div class="flex items-center space-x-4 pb-4 border-b">
+                                <div class="w-16 h-16 rounded-full overflow-hidden bg-purple-100 flex items-center justify-center">
+                                    <img :src="getAvatarUrl(currentUser.avatar)" class="w-full h-full object-cover">
+                                </div>
+                                <div>
+                                    <p class="font-semibold text-lg">{{ currentUser.name }} {{ currentUser.surname }}</p>
+                                    <p class="text-purple-600">{{ currentUser.nickname }}</p>
+                                    <p class="text-gray-500 text-sm">{{ currentUser.email }}</p>
                                 </div>
                             </div>
-                            
-                            <div class="bg-gray-50 rounded-xl p-4 sm:p-6">
-                                <h3 class="text-lg font-semibold mb-3 sm:mb-4">Краткая статистика</h3>
-                                <div class="space-y-3 sm:space-y-4">
-                                    <div class="gradient-bg text-white rounded-lg p-3 sm:p-4">
-                                        <p class="text-xs sm:text-sm opacity-90">Общий доход</p>
-                                        <p class="text-xl sm:text-2xl font-bold">{{ formatMoney(totalIncome) }} ₽</p>
-                                    </div>
-                                    <div class="gradient-bg text-white rounded-lg p-3 sm:p-4">
-                                        <p class="text-xs sm:text-sm opacity-90">Общие расходы</p>
-                                        <p class="text-xl sm:text-2xl font-bold">{{ formatMoney(totalExpenses) }} ₽</p>
-                                    </div>
-                                    <div class="gradient-bg text-white rounded-lg p-3 sm:p-4">
-                                        <p class="text-xs sm:text-sm opacity-90">Остаток</p>
-                                        <p class="text-xl sm:text-2xl font-bold">{{ formatMoney(balance) }} ₽</p>
-                                    </div>
+                            <div class="mt-4 space-y-3">
+                                <div class="flex justify-between items-center">
+                                    <span class="text-gray-600">Доход:</span>
+                                    <span class="font-semibold">{{ formatMoney(currentUser.income) }} ₽</span>
+                                    <button @click="editIncome" class="text-purple-600 text-sm">Изменить</button>
                                 </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-gray-600">КФГ:</span>
+                                    <span class="font-semibold text-purple-600 text-xl">{{ kfg }}</span>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-gray-600">Рейтинг:</span>
+                                    <span class="px-3 py-1 rounded-full text-white text-sm" :class="'rating-' + getUserRatingLevel(currentUser)">
+                                        {{ getUserRating(currentUser) }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-3 mt-4">
+                            <div class="gradient-bg text-white rounded-lg p-3 text-center">
+                                <p class="text-xs opacity-90">Доход</p>
+                                <p class="text-xl font-bold">{{ formatMoney(totalIncome) }} ₽</p>
+                            </div>
+                            <div class="gradient-bg text-white rounded-lg p-3 text-center">
+                                <p class="text-xs opacity-90">Расходы</p>
+                                <p class="text-xl font-bold">{{ formatMoney(totalExpenses) }} ₽</p>
+                            </div>
+                            <div class="gradient-bg text-white rounded-lg p-3 text-center col-span-2">
+                                <p class="text-xs opacity-90">Остаток</p>
+                                <p class="text-xl font-bold">{{ formatMoney(balance) }} ₽</p>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Вкладка расходов -->
+                    <!-- Расходы -->
                     <div v-show="currentTab === 'expenses'">
-                        <h2 class="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">Расходы по категориям</h2>
+                        <h2 class="text-xl font-bold mb-4">Расходы</h2>
                         <div class="expenses-grid">
-                            <div v-for="(value, category) in filteredExpenses" :key="category" class="bg-gray-50 rounded-lg p-3 sm:p-4">
-                                <label class="block text-gray-700 font-medium mb-1 sm:mb-2 text-sm">
-                                    <i :class="['mr-1', categoryIcons[category]]"></i>
+                            <div v-for="(value, category) in filteredExpenses" :key="category" class="bg-gray-50 rounded-lg p-3">
+                                <label class="block text-gray-700 font-medium text-sm mb-1">
+                                    <i :class="[categoryIcons[category], 'mr-1']"></i>
                                     {{ categoryNames[category] }}
                                 </label>
                                 <input v-model.number="expenses[category]" type="number" min="0" 
-                                       class="w-full px-2 sm:px-3 py-1.5 sm:py-2 border rounded-lg focus:outline-none focus:border-purple-500 text-sm sm:text-base">
+                                       class="w-full px-3 py-2 border rounded-lg text-sm">
                             </div>
                         </div>
-                        <button @click="saveExpenses" class="mt-4 sm:mt-6 gradient-bg text-white px-6 sm:px-8 py-3 rounded-lg font-semibold hover:shadow-lg w-full sm:w-auto">
+                        <button @click="saveExpenses" class="mt-4 gradient-bg text-white px-6 py-2 rounded-lg font-semibold w-full sm:w-auto">
                             <i class="fas fa-save mr-2"></i>Сохранить расходы
                         </button>
                     </div>
 
-                    <!-- Вкладка финансовых целей -->
+                    <!-- Цели -->
                     <div v-show="currentTab === 'goals'">
-                        <h2 class="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">Финансовые цели</h2>
-                        
-                        <div class="bg-gray-50 rounded-lg p-4 sm:p-6 mb-4 sm:mb-6">
-                            <h3 class="text-lg font-semibold mb-3 sm:mb-4">Новая цель</h3>
-                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
-                                <div>
-                                    <label class="block text-gray-700 font-medium mb-1 text-sm">Название цели</label>
-                                    <input v-model="newGoal.name" type="text" 
-                                           class="w-full px-3 sm:px-4 py-2 border rounded-lg focus:outline-none focus:border-purple-500 text-base"
-                                           placeholder="Например: Купить машину">
-                                </div>
-                                <div>
-                                    <label class="block text-gray-700 font-medium mb-1 text-sm">Необходимая сумма (₽)</label>
-                                    <input v-model.number="newGoal.targetAmount" type="number" min="1" 
-                                           class="w-full px-3 sm:px-4 py-2 border rounded-lg focus:outline-none focus:border-purple-500 text-base"
-                                           placeholder="100000">
-                                </div>
-                                <div class="flex items-end">
-                                    <button @click="addGoal" 
-                                            class="gradient-bg text-white px-4 sm:px-6 py-2 rounded-lg font-semibold hover:shadow-lg w-full">
-                                        <i class="fas fa-plus-circle mr-2"></i>Добавить
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-
-                        <h3 class="text-lg font-semibold mb-3">Мои цели ({{ goals.length }})</h3>
-                        
-                        <div v-if="goals.length === 0" class="bg-gray-50 rounded-lg p-6 sm:p-8 text-center text-gray-500">
-                            <i class="fas fa-bullseye text-3xl sm:text-4xl mb-3 opacity-50"></i>
-                            <p>У вас пока нет финансовых целей</p>
-                            <p class="text-sm">Создайте цель, чтобы начать копить</p>
-                        </div>
-                        
-                        <div v-else class="space-y-3 sm:space-y-4">
-                            <div v-for="(goal, index) in goals" :key="index" 
-                                 class="bg-gray-50 rounded-lg p-3 sm:p-4 hover:shadow-md transition">
-                                
-                                <div class="flex justify-between items-start mb-2 sm:mb-3">
-                                    <div class="min-w-0 flex-1">
-                                        <h4 class="font-semibold text-base sm:text-lg truncate">{{ goal.name }}</h4>
-                                        <p class="text-xs sm:text-sm text-gray-600">
-                                            {{ formatMoney(goal.currentAmount) }} / {{ formatMoney(goal.targetAmount) }} ₽
-                                        </p>
-                                    </div>
-                                    <div class="flex space-x-2 ml-2 flex-shrink-0">
-                                        <button @click="openAddToGoalModal(index)" 
-                                                class="text-green-600 hover:text-green-800 p-2">
-                                            <i class="fas fa-plus-circle text-lg sm:text-xl"></i>
-                                        </button>
-                                        <button @click="openRemoveGoalModal(index)" 
-                                                class="text-red-500 hover:text-red-700 p-2">
-                                            <i class="fas fa-trash"></i>
-                                        </button>
-                                    </div>
-                                </div>
-                                
-                                <div class="relative pt-1">
-                                    <div class="flex mb-1 items-center justify-between">
-                                        <span class="text-xs font-semibold text-purple-600">Прогресс</span>
-                                        <span class="text-xs font-semibold text-purple-600">
-                                            {{ Math.min(100, Math.round((goal.currentAmount / goal.targetAmount) * 100)) }}%
-                                        </span>
-                                    </div>
-                                    <div class="overflow-hidden h-2 mb-2 text-xs flex rounded bg-purple-200">
-                                        <div :style="{ width: Math.min(100, (goal.currentAmount / goal.targetAmount) * 100) + '%' }"
-                                             class="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-purple-600 goal-progress">
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <div class="flex flex-wrap gap-2 mt-2">
-                                    <button @click="quickAddToGoal(index, 1000)" 
-                                            class="text-xs bg-gray-200 hover:bg-gray-300 px-3 py-1.5 rounded">
-                                        +1 000 ₽
-                                    </button>
-                                    <button @click="quickAddToGoal(index, 5000)" 
-                                            class="text-xs bg-gray-200 hover:bg-gray-300 px-3 py-1.5 rounded">
-                                        +5 000 ₽
-                                    </button>
-                                    <button @click="quickAddToGoal(index, 10000)" 
-                                            class="text-xs bg-gray-200 hover:bg-gray-300 px-3 py-1.5 rounded">
-                                        +10 000 ₽
-                                    </button>
-                                    <span v-if="goal.currentAmount >= goal.targetAmount" 
-                                          class="text-xs bg-green-100 text-green-700 px-3 py-1.5 rounded ml-auto">
-                                        <i class="fas fa-check-circle mr-1"></i>Цель достигнута!
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="bg-blue-50 rounded-lg p-4 mt-4 sm:mt-6">
-                            <h4 class="font-semibold text-blue-700 mb-2 text-sm sm:text-base">
-                                <i class="fas fa-lightbulb mr-2"></i>Совет
-                            </h4>
-                            <p class="text-xs sm:text-sm text-blue-600">
-                                Откладывайте 10-20% дохода. Остаток: {{ formatMoney(balance) }} ₽
-                            </p>
-                        </div>
-                    </div>
-
-                    <!-- Вкладка аналитики -->
-                    <div v-show="currentTab === 'analytics'">
-                        <h2 class="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">Аналитика</h2>
-                        
-                        <div class="flex flex-wrap gap-2 mb-4 sm:mb-6">
-                            <button @click="analyticsPeriod = 'week'; loadHistoricalData()" 
-                                    :class="['px-4 py-2 rounded-lg font-medium text-sm sm:text-base transition flex-1 sm:flex-none',
-                                             analyticsPeriod === 'week' ? 'gradient-bg text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300']">
-                                Неделя
-                            </button>
-                            <button @click="analyticsPeriod = 'month'; loadHistoricalData()" 
-                                    :class="['px-4 py-2 rounded-lg font-medium text-sm sm:text-base transition flex-1 sm:flex-none',
-                                             analyticsPeriod === 'month' ? 'gradient-bg text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300']">
-                                Месяц
-                            </button>
-                            <button @click="analyticsPeriod = 'year'; loadHistoricalData()" 
-                                    :class="['px-4 py-2 rounded-lg font-medium text-sm sm:text-base transition flex-1 sm:flex-none',
-                                             analyticsPeriod === 'year' ? 'gradient-bg text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300']">
-                                Год
-                            </button>
-                        </div>
-
-                        <div v-if="hasHistoricalData" class="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4 mb-4 sm:mb-6">
-                            <div class="bg-white rounded-lg p-2 sm:p-4 shadow-sm">
-                                <p class="text-xs text-gray-500">Доход</p>
-                                <p class="text-sm sm:text-xl font-bold">{{ formatMoney(totalIncome) }} ₽</p>
-                                <p class="text-xs mt-1" :class="getComparisonClass(incomeComparison)">
-                                    <i :class="getComparisonIcon(incomeComparison)"></i>
-                                    {{ Math.abs(incomeComparison.percentChange) }}%
-                                </p>
-                            </div>
-                            <div class="bg-white rounded-lg p-2 sm:p-4 shadow-sm">
-                                <p class="text-xs text-gray-500">Расходы</p>
-                                <p class="text-sm sm:text-xl font-bold">{{ formatMoney(totalExpenses) }} ₽</p>
-                                <p class="text-xs mt-1" :class="getComparisonClass(expensesComparison, true)">
-                                    <i :class="getComparisonIcon(expensesComparison, true)"></i>
-                                    {{ Math.abs(expensesComparison.percentChange) }}%
-                                </p>
-                            </div>
-                            <div class="bg-white rounded-lg p-2 sm:p-4 shadow-sm">
-                                <p class="text-xs text-gray-500">КФГ</p>
-                                <p class="text-sm sm:text-xl font-bold">{{ kfg }}</p>
-                                <p class="text-xs mt-1" :class="getComparisonClass(kfgComparison)">
-                                    <i :class="getComparisonIcon(kfgComparison)"></i>
-                                    {{ Math.abs(kfgComparison.percentChange) }}%
-                                </p>
-                            </div>
-                            <div class="bg-white rounded-lg p-2 sm:p-4 shadow-sm">
-                                <p class="text-xs text-gray-500">Остаток</p>
-                                <p class="text-sm sm:text-xl font-bold">{{ formatMoney(balance) }} ₽</p>
-                                <p class="text-xs mt-1" :class="getComparisonClass(balanceComparison)">
-                                    <i :class="getComparisonIcon(balanceComparison)"></i>
-                                    {{ Math.abs(balanceComparison.percentChange) }}%
-                                </p>
-                            </div>
-                        </div>
-
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 mb-4 sm:mb-6">
-                            <div class="bg-gray-50 rounded-xl p-3 sm:p-6">
-                                <h3 class="text-base sm:text-lg font-semibold mb-3">Структура расходов</h3>
-                                <div class="h-48 sm:h-64">
-                                    <canvas id="expenseChart"></canvas>
-                                </div>
-                            </div>
-                            <div class="bg-gray-50 rounded-xl p-3 sm:p-6">
-                                <h3 class="text-base sm:text-lg font-semibold mb-3">Динамика КФГ</h3>
-                                <div class="h-48 sm:h-64">
-                                    <canvas id="kfgTrendChart"></canvas>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Вкладка ИИ-Ассистент с DeepSeek -->
-                    <div v-show="currentTab === 'chat'">
-                        <h2 class="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">ИИ-Ассистент DeepSeek</h2>
-                        
-                        <div class="bg-gray-50 rounded-lg p-3 sm:p-4">
-                            <div class="h-96 overflow-y-auto flex flex-col space-y-2 mb-3 sm:mb-4 p-2" ref="chatContainer" style="-webkit-overflow-scrolling: touch;">
-                                <div v-for="(msg, index) in chatMessages" :key="index" 
-                                     :class="msg.sender === 'bot' ? 'message-bot' : 'message-user'">
-                                    <div v-if="msg.sender === 'bot' && msg.loading" class="flex items-center space-x-2">
-                                        <div class="typing-indicator">
-                                            <span></span>
-                                            <span></span>
-                                            <span></span>
-                                        </div>
-                                        <span class="text-gray-500 text-xs">DeepSeek анализирует...</span>
-                                    </div>
-                                    <div v-else-if="msg.sender === 'bot' && msg.error" class="text-red-500 text-sm">
-                                        <i class="fas fa-exclamation-triangle mr-1"></i>
-                                        {{ msg.text }}
-                                    </div>
-                                    <div v-else class="text-sm sm:text-base break-words" v-html="formatBotMessage(msg.text, msg.sender)">
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div class="overflow-x-auto mb-3 pb-1" style="-webkit-overflow-scrolling: touch;">
-                                <div class="flex space-x-2" style="min-width: min-content;">
-                                    <span @click="quickQuestion('Как сократить расходы с моим доходом ' + formatMoney(totalIncome) + ' ₽?')" class="suggestion-chip text-xs sm:text-sm whitespace-nowrap">
-                                        <i class="fas fa-utensils mr-1"></i> Сократить расходы
-                                    </span>
-                                    <span @click="quickQuestion('Как начать инвестировать с ' + formatMoney(balance) + ' ₽?')" class="suggestion-chip text-xs sm:text-sm whitespace-nowrap">
-                                        <i class="fas fa-chart-line mr-1"></i> Инвестировать
-                                    </span>
-                                    <span @click="quickQuestion('Как улучшить КФГ с ' + kfg + '? Мои расходы: ' + getExpensesSummary())" class="suggestion-chip text-xs sm:text-sm whitespace-nowrap">
-                                        <i class="fas fa-star mr-1"></i> Улучшить КФГ
-                                    </span>
-                                    <span @click="quickQuestion('Как создать подушку безопасности? Мой доход: ' + formatMoney(totalIncome) + ' ₽')" class="suggestion-chip text-xs sm:text-sm whitespace-nowrap">
-                                        <i class="fas fa-shield-alt mr-1"></i> Подушка
-                                    </span>
-                                    <span @click="quickQuestion('Анализ моих расходов по категориям: ' + getDetailedExpenses())" class="suggestion-chip text-xs sm:text-sm whitespace-nowrap">
-                                        <i class="fas fa-chart-pie mr-1"></i> Анализ расходов
-                                    </span>
-                                    <span @click="resetChatContext" class="suggestion-chip text-xs sm:text-sm whitespace-nowrap bg-red-100 text-red-700">
-                                        <i class="fas fa-redo-alt mr-1"></i> Сбросить контекст
-                                    </span>
-                                </div>
-                            </div>
-                            
-                            <div class="flex space-x-2">
-                                <textarea v-model="chatInput" @keyup.enter="sendMessage" rows="1" 
-                                          class="flex-1 px-3 sm:px-4 py-2 border rounded-lg focus:outline-none focus:border-purple-500 resize-none text-sm sm:text-base"
-                                          placeholder="Спросите DeepSeek о финансах..."></textarea>
-                                <button @click="sendMessage" :disabled="aiLoading" 
-                                        class="gradient-bg text-white px-4 sm:px-6 rounded-lg font-semibold hover:shadow-lg disabled:opacity-50 min-w-[44px]">
-                                    <i class="fas fa-paper-plane" :class="{'fa-spinner fa-spin': aiLoading}"></i>
-                                </button>
-                            </div>
-                            
-                            <div class="text-xs text-gray-500 mt-2 text-right">
-                                <i class="fas fa-robot mr-1"></i> DeepSeek AI • Контекст: {{ aiContextLength }} сообщений
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Вкладка друзей -->
-                    <div v-show="currentTab === 'friends'">
-                        <h2 class="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">Друзья и рейтинги</h2>
-                        
-                        <div class="bg-gradient-to-r from-purple-600 to-indigo-600 rounded-lg p-3 sm:p-4 mb-4 sm:mb-6 text-white">
-                            <h3 class="text-base sm:text-lg font-semibold mb-2 sm:mb-3">🏆 Рейтинг КФГ</h3>
-                            <div class="space-y-2">
-                                <div v-for="(participant, index) in ratingParticipants.slice(0, 5)" :key="participant.login" 
-                                     class="flex items-center justify-between rounded-lg p-2 text-sm"
-                                     :class="participant.isCurrentUser ? 'current-user-row' : 'bg-white bg-opacity-20'">
-                                    <div class="flex items-center space-x-2 min-w-0 flex-1">
-                                        <span class="font-bold w-5 text-white">{{ index + 1 }}</span>
-                                        <div class="w-6 h-6 sm:w-8 sm:h-8 rounded-full overflow-hidden flex-shrink-0">
-                                            <img :src="getAvatarUrl(participant.avatar)" class="w-full h-full object-cover">
-                                        </div>
-                                        <span class="font-medium text-white truncate">
-                                            {{ participant.name }} {{ participant.isCurrentUser ? '(Вы)' : '' }}
-                                        </span>
-                                    </div>
-                                    <div class="flex items-center space-x-2 flex-shrink-0 ml-2">
-                                        <span class="font-bold text-white">{{ participant.kfg }}</span>
-                                        <span class="text-xs px-2 py-1 rounded-full text-white" :class="'rating-' + participant.ratingLevel">
-                                            {{ participant.ratingName.substring(0, 2) }}
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="bg-gray-50 rounded-lg p-3 sm:p-4 mb-4 sm:mb-6">
-                            <h3 class="text-base sm:text-lg font-semibold mb-3">Найти друга</h3>
-                            <div class="flex space-x-2">
-                                <input v-model="friendSearchQuery" type="text" 
-                                       class="flex-1 px-3 sm:px-4 py-2 border rounded-lg focus:outline-none focus:border-purple-500 text-sm sm:text-base" 
-                                       placeholder="@username">
-                                <button @click="searchFriends" class="gradient-bg text-white px-4 sm:px-6 py-2 rounded-lg font-semibold hover:shadow-lg">
-                                    <i class="fas fa-search"></i>
-                                </button>
-                            </div>
-                            
-                            <div v-if="searchResults.length > 0" class="mt-3 space-y-2">
-                                <div v-for="user in searchResults" :key="user.login" 
-                                     class="bg-white p-3 rounded-lg flex justify-between items-center border">
-                                    <div class="flex items-center space-x-3 min-w-0 flex-1">
-                                        <div class="w-8 h-8 rounded-full overflow-hidden flex-shrink-0">
-                                            <img :src="getAvatarUrl(user.avatar)" class="w-full h-full object-cover">
-                                        </div>
-                                        <div class="min-w-0">
-                                            <span class="font-medium text-sm block truncate">{{ user.name }} {{ user.surname }}</span>
-                                            <span class="text-xs text-gray-500">{{ user.nickname }}</span>
-                                        </div>
-                                    </div>
-                                    <button @click="sendFriendRequest(user)" 
-                                            class="bg-purple-500 text-white px-3 py-1.5 rounded-lg text-xs sm:text-sm hover:bg-purple-600 ml-2 flex-shrink-0">
-                                        <i class="fas fa-user-plus mr-1"></i>Добавить
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div v-if="pendingFriendRequests.length > 0" class="bg-yellow-50 rounded-lg p-3 sm:p-4 mb-4 border-2 border-yellow-200">
-                            <h3 class="text-base sm:text-lg font-semibold text-yellow-700 mb-3">
-                                <i class="fas fa-user-plus mr-2"></i>
-                                Заявки ({{ pendingFriendRequests.length }})
-                            </h3>
-                            <div class="space-y-2">
-                                <div v-for="request in pendingFriendRequests" :key="request.login" 
-                                     class="bg-white p-3 rounded-lg flex justify-between items-center border border-yellow-200">
-                                    <div class="flex items-center space-x-3 min-w-0 flex-1">
-                                        <div class="w-8 h-8 rounded-full overflow-hidden flex-shrink-0">
-                                            <img :src="getAvatarUrl(request.avatar)" class="w-full h-full object-cover">
-                                        </div>
-                                        <div class="min-w-0">
-                                            <span class="font-medium text-sm block truncate">{{ request.name }}</span>
-                                            <span class="text-xs text-gray-500">{{ request.nickname }}</span>
-                                        </div>
-                                    </div>
-                                    <div class="flex space-x-2 flex-shrink-0 ml-2">
-                                        <button @click="acceptFriendRequest(request)" 
-                                                class="bg-green-500 text-white px-3 py-1.5 rounded-lg text-xs hover:bg-green-600">
-                                            <i class="fas fa-check"></i>
-                                        </button>
-                                        <button @click="rejectFriendRequest(request)" 
-                                                class="bg-red-500 text-white px-3 py-1.5 rounded-lg text-xs hover:bg-red-600">
-                                            <i class="fas fa-times"></i>
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <h3 class="text-base sm:text-lg font-semibold mb-3">Мои друзья ({{ friends.length }})</h3>
-                        
-                        <div v-if="friends.length === 0" class="bg-gray-50 rounded-lg p-6 text-center text-gray-500">
-                            <i class="fas fa-user-friends text-3xl mb-2 opacity-50"></i>
-                            <p class="text-sm">У вас пока нет друзей</p>
-                        </div>
-                        
-                        <div v-else class="space-y-3">
-                            <div v-for="friend in friendsWithDetails" :key="friend.login" 
-                                 class="bg-gray-50 rounded-lg p-3 hover:shadow-md transition">
-                                <div class="flex justify-between items-center">
-                                    <div class="flex items-center space-x-3 min-w-0 flex-1">
-                                        <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-full overflow-hidden flex-shrink-0">
-                                            <img :src="getAvatarUrl(friend.avatar)" class="w-full h-full object-cover">
-                                        </div>
-                                        <div class="min-w-0">
-                                            <div class="flex items-center space-x-2">
-                                                <span class="font-medium text-sm sm:text-base truncate">{{ friend.name }}</span>
-                                                <span class="text-xs px-2 py-0.5 rounded-full text-white" :class="'rating-' + friend.ratingLevel">
-                                                    {{ friend.ratingName.substring(0, 2) }}
-                                                </span>
-                                            </div>
-                                            <span class="text-xs text-gray-500 block truncate">{{ friend.nickname }}</span>
-                                        </div>
-                                    </div>
-                                    <div class="flex items-center space-x-2 sm:space-x-4 flex-shrink-0 ml-2">
-                                        <div class="text-right">
-                                            <div class="text-xs text-gray-600">КФГ</div>
-                                            <div class="font-bold text-purple-600 text-sm">{{ friend.kfg }}</div>
-                                        </div>
-                                        <button @click="removeFriend(friend)" class="text-red-500 hover:text-red-700 p-2">
-                                            <i class="fas fa-user-minus"></i>
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Вкладка наград -->
-                    <div v-show="currentTab === 'rewards'">
-                        <h2 class="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">Награды</h2>
-                        
+                        <h2 class="text-xl font-bold mb-4">Финансовые цели</h2>
                         <div class="bg-gray-50 rounded-lg p-4 mb-4">
-                            <h3 class="text-base sm:text-lg font-semibold mb-2">Ваш КФГ: <span class="text-purple-600">{{ kfg }}</span></h3>
-                            <h3 class="text-base sm:text-lg font-semibold">Рейтинг: <span class="px-2 py-1 rounded-full text-white text-sm" :class="'rating-' + getUserRatingLevel(currentUser)">{{ getUserRating(currentUser) }}</span></h3>
+                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                <input v-model="newGoal.name" type="text" placeholder="Название цели" class="px-3 py-2 border rounded-lg">
+                                <input v-model.number="newGoal.targetAmount" type="number" placeholder="Сумма" class="px-3 py-2 border rounded-lg">
+                                <button @click="addGoal" class="gradient-bg text-white px-4 py-2 rounded-lg">Добавить цель</button>
+                            </div>
                         </div>
-
-                        <div class="grid grid-cols-3 sm:grid-cols-5 gap-2 sm:gap-4 mb-4">
-                            <div v-for="avatar in avatars" :key="avatar.id" 
-                                 @click="changeAvatar(avatar)"
-                                 class="relative cursor-pointer rounded-lg overflow-hidden border-2 p-1 sm:p-2"
-                                 :class="[
-                                     isAvatarUnlocked(avatar) ? 'opacity-100 hover:border-purple-500' : 'opacity-50 cursor-not-allowed',
-                                     currentUser.avatar === avatar.id ? 'border-purple-500' : 'border-gray-200'
-                                 ]">
-                                <img :src="getAvatarUrl(avatar.id)" class="w-full h-auto mb-1">
-                                <div class="text-center">
-                                    <p class="text-xs font-medium truncate">{{ avatar.name }}</p>
+                        
+                        <div v-for="(goal, index) in goals" :key="index" class="bg-gray-50 rounded-lg p-4 mb-3">
+                            <div class="flex justify-between items-start mb-2">
+                                <div>
+                                    <h4 class="font-semibold">{{ goal.name }}</h4>
+                                    <p class="text-sm text-gray-600">{{ formatMoney(goal.currentAmount) }} / {{ formatMoney(goal.targetAmount) }} ₽</p>
                                 </div>
-                                <div v-if="!isAvatarUnlocked(avatar)" 
-                                     class="absolute inset-0 bg-black bg-opacity-20 flex items-center justify-center">
-                                    <i class="fas fa-lock text-gray-600 text-sm"></i>
+                                <div class="flex space-x-2">
+                                    <button @click="openAddToGoalModal(index)" class="text-green-600">+</button>
+                                    <button @click="openRemoveGoalModal(index)" class="text-red-500">×</button>
+                                </div>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-2">
+                                <div class="bg-purple-600 h-2 rounded-full goal-progress" :style="{ width: (goal.currentAmount / goal.targetAmount * 100) + '%' }"></div>
+                            </div>
+                            <div class="flex gap-2 mt-2">
+                                <button @click="quickAddToGoal(index, 1000)" class="text-xs bg-gray-200 px-3 py-1 rounded">+1000</button>
+                                <button @click="quickAddToGoal(index, 5000)" class="text-xs bg-gray-200 px-3 py-1 rounded">+5000</button>
+                                <button @click="quickAddToGoal(index, 10000)" class="text-xs bg-gray-200 px-3 py-1 rounded">+10000</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Аналитика -->
+                    <div v-show="currentTab === 'analytics'">
+                        <h2 class="text-xl font-bold mb-4">Аналитика</h2>
+                        <div class="grid grid-cols-2 gap-3 mb-4">
+                            <div class="bg-white rounded-lg p-3 shadow text-center">
+                                <p class="text-xs text-gray-500">Доход</p>
+                                <p class="text-xl font-bold text-purple-600">{{ formatMoney(totalIncome) }} ₽</p>
+                            </div>
+                            <div class="bg-white rounded-lg p-3 shadow text-center">
+                                <p class="text-xs text-gray-500">Расходы</p>
+                                <p class="text-xl font-bold text-purple-600">{{ formatMoney(totalExpenses) }} ₽</p>
+                            </div>
+                            <div class="bg-white rounded-lg p-3 shadow text-center">
+                                <p class="text-xs text-gray-500">Остаток</p>
+                                <p class="text-xl font-bold text-purple-600">{{ formatMoney(balance) }} ₽</p>
+                            </div>
+                            <div class="bg-white rounded-lg p-3 shadow text-center">
+                                <p class="text-xs text-gray-500">КФГ</p>
+                                <p class="text-xl font-bold text-purple-600">{{ kfg }}</p>
+                            </div>
+                        </div>
+                        <div class="bg-gray-50 rounded-lg p-4">
+                            <canvas id="expenseChart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- ИИ Ассистент -->
+                    <div v-show="currentTab === 'chat'">
+                        <h2 class="text-xl font-bold mb-4">ИИ-Ассистент</h2>
+                        <div class="bg-gray-50 rounded-lg p-4">
+                            <div class="h-80 overflow-y-auto flex flex-col space-y-2 mb-3" ref="chatContainer">
+                                <div v-for="(msg, idx) in chatMessages" :key="idx" :class="msg.sender === 'bot' ? 'message-bot' : 'message-user'">
+                                    <div v-if="msg.loading" class="typing-indicator">
+                                        <span></span><span></span><span></span>
+                                    </div>
+                                    <div v-else v-html="formatBotMessage(msg.text)"></div>
+                                </div>
+                            </div>
+                            <div class="flex overflow-x-auto gap-2 mb-3 pb-1">
+                                <span @click="quickQuestion('Как сократить расходы?')" class="suggestion-chip">💰 Сократить расходы</span>
+                                <span @click="quickQuestion('Как начать инвестировать?')" class="suggestion-chip">📈 Инвестировать</span>
+                                <span @click="quickQuestion('Как улучшить КФГ?')" class="suggestion-chip">⭐ Улучшить КФГ</span>
+                                <span @click="quickQuestion('Подушка безопасности')" class="suggestion-chip">🛡️ Подушка безопасности</span>
+                            </div>
+                            <div class="flex gap-2">
+                                <textarea v-model="chatInput" @keyup.enter="sendMessage" rows="1" class="flex-1 px-3 py-2 border rounded-lg resize-none" placeholder="Спросите DeepSeek..."></textarea>
+                                <button @click="sendMessage" :disabled="aiLoading" class="gradient-bg text-white px-4 rounded-lg">➤</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Друзья -->
+                    <div v-show="currentTab === 'friends'">
+                        <h2 class="text-xl font-bold mb-4">Друзья</h2>
+                        <div class="bg-gray-50 rounded-lg p-4 mb-4">
+                            <div class="flex gap-2">
+                                <input v-model="friendSearchQuery" type="text" placeholder="@username" class="flex-1 px-3 py-2 border rounded-lg">
+                                <button @click="searchFriends" class="gradient-bg text-white px-4 rounded-lg">Найти</button>
+                            </div>
+                            <div v-if="searchResults.length" class="mt-3 space-y-2">
+                                <div v-for="user in searchResults" :key="user.login" class="bg-white p-3 rounded-lg flex justify-between">
+                                    <span>{{ user.name }} {{ user.surname }}</span>
+                                    <button @click="sendFriendRequest(user)" class="text-purple-600">Добавить</button>
                                 </div>
                             </div>
                         </div>
+                        <div v-for="friend in friends" :key="friend.login" class="bg-gray-50 rounded-lg p-3 mb-2 flex justify-between">
+                            <span>{{ friend.name }} {{ friend.surname }}</span>
+                            <button @click="removeFriend(friend)" class="text-red-500">Удалить</button>
+                        </div>
+                    </div>
 
-                        <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
+                    <!-- Награды -->
+                    <div v-show="currentTab === 'rewards'">
+                        <h2 class="text-xl font-bold mb-4">Награды</h2>
+                        <div class="grid grid-cols-2 gap-3">
                             <div v-for="reward in rewards" :key="reward.id" 
                                  @click="claimReward(reward)"
-                                 :class="['rounded-lg p-3 sm:p-4 text-center cursor-pointer transition-transform hover:scale-105',
-                                          reward.kfgRequired <= kfg 
-                                              ? 'bg-gradient-to-br from-yellow-400 to-orange-400' 
-                                              : 'bg-gradient-to-br from-gray-300 to-gray-400 opacity-75']">
-                                <i :class="['fas', reward.icon, 'text-xl sm:text-3xl mb-1 sm:mb-2 text-white']"></i>
-                                <h4 class="font-bold text-white text-xs sm:text-sm mb-1">{{ reward.name }}</h4>
-                                <span class="inline-block bg-white bg-opacity-20 text-white px-2 py-0.5 rounded-full text-xs">
-                                    {{ reward.kfgRequired }}
-                                </span>
+                                 :class="['rounded-lg p-4 text-center cursor-pointer transition',
+                                          reward.kfgRequired <= kfg ? 'bg-yellow-400' : 'bg-gray-400 opacity-50']">
+                                <i :class="['fas', reward.icon, 'text-2xl mb-2']"></i>
+                                <p class="font-bold">{{ reward.name }}</p>
+                                <p class="text-xs">КФГ: {{ reward.kfgRequired }}</p>
                             </div>
                         </div>
                     </div>
@@ -964,65 +454,45 @@
             </div>
         </div>
 
-        <!-- Модальные окна -->
+        <!-- Модалки -->
         <div v-if="showIncomeModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div class="bg-white rounded-xl p-4 sm:p-6 max-w-md w-full modal-content">
-                <h3 class="text-lg sm:text-xl font-bold mb-4">Изменить доход</h3>
-                <div class="mb-4">
-                    <label class="block text-gray-700 font-medium mb-2 text-sm">Новый доход в месяц (₽)</label>
-                    <input v-model.number="newIncomeValue" type="number" min="0" 
-                           class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-purple-500 text-base">
-                </div>
-                <div class="flex space-x-2">
-                    <button @click="saveIncome" class="gradient-bg text-white px-6 py-2 rounded-lg font-semibold hover:shadow-lg flex-1 text-sm sm:text-base">
-                        Сохранить
-                    </button>
-                    <button @click="closeIncomeModal" class="bg-gray-300 text-gray-700 px-6 py-2 rounded-lg font-semibold hover:bg-gray-400 flex-1 text-sm sm:text-base">
-                        Отмена
-                    </button>
+            <div class="bg-white rounded-xl p-6 max-w-md w-full">
+                <h3 class="text-xl font-bold mb-4">Изменить доход</h3>
+                <input v-model.number="newIncomeValue" type="number" class="w-full px-4 py-2 border rounded-lg mb-4">
+                <div class="flex gap-2">
+                    <button @click="saveIncome" class="gradient-bg text-white px-6 py-2 rounded-lg flex-1">Сохранить</button>
+                    <button @click="closeIncomeModal" class="bg-gray-300 px-6 py-2 rounded-lg flex-1">Отмена</button>
                 </div>
             </div>
         </div>
 
         <div v-if="showAddToGoalModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div class="bg-white rounded-xl p-4 sm:p-6 max-w-md w-full modal-content">
-                <h3 class="text-lg sm:text-xl font-bold mb-4">Добавить к "{{ selectedGoalName }}"</h3>
-                <div class="mb-4">
-                    <label class="block text-gray-700 font-medium mb-2 text-sm">Сумма (₽)</label>
-                    <input v-model.number="addToGoalAmount" type="number" min="1" 
-                           class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-purple-500 text-base">
-                </div>
-                <div class="flex space-x-2">
-                    <button @click="confirmAddToGoal" class="gradient-bg text-white px-6 py-2 rounded-lg font-semibold hover:shadow-lg flex-1 text-sm sm:text-base">
-                        Добавить
-                    </button>
-                    <button @click="closeAddToGoalModal" class="bg-gray-300 text-gray-700 px-6 py-2 rounded-lg font-semibold hover:bg-gray-400 flex-1 text-sm sm:text-base">
-                        Отмена
-                    </button>
+            <div class="bg-white rounded-xl p-6 max-w-md w-full">
+                <h3 class="text-xl font-bold mb-4">Добавить к "{{ selectedGoalName }}"</h3>
+                <input v-model.number="addToGoalAmount" type="number" class="w-full px-4 py-2 border rounded-lg mb-4">
+                <div class="flex gap-2">
+                    <button @click="confirmAddToGoal" class="gradient-bg text-white px-6 py-2 rounded-lg flex-1">Добавить</button>
+                    <button @click="closeAddToGoalModal" class="bg-gray-300 px-6 py-2 rounded-lg flex-1">Отмена</button>
                 </div>
             </div>
         </div>
 
         <div v-if="showRemoveGoalModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div class="bg-white rounded-xl p-4 sm:p-6 max-w-md w-full modal-content">
-                <h3 class="text-lg sm:text-xl font-bold mb-4">Удалить цель</h3>
-                <p class="text-gray-600 mb-6 text-sm">Удалить "{{ selectedGoalNameForRemove }}"?</p>
-                <div class="flex space-x-2">
-                    <button @click="confirmRemoveGoal" class="bg-red-500 text-white px-6 py-2 rounded-lg font-semibold hover:bg-red-600 flex-1 text-sm sm:text-base">
-                        Удалить
-                    </button>
-                    <button @click="closeRemoveGoalModal" class="bg-gray-300 text-gray-700 px-6 py-2 rounded-lg font-semibold hover:bg-gray-400 flex-1 text-sm sm:text-base">
-                        Отмена
-                    </button>
+            <div class="bg-white rounded-xl p-6 max-w-md w-full">
+                <h3 class="text-xl font-bold mb-4">Удалить цель</h3>
+                <p class="mb-4">Удалить "{{ selectedGoalNameForRemove }}"?</p>
+                <div class="flex gap-2">
+                    <button @click="confirmRemoveGoal" class="bg-red-500 text-white px-6 py-2 rounded-lg flex-1">Удалить</button>
+                    <button @click="closeRemoveGoalModal" class="bg-gray-300 px-6 py-2 rounded-lg flex-1">Отмена</button>
                 </div>
             </div>
         </div>
     </div>
 
     <script>
-        const { createApp, ref, reactive, computed, watch, onMounted, nextTick } = Vue;
+        const { createApp, ref, reactive, computed, onMounted, nextTick } = Vue;
 
-        // Firebase конфигурация
+        // Firebase
         const firebaseConfig = {
             apiKey: "AIzaSyBoIf1-o2chwXIzWp7VBujZdqxqtYSu_4c",
             authDomain: "fingrade-f9eee.firebaseapp.com",
@@ -1036,26 +506,26 @@
         const auth = firebase.auth();
         const db = firebase.firestore();
 
-        // Конфигурация DeepSeek API
+        // Провайдеры
+        const googleProvider = new firebase.auth.GoogleAuthProvider();
+        const mailruProvider = new firebase.auth.OAuthProvider('mail.ru');
+        
+        // DeepSeek API
         const DEEPSEEK_API_KEY = 'sk-d5aa9940c6724fb9991d46fabb3a299c';
         const DEEPSEEK_API_URL = 'https://api.deepseek.com/v1/chat/completions';
-        
-        // ============= VK CONFIGURATION =============
-        const VK_APP_ID = '54505733';
-        const VK_REDIRECT_URI = 'https://nastyayakovets1207-cmyk.github.io/finance_helper_1/';
-        // ============================================
 
         const app = createApp({
             setup() {
                 // Состояние
                 const loading = ref(false);
-                const loadingMessage = ref('Загрузка...');
+                const loadingMessage = ref('');
                 const currentTab = ref('profile');
+                const currentUser = ref(null);
+                const showRegister = ref(false);
                 const message = reactive({ show: false, text: '', type: 'success' });
                 const users = ref([]);
-                const currentUser = ref(null);
                 
-                // Модальные окна
+                // Модалки
                 const showIncomeModal = ref(false);
                 const newIncomeValue = ref(0);
                 const showAddToGoalModal = ref(false);
@@ -1068,12 +538,10 @@
                 
                 // Формы
                 const loginForm = reactive({ login: '', password: '' });
-                
                 const initialExpenses = {
                     food: 0, transport: 0, cafe: 0, hobby: 0, selfcare: 0,
                     health: 0, housing: 0, entertainment: 0, subscriptions: 0, education: 0, travel: 0
                 };
-                
                 const registerForm = reactive({
                     name: '', surname: '', nickname: '', login: '', email: '', password: '',
                     income: 0, avatar: 1, expenses: { ...initialExpenses }
@@ -1082,25 +550,21 @@
                 const expenses = reactive({ ...initialExpenses });
                 const goals = ref([]);
                 const newGoal = reactive({ name: '', targetAmount: 0 });
-                
                 const friends = ref([]);
                 const friendRequests = ref([]);
                 const pendingRequests = ref([]);
-                
                 const friendSearchQuery = ref('');
                 const searchResults = ref([]);
-                const searchPerformed = ref(false);
                 
-                // Чат с DeepSeek
+                // Чат
                 const chatMessages = ref([
-                    { text: 'Привет! Я DeepSeek AI, ваш финансовый ассистент. Я помогу вам с анализом расходов, советами по инвестированию и улучшению КФГ. Задайте вопрос!', sender: 'bot' }
+                    { text: 'Привет! Я DeepSeek AI, ваш финансовый ассистент. Задайте вопрос!', sender: 'bot' }
                 ]);
                 const chatInput = ref('');
                 const chatContainer = ref(null);
                 const aiLoading = ref(false);
-                
                 const chatHistory = ref([
-                    { role: 'system', content: 'Вы DeepSeek AI, профессиональный финансовый ассистент в приложении FinGrade. Вы даете советы по личным финансам, помогаете анализировать расходы, предлагаете стратегии инвестирования и улучшения КФГ (коэффициента финансовой грамотности). Отвечайте подробно, но понятно. Используйте русский язык. Можете форматировать ответы с помощью markdown-like синтаксиса для улучшения читаемости.' }
+                    { role: 'system', content: 'Вы DeepSeek AI, финансовый ассистент. Отвечайте на русском. Давайте советы по финансам.' }
                 ]);
                 
                 // Аналитика
@@ -1108,11 +572,11 @@
                 const savedSnapshots = ref([]);
                 
                 const rewards = [
-                    { id: 1, name: 'Кофе', kfgRequired: 50, description: 'Скидка 50%', icon: 'fa-coffee' },
-                    { id: 2, name: 'Кино', kfgRequired: 100, description: 'Месяц подписки', icon: 'fa-film' },
-                    { id: 3, name: 'Книга', kfgRequired: 150, description: 'Электронная книга', icon: 'fa-book' },
-                    { id: 4, name: 'Спорт', kfgRequired: 200, description: 'Месяц в зал', icon: 'fa-dumbbell' },
-                    { id: 5, name: 'Путешествие', kfgRequired: 300, description: 'Скидка 20%', icon: 'fa-plane' }
+                    { id: 1, name: 'Кофе', kfgRequired: 50, icon: 'fa-coffee' },
+                    { id: 2, name: 'Кино', kfgRequired: 100, icon: 'fa-film' },
+                    { id: 3, name: 'Книга', kfgRequired: 150, icon: 'fa-book' },
+                    { id: 4, name: 'Спорт', kfgRequired: 200, icon: 'fa-dumbbell' },
+                    { id: 5, name: 'Путешествие', kfgRequired: 300, icon: 'fa-plane' }
                 ];
 
                 const avatars = [
@@ -1134,17 +598,17 @@
                 ];
                 
                 const categoryNames = {
-                    food: 'Еда', transport: 'Транспорт', cafe: 'Кафе',
-                    hobby: 'Хобби', selfcare: 'Уход', health: 'Здоровье',
-                    housing: 'Жилье', entertainment: 'Развлечения', subscriptions: 'Подписки',
+                    food: 'Еда', transport: 'Транспорт', cafe: 'Кафе', hobby: 'Хобби',
+                    selfcare: 'Уход', health: 'Здоровье', housing: 'Жилье',
+                    entertainment: 'Развлечения', subscriptions: 'Подписки',
                     education: 'Учеба', travel: 'Путешествия'
                 };
                 
                 const categoryIcons = {
                     food: 'fas fa-utensils', transport: 'fas fa-bus', cafe: 'fas fa-coffee',
                     hobby: 'fas fa-palette', selfcare: 'fas fa-spa', health: 'fas fa-heartbeat',
-                    housing: 'fas fa-home', entertainment: 'fas fa-gamepad', subscriptions: 'fas fa-tv',
-                    education: 'fas fa-book', travel: 'fas fa-plane'
+                    housing: 'fas fa-home', entertainment: 'fas fa-gamepad',
+                    subscriptions: 'fas fa-tv', education: 'fas fa-book', travel: 'fas fa-plane'
                 };
 
                 const categoryColors = {
@@ -1154,964 +618,332 @@
                     education: '#2E8B57', travel: '#FF8C42'
                 };
 
-                // Вычисляемые свойства
+                // Вычисления
                 const totalExpenses = computed(() => Object.values(expenses).reduce((a, b) => a + b, 0));
                 const totalIncome = computed(() => currentUser.value?.income || 0);
                 const balance = computed(() => totalIncome.value - totalExpenses.value);
-                const hasExpenses = computed(() => Object.values(expenses).some(val => val > 0));
+                const hasExpenses = computed(() => Object.values(expenses).some(v => v > 0));
+                
+                const filteredExpenses = computed(() => {
+                    const f = {};
+                    Object.keys(expenses).forEach(k => { if (categoryNames[k]) f[k] = expenses[k]; });
+                    return f;
+                });
 
                 const kfg = computed(() => {
                     if (!currentUser.value || totalIncome.value === 0) return 0;
-                    const hasAnyExpenses = Object.values(expenses).some(val => val > 0);
-                    if (!hasAnyExpenses) return 0;
-                    
-                    let value = 100 - (totalExpenses.value / totalIncome.value * 100);
-                    const totalFood = (expenses.food || 0) + (expenses.cafe || 0);
-                    
-                    if (expenses.entertainment > totalIncome.value * 0.3) value -= 20;
-                    if (totalFood > totalIncome.value * 0.5) value -= 15;
-                    if (expenses.subscriptions > totalIncome.value * 0.1) value -= 10;
-                    if (expenses.education > 0) value += 5;
-                    if (balance.value > totalIncome.value * 0.2) value += 10;
-                    
-                    return Math.max(0, Math.min(100, Math.round(value)));
-                });
-
-                const friendsWithDetails = computed(() => {
-                    return friends.value.map(friend => {
-                        const fullUser = users.value.find(u => u.login === friend.login);
-                        if (fullUser) {
-                            return {
-                                ...friend,
-                                kfg: calculateKFG(fullUser),
-                                ratingLevel: getUserRatingLevel(fullUser),
-                                ratingName: getUserRating(fullUser)
-                            };
-                        }
-                        return friend;
-                    });
+                    let val = 100 - (totalExpenses.value / totalIncome.value * 100);
+                    if (expenses.entertainment > totalIncome.value * 0.3) val -= 20;
+                    if (expenses.education > 0) val += 5;
+                    if (balance.value > totalIncome.value * 0.2) val += 10;
+                    return Math.max(0, Math.min(100, Math.round(val)));
                 });
 
                 const pendingFriendRequests = computed(() => {
-                    if (!currentUser.value) return [];
-                    return pendingRequests.value.map(requestLogin => {
-                        const user = users.value.find(u => u.login === requestLogin);
-                        return user ? {
-                            login: user.login,
-                            name: user.name,
-                            surname: user.surname,
-                            nickname: user.nickname,
-                            avatar: user.avatar
-                        } : null;
-                    }).filter(req => req !== null);
+                    return pendingRequests.value.map(login => users.value.find(u => u.login === login)).filter(Boolean);
                 });
 
                 const ratingParticipants = computed(() => {
                     if (!currentUser.value) return [];
-                    
-                    const participants = [{
-                        ...currentUser.value,
-                        kfg: kfg.value,
-                        isCurrentUser: true,
-                        ratingName: getUserRating(currentUser.value),
-                        ratingLevel: getUserRatingLevel(currentUser.value)
+                    const parts = [{
+                        ...currentUser.value, kfg: kfg.value, isCurrentUser: true,
+                        ratingName: getUserRating(currentUser.value), ratingLevel: getUserRatingLevel(currentUser.value)
                     }];
-                    
-                    friends.value.forEach(friend => {
-                        const fullUser = users.value.find(u => u.login === friend.login);
-                        if (fullUser) {
-                            participants.push({
-                                ...friend,
-                                kfg: calculateKFG(fullUser),
-                                avatar: fullUser.avatar,
-                                isCurrentUser: false,
-                                ratingName: getUserRating(fullUser),
-                                ratingLevel: getUserRatingLevel(fullUser)
-                            });
-                        }
+                    friends.value.forEach(f => {
+                        const u = users.value.find(u => u.login === f.login);
+                        if (u) parts.push({ ...u, kfg: calculateKFG(u), isCurrentUser: false, ratingName: getUserRating(u), ratingLevel: getUserRatingLevel(u) });
                     });
-                    
-                    return participants.sort((a, b) => b.kfg - a.kfg);
+                    return parts.sort((a, b) => b.kfg - a.kfg);
                 });
 
-                const filteredExpenses = computed(() => {
-                    const filtered = {};
-                    Object.keys(expenses).forEach(key => {
-                        if (categoryNames[key]) filtered[key] = expenses[key];
+                const friendsWithDetails = computed(() => {
+                    return friends.value.map(f => {
+                        const u = users.value.find(u => u.login === f.login);
+                        return u ? { ...f, kfg: calculateKFG(u), ratingName: getUserRating(u), ratingLevel: getUserRatingLevel(u) } : f;
                     });
-                    return filtered;
                 });
 
-                const hasHistoricalData = computed(() => savedSnapshots.value.length > 1);
-
-                const previousPeriodData = computed(() => {
-                    if (savedSnapshots.value.length < 2) return null;
-                    
-                    const periods = { week: 7, month: 30, year: 365 };
-                    const currentDate = new Date();
-                    const periodDays = periods[analyticsPeriod.value] || 30;
-                    
-                    const targetDate = new Date(currentDate);
-                    targetDate.setDate(targetDate.getDate() - periodDays);
-                    
-                    let closestSnapshot = null;
-                    let minDiff = Infinity;
-                    
-                    savedSnapshots.value.forEach(snapshot => {
-                        const snapshotDate = new Date(snapshot.timestamp);
-                        const diff = Math.abs(snapshotDate - targetDate);
-                        if (diff < minDiff) {
-                            minDiff = diff;
-                            closestSnapshot = snapshot;
-                        }
-                    });
-                    
-                    return closestSnapshot;
-                });
-
-                const incomeComparison = computed(() => {
-                    const prev = previousPeriodData.value;
-                    if (!prev) return { change: 0, percentChange: 0, previousValue: 0 };
-                    const change = totalIncome.value - prev.income;
-                    const percentChange = prev.income > 0 ? Math.round((change / prev.income) * 100) : 0;
-                    return { change, percentChange, previousValue: prev.income };
-                });
-
-                const expensesComparison = computed(() => {
-                    const prev = previousPeriodData.value;
-                    if (!prev) return { change: 0, percentChange: 0, previousValue: 0 };
-                    const change = totalExpenses.value - prev.totalExpenses;
-                    const percentChange = prev.totalExpenses > 0 ? Math.round((change / prev.totalExpenses) * 100) : 0;
-                    return { change, percentChange, previousValue: prev.totalExpenses };
-                });
-
-                const kfgComparison = computed(() => {
-                    const prev = previousPeriodData.value;
-                    if (!prev) return { change: 0, percentChange: 0, previousValue: 0 };
-                    const change = kfg.value - prev.kfg;
-                    const percentChange = prev.kfg > 0 ? Math.round((change / prev.kfg) * 100) : 0;
-                    return { change, percentChange, previousValue: prev.kfg };
-                });
-
-                const balanceComparison = computed(() => {
-                    const prev = previousPeriodData.value;
-                    if (!prev) return { change: 0, percentChange: 0, previousValue: 0 };
-                    const prevBalance = prev.income - prev.totalExpenses;
-                    const change = balance.value - prevBalance;
-                    const percentChange = prevBalance > 0 ? Math.round((change / prevBalance) * 100) : 0;
-                    return { change, percentChange, previousValue: prevBalance };
-                });
-
-                const aiContextLength = computed(() => chatHistory.value.length - 1);
-
-                // Вспомогательные функции
+                // Вспомогательные
                 function getUserRating(user) {
-                    const userKFG = calculateKFG(user);
-                    if (userKFG >= 90) return 'Гуру';
-                    if (userKFG >= 70) return 'Эксперт';
-                    if (userKFG >= 50) return 'Инвестор';
-                    if (userKFG >= 30) return 'Эконом';
+                    const k = calculateKFG(user);
+                    if (k >= 90) return 'Гуру';
+                    if (k >= 70) return 'Эксперт';
+                    if (k >= 50) return 'Инвестор';
+                    if (k >= 30) return 'Эконом';
                     return 'Новичок';
                 }
-
+                
                 function getUserRatingLevel(user) {
-                    const userKFG = calculateKFG(user);
-                    if (userKFG >= 90) return 5;
-                    if (userKFG >= 70) return 4;
-                    if (userKFG >= 50) return 3;
-                    if (userKFG >= 30) return 2;
+                    const k = calculateKFG(user);
+                    if (k >= 90) return 5;
+                    if (k >= 70) return 4;
+                    if (k >= 50) return 3;
+                    if (k >= 30) return 2;
                     return 1;
                 }
-
+                
                 function calculateKFG(user) {
-                    if (!user?.income || user.income === 0) return 0;
-                    
-                    const userExpenses = user.expenses || {};
-                    const hasAnyExpenses = Object.values(userExpenses).some(val => val > 0);
-                    if (!hasAnyExpenses) return 0;
-                    
-                    const totalUserExpenses = Object.values(userExpenses).reduce((a, b) => a + b, 0);
-                    
-                    let value = 100 - (totalUserExpenses / user.income * 100);
-                    
-                    const totalFood = (userExpenses.food || 0) + (userExpenses.cafe || 0);
-                    
-                    if ((userExpenses.entertainment || 0) > user.income * 0.3) value -= 20;
-                    if (totalFood > user.income * 0.5) value -= 15;
-                    if ((userExpenses.subscriptions || 0) > user.income * 0.1) value -= 10;
-                    if (userExpenses.education > 0) value += 5;
-                    if ((user.income - totalUserExpenses) > user.income * 0.2) value += 10;
-                    
-                    return Math.max(0, Math.min(100, Math.round(value)));
+                    if (!user?.income) return 0;
+                    const exp = Object.values(user.expenses || {}).reduce((a, b) => a + b, 0);
+                    if (exp === 0) return 0;
+                    let val = 100 - (exp / user.income * 100);
+                    if ((user.expenses?.entertainment || 0) > user.income * 0.3) val -= 20;
+                    if (user.expenses?.education > 0) val += 5;
+                    if ((user.income - exp) > user.income * 0.2) val += 10;
+                    return Math.max(0, Math.min(100, Math.round(val)));
                 }
-
-                function isAvatarUnlocked(avatar) {
-                    if (!currentUser.value) return false;
-                    if (avatar.id === 1) return true;
-                    return kfg.value >= avatar.kfgRequired;
-                }
-
-                function isAvatarAvailableForRegister(avatar) {
-                    return avatar.id === 1;
-                }
-
-                function selectRegisterAvatar(avatar) {
-                    if (isAvatarAvailableForRegister(avatar)) {
-                        registerForm.avatar = avatar.id;
-                    } else {
-                        showMessage('Этот аватар недоступен', 'error');
-                    }
-                }
-
-                function getAvatarUrl(avatarId) {
-                    const avatarsMap = {
+                
+                function getAvatarUrl(id) {
+                    const map = {
                         1: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Novice&backgroundColor=b6e3f4',
                         2: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Econom&backgroundColor=ffd5dc',
                         3: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Investor&backgroundColor=c0aede',
                         4: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Expert&backgroundColor=ffb347',
                         5: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Guru&backgroundColor=7ed4ad'
                     };
-                    return avatarsMap[avatarId] || avatarsMap[1];
+                    return map[id] || map[1];
                 }
-
-                function getAvatarName(avatarId) {
-                    const avatar = avatars.find(a => a.id === avatarId);
-                    return avatar ? avatar.name : 'Новичок';
-                }
-
+                
                 function formatMoney(amount) {
-                    if (isNaN(amount) || amount === null || amount === undefined) return '0';
-                    return new Intl.NumberFormat('ru-RU').format(Math.round(amount));
+                    return new Intl.NumberFormat('ru-RU').format(amount || 0);
                 }
-
-                function getComparisonClass(comparison, reverse = false) {
-                    const change = comparison.percentChange;
-                    if (change > 0) return reverse ? 'trend-down' : 'trend-up';
-                    if (change < 0) return reverse ? 'trend-up' : 'trend-down';
-                    return 'trend-neutral';
-                }
-
-                function getComparisonIcon(comparison, reverse = false) {
-                    const change = comparison.percentChange;
-                    if (change > 0) return reverse ? 'fas fa-arrow-down' : 'fas fa-arrow-up';
-                    if (change < 0) return reverse ? 'fas fa-arrow-up' : 'fas fa-arrow-down';
-                    return 'fas fa-minus';
-                }
-
-                function formatDate(dateString) {
-                    const date = new Date(dateString);
-                    return date.toLocaleDateString('ru-RU', { 
-                        day: 'numeric', 
-                        month: 'short',
-                        hour: '2-digit',
-                        minute: '2-digit'
-                    });
-                }
-
+                
                 function showMessage(text, type) {
                     message.text = text;
                     message.type = type;
                     message.show = true;
                     setTimeout(() => { message.show = false; }, 3000);
                 }
-
-                function formatBotMessage(text, sender) {
-                    if (sender !== 'bot') return text;
+                
+                function formatBotMessage(text) {
                     return text.replace(/\n/g, '<br>');
                 }
 
-                function getExpensesSummary() {
-                    const categories = [];
-                    for (const [key, value] of Object.entries(expenses)) {
-                        if (value > 0 && categoryNames[key]) {
-                            categories.push(`${categoryNames[key]}: ${formatMoney(value)} ₽`);
-                        }
-                    }
-                    return categories.join(', ') || 'нет расходов';
-                }
-
-                function getDetailedExpenses() {
-                    let summary = '';
-                    for (const [key, value] of Object.entries(expenses)) {
-                        if (value > 0 && categoryNames[key]) {
-                            summary += `${categoryNames[key]}: ${formatMoney(value)} ₽ (${Math.round(value/totalExpenses.value*100)}%), `;
-                        }
-                    }
-                    return summary || 'нет расходов';
-                }
-
-                function getUserContext() {
-                    if (!currentUser.value) return '';
-                    
-                    return `
-Информация о пользователе:
-- Имя: ${currentUser.value.name} ${currentUser.value.surname}
-- Доход в месяц: ${formatMoney(totalIncome.value)} ₽
-- Расходы в месяц: ${formatMoney(totalExpenses.value)} ₽
-- Остаток: ${formatMoney(balance.value)} ₽
-- КФГ (коэффициент финансовой грамотности): ${kfg.value}
-- Рейтинг: ${getUserRating(currentUser.value)}
-- Детализация расходов: ${getDetailedExpenses()}
-- Количество финансовых целей: ${goals.value.length}
-- Количество друзей: ${friends.value.length}
-                    `;
-                }
-
-                // DeepSeek API функция
-                async function sendToDeepSeek(messages) {
-                    try {
-                        const response = await axios.post(DEEPSEEK_API_URL, {
-                            model: 'deepseek-chat',
-                            messages: messages,
-                            temperature: 0.7,
-                            max_tokens: 1000,
-                            top_p: 0.95,
-                            frequency_penalty: 0,
-                            presence_penalty: 0
-                        }, {
-                            headers: {
-                                'Authorization': `Bearer ${DEEPSEEK_API_KEY}`,
-                                'Content-Type': 'application/json'
-                            }
-                        });
-
-                        if (response.data && response.data.choices && response.data.choices.length > 0) {
-                            return response.data.choices[0].message.content;
-                        } else {
-                            throw new Error('Неожиданный ответ от API');
-                        }
-                    } catch (error) {
-                        console.error('DeepSeek API error:', error);
-                        if (error.response) {
-                            throw new Error(`Ошибка API: ${error.response.status} - ${error.response.data?.error?.message || 'Неизвестная ошибка'}`);
-                        } else if (error.request) {
-                            throw new Error('Нет ответа от сервера DeepSeek');
-                        } else {
-                            throw new Error(error.message || 'Ошибка при обращении к DeepSeek');
-                        }
-                    }
-                }
-
-                async function sendMessage() {
-                    if (!chatInput.value.trim() || aiLoading.value) return;
-                    
-                    const userMessage = chatInput.value.trim();
-                    chatMessages.value.push({ text: userMessage, sender: 'user' });
-                    
-                    chatHistory.value.push({ role: 'user', content: userMessage });
-                    
-                    chatInput.value = '';
-                    
-                    const loadingIndex = chatMessages.value.length;
-                    chatMessages.value.push({ text: '', sender: 'bot', loading: true });
-                    
-                    await nextTick();
-                    if (chatContainer.value) {
-                        chatContainer.value.scrollTop = chatContainer.value.scrollHeight;
-                    }
-                    
-                    aiLoading.value = true;
-                    
-                    try {
-                        const messagesForAI = [...chatHistory.value];
-                        
-                        if (chatHistory.value.length === 1) {
-                            messagesForAI[0] = {
-                                role: 'system',
-                                content: chatHistory.value[0].content + '\n\n' + getUserContext()
-                            };
-                        }
-                        
-                        const aiResponse = await sendToDeepSeek(messagesForAI);
-                        
-                        chatMessages.value.splice(loadingIndex, 1);
-                        chatMessages.value.push({ text: aiResponse, sender: 'bot' });
-                        chatHistory.value.push({ role: 'assistant', content: aiResponse });
-                        
-                        if (chatHistory.value.length > 11) {
-                            const systemMessage = chatHistory.value[0];
-                            chatHistory.value = [systemMessage, ...chatHistory.value.slice(-10)];
-                        }
-                        
-                    } catch (error) {
-                        console.error('Ошибка DeepSeek:', error);
-                        chatMessages.value.splice(loadingIndex, 1);
-                        chatMessages.value.push({ 
-                            text: `Извините, произошла ошибка: ${error.message}. Пожалуйста, попробуйте позже.`, 
-                            sender: 'bot', 
-                            error: true 
-                        });
-                    } finally {
-                        aiLoading.value = false;
-                        
-                        nextTick(() => {
-                            if (chatContainer.value) {
-                                chatContainer.value.scrollTop = chatContainer.value.scrollHeight;
-                            }
-                        });
-                    }
-                }
-
-                function resetChatContext() {
-                    chatHistory.value = [
-                        { role: 'system', content: 'Вы DeepSeek AI, профессиональный финансовый ассистент в приложении FinGrade. Вы даете советы по личным финансам, помогаете анализировать расходы, предлагаете стратегии инвестирования и улучшения КФГ (коэффициента финансовой грамотности). Отвечайте подробно, но понятно. Используйте русский язык. Можете форматировать ответы с помощью markdown-like синтаксиса для улучшения читаемости.' }
-                    ];
-                    
-                    chatMessages.value = [
-                        { text: 'Привет! Я DeepSeek AI, ваш финансовый ассистент. Контекст сброшен. Задайте новый вопрос!', sender: 'bot' }
-                    ];
-                    
-                    showMessage('Контекст сброшен', 'success');
-                }
-
-                function quickQuestion(question) {
-                    chatInput.value = question;
-                    sendMessage();
-                }
-
-                // ============= VK AUTH FUNCTIONS (упрощенная версия) =============
-                function generateRandomString(length = 32) {
-                    const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-                    let text = '';
-                    for (let i = 0; i < length; i++) {
-                        text += possible.charAt(Math.floor(Math.random() * possible.length));
-                    }
-                    return text;
-                }
-
-                function saveState(state) {
-                    localStorage.setItem('vk_oauth_state', state);
-                }
-
-                function verifyState(state) {
-                    const savedState = localStorage.getItem('vk_oauth_state');
-                    localStorage.removeItem('vk_oauth_state');
-                    return savedState === state;
-                }
-
-                async function loginWithVK() {
+                // ============ GOOGLE LOGIN ============
+                async function loginWithGoogle() {
                     loading.value = true;
-                    loadingMessage.value = 'Перенаправление в VK...';
-                    
+                    loadingMessage.value = 'Вход через Google...';
                     try {
-                        const state = generateRandomString();
-                        saveState(state);
+                        const result = await auth.signInWithPopup(googleProvider);
+                        const user = result.user;
+                        const emailQuery = await db.collection('users').where('email', '==', user.email).get();
                         
-                        // Используем старый API VK (не VK ID)
-                        const authUrl = new URL('https://oauth.vk.com/authorize');
-                        authUrl.searchParams.append('client_id', VK_APP_ID);
-                        authUrl.searchParams.append('redirect_uri', VK_REDIRECT_URI);
-                        authUrl.searchParams.append('response_type', 'token');
-                        authUrl.searchParams.append('state', state);
-                        authUrl.searchParams.append('scope', 'email');
-                        authUrl.searchParams.append('v', '5.131');
-                        authUrl.searchParams.append('display', 'page');
-                        
-                        window.location.href = authUrl.toString();
-                        
-                    } catch (error) {
-                        console.error('VK login error:', error);
-                        showMessage('Ошибка инициализации входа через VK', 'error');
+                        if (!emailQuery.empty) {
+                            const data = emailQuery.docs[0].data();
+                            currentUser.value = { ...data, login: emailQuery.docs[0].id };
+                            showMessage('Добро пожаловать!', 'success');
+                        } else {
+                            const baseLogin = user.email.split('@')[0].replace(/[^a-zA-Z0-9]/g, '');
+                            let login = baseLogin;
+                            let c = 1;
+                            while ((await db.collection('users').doc(login).get()).exists) login = `${baseLogin}${c++}`;
+                            
+                            const newUser = {
+                                name: user.displayName?.split(' ')[0] || 'Пользователь',
+                                surname: user.displayName?.split(' ').slice(1).join(' ') || '',
+                                nickname: '@' + baseLogin,
+                                login: login,
+                                email: user.email,
+                                income: 0,
+                                avatar: 1,
+                                expenses: { ...initialExpenses },
+                                goals: [],
+                                friends: [],
+                                createdAt: new Date().toISOString()
+                            };
+                            await db.collection('users').doc(login).set(newUser);
+                            currentUser.value = newUser;
+                            showMessage('Профиль создан!', 'success');
+                        }
+                        await loadUsers();
+                    } catch (e) {
+                        console.error(e);
+                        showMessage('Ошибка: ' + e.message, 'error');
+                    } finally {
                         loading.value = false;
                     }
                 }
 
-                async function handleVKCallback() {
-                    const hashParams = new URLSearchParams(window.location.hash.substring(1));
-                    const accessToken = hashParams.get('access_token');
-                    const state = hashParams.get('state');
-                    const error = hashParams.get('error');
-                    
-                    if (error) {
-                        showMessage(`Ошибка авторизации VK: ${error}`, 'error');
-                        window.history.replaceState({}, document.title, window.location.pathname);
-                        return false;
-                    }
-                    
-                    if (accessToken && state) {
-                        loading.value = true;
-                        loadingMessage.value = 'Завершение авторизации...';
+                // ============ MAIL.RU LOGIN ============
+                async function loginWithMailRu() {
+                    loading.value = true;
+                    loadingMessage.value = 'Вход через Mail.ru...';
+                    try {
+                        const result = await auth.signInWithPopup(mailruProvider);
+                        const user = result.user;
+                        const emailQuery = await db.collection('users').where('email', '==', user.email).get();
                         
-                        try {
-                            if (!verifyState(state)) {
-                                throw new Error('Невалидный state параметр');
-                            }
+                        if (!emailQuery.empty) {
+                            const data = emailQuery.docs[0].data();
+                            currentUser.value = { ...data, login: emailQuery.docs[0].id };
+                            showMessage('Добро пожаловать!', 'success');
+                        } else {
+                            const baseLogin = user.email.split('@')[0].replace(/[^a-zA-Z0-9]/g, '');
+                            let login = baseLogin;
+                            let c = 1;
+                            while ((await db.collection('users').doc(login).get()).exists) login = `${baseLogin}${c++}`;
                             
-                            const userId = hashParams.get('user_id');
-                            
-                            if (!userId) {
-                                const userInfoResponse = await axios.get('https://api.vk.com/method/users.get', {
-                                    params: {
-                                        access_token: accessToken,
-                                        v: '5.131',
-                                        fields: 'first_name,last_name,nickname,photo_100'
-                                    }
-                                });
-                                
-                                if (userInfoResponse.data.error) {
-                                    throw new Error(userInfoResponse.data.error.error_msg);
-                                }
-                                
-                                const vkUser = userInfoResponse.data.response[0];
-                                const vkUserId = vkUser.id;
-                                
-                                const userLogin = `vk_${vkUserId}`;
-                                const userDoc = await db.collection('users').doc(userLogin).get();
-                                
-                                if (userDoc.exists) {
-                                    await loadCurrentUserData(userLogin);
-                                    showMessage('Добро пожаловать!', 'success');
-                                } else {
-                                    const newUser = {
-                                        name: vkUser.first_name,
-                                        surname: vkUser.last_name || '',
-                                        nickname: vkUser.nickname || `vk_${vkUserId}`,
-                                        login: userLogin,
-                                        email: `${vkUserId}@vk.com`,
-                                        income: 0,
-                                        avatar: 1,
-                                        expenses: { ...initialExpenses },
-                                        goals: [],
-                                        friends: [],
-                                        friendRequests: [],
-                                        pendingRequests: [],
-                                        vkId: vkUserId,
-                                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
-                                    };
-                                    
-                                    await db.collection('users').doc(userLogin).set(newUser);
-                                    await loadCurrentUserData(userLogin);
-                                    showMessage('Аккаунт создан через VK!', 'success');
-                                }
-                                
-                                await loadUsersFromFirestore();
-                                
-                            } else {
-                                const userLogin = `vk_${userId}`;
-                                const userDoc = await db.collection('users').doc(userLogin).get();
-                                
-                                if (userDoc.exists) {
-                                    await loadCurrentUserData(userLogin);
-                                    showMessage('Добро пожаловать!', 'success');
-                                } else {
-                                    const userInfoResponse = await axios.get('https://api.vk.com/method/users.get', {
-                                        params: {
-                                            user_ids: userId,
-                                            access_token: accessToken,
-                                            v: '5.131',
-                                            fields: 'first_name,last_name,nickname,photo_100'
-                                        }
-                                    });
-                                    
-                                    const vkUser = userInfoResponse.data.response[0];
-                                    
-                                    const newUser = {
-                                        name: vkUser.first_name,
-                                        surname: vkUser.last_name || '',
-                                        nickname: vkUser.nickname || `vk_${userId}`,
-                                        login: userLogin,
-                                        email: `${userId}@vk.com`,
-                                        income: 0,
-                                        avatar: 1,
-                                        expenses: { ...initialExpenses },
-                                        goals: [],
-                                        friends: [],
-                                        friendRequests: [],
-                                        pendingRequests: [],
-                                        vkId: userId,
-                                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
-                                    };
-                                    
-                                    await db.collection('users').doc(userLogin).set(newUser);
-                                    await loadCurrentUserData(userLogin);
-                                    showMessage('Аккаунт создан через VK!', 'success');
-                                }
-                            }
-                            
-                            window.history.replaceState({}, document.title, window.location.pathname);
-                            return true;
-                            
-                        } catch (error) {
-                            console.error('VK callback error:', error);
-                            showMessage('Ошибка завершения авторизации VK: ' + (error.message || 'Неизвестная ошибка'), 'error');
-                            window.history.replaceState({}, document.title, window.location.pathname);
-                            return false;
-                        } finally {
-                            loading.value = false;
+                            const newUser = {
+                                name: user.displayName?.split(' ')[0] || 'Пользователь',
+                                surname: user.displayName?.split(' ').slice(1).join(' ') || '',
+                                nickname: '@' + baseLogin,
+                                login: login,
+                                email: user.email,
+                                income: 0,
+                                avatar: 1,
+                                expenses: { ...initialExpenses },
+                                goals: [],
+                                friends: [],
+                                createdAt: new Date().toISOString()
+                            };
+                            await db.collection('users').doc(login).set(newUser);
+                            currentUser.value = newUser;
+                            showMessage('Профиль создан!', 'success');
                         }
-                    }
-                    
-                    return false;
-                }
-                // ============================================
-
-                // Методы Firestore
-                async function loadUsersFromFirestore() {
-                    try {
-                        const usersSnapshot = await db.collection('users').get();
-                        const loadedUsers = [];
-                        usersSnapshot.forEach(doc => {
-                            loadedUsers.push({ id: doc.id, ...doc.data() });
-                        });
-                        users.value = loadedUsers;
-                    } catch (error) {
-                        console.error('Ошибка загрузки пользователей:', error);
+                        await loadUsers();
+                    } catch (e) {
+                        console.error(e);
+                        showMessage('Ошибка: ' + e.message, 'error');
+                    } finally {
+                        loading.value = false;
                     }
                 }
 
-                async function loadCurrentUserData(login) {
+                // Обычный вход/регистрация
+                async function handleLogin() {
+                    if (!loginForm.login || !loginForm.password) {
+                        showMessage('Заполните поля', 'error');
+                        return;
+                    }
+                    loading.value = true;
                     try {
-                        const userDoc = await db.collection('users').doc(login).get();
-                        if (userDoc.exists) {
-                            const userData = userDoc.data();
-                            currentUser.value = { ...userData, login: userDoc.id };
-                            
-                            if (userData.expenses) {
-                                Object.assign(expenses, userData.expenses);
-                            }
-                            
-                            goals.value = userData.goals || [];
-                            friends.value = userData.friends || [];
-                            friendRequests.value = userData.friendRequests || [];
-                            pendingRequests.value = userData.pendingRequests || [];
-                            
-                            await loadHistoricalData();
-                            
-                            return true;
+                        const userDoc = await db.collection('users').doc(loginForm.login).get();
+                        if (!userDoc.exists) {
+                            showMessage('Пользователь не найден', 'error');
+                            return;
                         }
-                        return false;
-                    } catch (error) {
-                        console.error('Ошибка загрузки пользователя:', error);
-                        return false;
+                        const data = userDoc.data();
+                        await auth.signInWithEmailAndPassword(data.email, loginForm.password);
+                        currentUser.value = { ...data, login: loginForm.login };
+                        showMessage('Добро пожаловать!', 'success');
+                        loginForm.login = '';
+                        loginForm.password = '';
+                        await loadUsers();
+                    } catch (e) {
+                        showMessage('Ошибка входа', 'error');
+                    } finally {
+                        loading.value = false;
                     }
                 }
 
-                async function loadHistoricalData() {
-                    if (!currentUser.value) return;
-                    
-                    try {
-                        const snapshotsRef = db.collection('users')
-                            .doc(currentUser.value.login)
-                            .collection('snapshots')
-                            .orderBy('timestamp', 'desc')
-                            .limit(20);
-                        
-                        const snapshotDocs = await snapshotsRef.get();
-                        savedSnapshots.value = [];
-                        
-                        snapshotDocs.forEach(doc => {
-                            savedSnapshots.value.push(doc.data());
-                        });
-                        
-                        updateTrendChart();
-                    } catch (error) {
-                        console.error('Ошибка загрузки исторических данных:', error);
-                    }
-                }
-
-                async function saveSnapshot() {
-                    if (!currentUser.value) return;
-                    
-                    try {
-                        const snapshot = {
-                            timestamp: new Date().toISOString(),
-                            income: currentUser.value.income,
-                            expenses: { ...expenses },
-                            totalExpenses: totalExpenses.value,
-                            kfg: kfg.value,
-                            rating: getUserRating(currentUser.value),
-                            ratingLevel: getUserRatingLevel(currentUser.value)
-                        };
-                        
-                        await db.collection('users')
-                            .doc(currentUser.value.login)
-                            .collection('snapshots')
-                            .add(snapshot);
-                        
-                        savedSnapshots.value.unshift(snapshot);
-                        if (savedSnapshots.value.length > 20) {
-                            savedSnapshots.value = savedSnapshots.value.slice(0, 20);
-                        }
-                        
-                    } catch (error) {
-                        console.error('Ошибка сохранения снапшота:', error);
-                    }
-                }
-
-                // Методы авторизации
                 async function handleRegister() {
                     if (!registerForm.name || !registerForm.surname || !registerForm.nickname || 
-                        !registerForm.login || !registerForm.email || !registerForm.password || !registerForm.income) {
+                        !registerForm.login || !registerForm.email || !registerForm.password) {
                         showMessage('Заполните все поля', 'error');
                         return;
                     }
-                    
-                    if (registerForm.income < 0) {
-                        showMessage('Доход не может быть отрицательным', 'error');
-                        return;
-                    }
-                    
                     loading.value = true;
-                    loadingMessage.value = 'Регистрация...';
-                    
                     try {
-                        const loginCheck = await db.collection('users').doc(registerForm.login).get();
-                        if (loginCheck.exists) {
-                            showMessage('Логин уже существует', 'error');
-                            loading.value = false;
+                        if ((await db.collection('users').doc(registerForm.login).get()).exists) {
+                            showMessage('Логин занят', 'error');
                             return;
                         }
-                        
-                        const nicknameQuery = await db.collection('users').where('nickname', '==', registerForm.nickname).get();
-                        if (!nicknameQuery.empty) {
-                            showMessage('Никнейм уже существует', 'error');
-                            loading.value = false;
+                        const nickCheck = await db.collection('users').where('nickname', '==', registerForm.nickname).get();
+                        if (!nickCheck.empty) {
+                            showMessage('Никнейм занят', 'error');
                             return;
                         }
-                        
-                        await auth.createUserWithEmailAndPassword(
-                            registerForm.email,
-                            registerForm.password
-                        );
-                        
+                        await auth.createUserWithEmailAndPassword(registerForm.email, registerForm.password);
                         const newUser = {
                             name: registerForm.name,
                             surname: registerForm.surname,
                             nickname: registerForm.nickname,
                             login: registerForm.login,
                             email: registerForm.email,
-                            income: Number(registerForm.income),
-                            avatar: registerForm.avatar,
+                            income: Number(registerForm.income) || 0,
+                            avatar: 1,
                             expenses: { ...registerForm.expenses },
                             goals: [],
                             friends: [],
-                            friendRequests: [],
-                            pendingRequests: [],
-                            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                            createdAt: new Date().toISOString()
                         };
-                        
                         await db.collection('users').doc(registerForm.login).set(newUser);
-                        await loadCurrentUserData(registerForm.login);
+                        currentUser.value = newUser;
                         showMessage('Регистрация успешна!', 'success');
-                        
-                        registerForm.name = '';
-                        registerForm.surname = '';
-                        registerForm.nickname = '';
-                        registerForm.login = '';
-                        registerForm.email = '';
-                        registerForm.password = '';
-                        registerForm.income = 0;
-                        registerForm.avatar = 1;
-                        Object.assign(registerForm.expenses, initialExpenses);
-                        
-                    } catch (error) {
-                        console.error('Ошибка регистрации:', error);
-                        showMessage('Ошибка регистрации: ' + (error.message || 'Проверьте данные'), 'error');
-                    } finally {
-                        loading.value = false;
-                    }
-                }
-                
-                async function handleLogin() {
-                    if (!loginForm.login || !loginForm.password) {
-                        showMessage('Заполните все поля', 'error');
-                        return;
-                    }
-                    
-                    loading.value = true;
-                    loadingMessage.value = 'Вход...';
-                    
-                    try {
-                        const userDoc = await db.collection('users').doc(loginForm.login).get();
-                        
-                        if (!userDoc.exists) {
-                            showMessage('Пользователь не найден', 'error');
-                            loading.value = false;
-                            return;
-                        }
-                        
-                        const userData = userDoc.data();
-                        
-                        await auth.signInWithEmailAndPassword(
-                            userData.email,
-                            loginForm.password
-                        );
-                        
-                        await loadCurrentUserData(loginForm.login);
-                        await loadUsersFromFirestore();
-                        
-                        showMessage('Добро пожаловать!', 'success');
-                        
-                        loginForm.login = '';
-                        loginForm.password = '';
-                        
-                    } catch (error) {
-                        console.error('Ошибка входа:', error);
-                        showMessage('Неверный логин или пароль', 'error');
-                    } finally {
-                        loading.value = false;
-                    }
-                }
-                
-                async function logout() {
-                    loading.value = true;
-                    loadingMessage.value = 'Выход...';
-                    try {
-                        await auth.signOut();
-                        currentUser.value = null;
-                        Object.assign(expenses, initialExpenses);
-                        goals.value = [];
-                        friends.value = [];
-                        friendRequests.value = [];
-                        pendingRequests.value = [];
-                        savedSnapshots.value = [];
-                        chatMessages.value = [
-                            { text: 'Привет! Я DeepSeek AI, ваш финансовый ассистент. Я помогу вам с анализом расходов, советами по инвестированию и улучшению КФГ. Задайте вопрос!', sender: 'bot' }
-                        ];
-                        chatHistory.value = [
-                            { role: 'system', content: 'Вы DeepSeek AI, профессиональный финансовый ассистент в приложении FinGrade. Вы даете советы по личным финансам, помогаете анализировать расходы, предлагаете стратегии инвестирования и улучшения КФГ (коэффициента финансовой грамотности). Отвечайте подробно, но понятно. Используйте русский язык. Можете форматировать ответы с помощью markdown-like синтаксиса для улучшения читаемости.' }
-                        ];
-                        showMessage('Вы вышли', 'success');
-                    } catch (error) {
-                        showMessage('Ошибка при выходе', 'error');
+                        showRegister.value = false;
+                        await loadUsers();
+                    } catch (e) {
+                        showMessage('Ошибка: ' + e.message, 'error');
                     } finally {
                         loading.value = false;
                     }
                 }
 
+                async function logout() {
+                    loading.value = true;
+                    try {
+                        await auth.signOut();
+                        currentUser.value = null;
+                        showMessage('Вы вышли', 'success');
+                    } catch (e) {
+                        showMessage('Ошибка', 'error');
+                    } finally {
+                        loading.value = false;
+                    }
+                }
+
+                async function loadUsers() {
+                    const snap = await db.collection('users').get();
+                    users.value = [];
+                    snap.forEach(d => users.value.push({ id: d.id, ...d.data() }));
+                }
+
                 async function saveExpenses() {
                     if (!currentUser.value) return;
-                    
                     loading.value = true;
-                    loadingMessage.value = 'Сохранение...';
-                    
                     try {
-                        currentUser.value.expenses = { ...expenses };
-                        
-                        await db.collection('users').doc(currentUser.value.login).update({
-                            expenses: { ...expenses },
-                            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-                        });
-                        
-                        await saveSnapshot();
-                        
-                        showMessage('Расходы сохранены!', 'success');
-                        updateChart();
-                        await loadHistoricalData();
-                    } catch (error) {
-                        showMessage('Ошибка сохранения', 'error');
+                        await db.collection('users').doc(currentUser.value.login).update({ expenses: { ...expenses } });
+                        showMessage('Сохранено!', 'success');
+                    } catch (e) {
+                        showMessage('Ошибка', 'error');
                     } finally {
                         loading.value = false;
                     }
                 }
 
                 async function addGoal() {
-                    if (!newGoal.name.trim()) {
-                        showMessage('Введите название цели', 'error');
+                    if (!newGoal.name || newGoal.targetAmount <= 0) {
+                        showMessage('Введите данные', 'error');
                         return;
                     }
-                    
-                    if (newGoal.targetAmount <= 0) {
-                        showMessage('Введите корректную сумму', 'error');
-                        return;
-                    }
-                    
-                    loading.value = true;
-                    loadingMessage.value = 'Добавление...';
-                    
-                    try {
-                        const newGoalObj = {
-                            name: newGoal.name,
-                            targetAmount: newGoal.targetAmount,
-                            currentAmount: 0
-                        };
-                        
-                        goals.value.push(newGoalObj);
-                        
-                        await db.collection('users').doc(currentUser.value.login).update({
-                            goals: goals.value
-                        });
-                        
-                        newGoal.name = '';
-                        newGoal.targetAmount = 0;
-                        
-                        showMessage('Цель добавлена!', 'success');
-                    } catch (error) {
-                        showMessage('Ошибка', 'error');
-                    } finally {
-                        loading.value = false;
-                    }
+                    goals.value.push({ name: newGoal.name, targetAmount: newGoal.targetAmount, currentAmount: 0 });
+                    await db.collection('users').doc(currentUser.value.login).update({ goals: goals.value });
+                    newGoal.name = '';
+                    newGoal.targetAmount = 0;
+                    showMessage('Цель добавлена!', 'success');
                 }
 
                 async function quickAddToGoal(index, amount) {
-                    if (amount <= 0) {
-                        showMessage('Сумма должна быть положительной', 'error');
-                        return;
-                    }
-                    
-                    loading.value = true;
-                    loadingMessage.value = 'Добавление...';
-                    try {
-                        goals.value[index].currentAmount += amount;
-                        
-                        await db.collection('users').doc(currentUser.value.login).update({
-                            goals: goals.value
-                        });
-                        
-                        showMessage(`Добавлено ${formatMoney(amount)} ₽`, 'success');
-                    } catch (error) {
-                        showMessage('Ошибка', 'error');
-                    } finally {
-                        loading.value = false;
-                    }
+                    goals.value[index].currentAmount += amount;
+                    await db.collection('users').doc(currentUser.value.login).update({ goals: goals.value });
+                    showMessage(`+${formatMoney(amount)} ₽`, 'success');
                 }
 
                 async function confirmAddToGoal() {
-                    if (selectedGoalIndex.value === null) return;
-                    
-                    if (addToGoalAmount.value <= 0) {
-                        showMessage('Введите корректную сумму', 'error');
-                        return;
-                    }
-                    
-                    loading.value = true;
-                    loadingMessage.value = 'Добавление...';
-                    
-                    try {
+                    if (selectedGoalIndex.value !== null && addToGoalAmount.value > 0) {
                         goals.value[selectedGoalIndex.value].currentAmount += addToGoalAmount.value;
-                        
-                        await db.collection('users').doc(currentUser.value.login).update({
-                            goals: goals.value
-                        });
-                        
-                        showMessage(`Добавлено ${formatMoney(addToGoalAmount.value)} ₽`, 'success');
+                        await db.collection('users').doc(currentUser.value.login).update({ goals: goals.value });
+                        showMessage(`+${formatMoney(addToGoalAmount.value)} ₽`, 'success');
                         closeAddToGoalModal();
-                    } catch (error) {
-                        showMessage('Ошибка', 'error');
-                    } finally {
-                        loading.value = false;
                     }
                 }
 
                 async function confirmRemoveGoal() {
-                    if (selectedGoalIndexForRemove.value === null) return;
-                    
-                    loading.value = true;
-                    loadingMessage.value = 'Удаление...';
-                    
-                    try {
+                    if (selectedGoalIndexForRemove.value !== null) {
                         goals.value.splice(selectedGoalIndexForRemove.value, 1);
-                        
-                        await db.collection('users').doc(currentUser.value.login).update({
-                            goals: goals.value
-                        });
-                        
+                        await db.collection('users').doc(currentUser.value.login).update({ goals: goals.value });
                         showMessage('Цель удалена', 'success');
                         closeRemoveGoalModal();
-                    } catch (error) {
-                        showMessage('Ошибка', 'error');
-                    } finally {
-                        loading.value = false;
                     }
                 }
 
@@ -2119,533 +951,184 @@
                     newIncomeValue.value = currentUser.value.income;
                     showIncomeModal.value = true;
                 }
-
-                function closeIncomeModal() {
-                    showIncomeModal.value = false;
-                    newIncomeValue.value = 0;
-                }
+                
+                function closeIncomeModal() { showIncomeModal.value = false; }
+                function openAddToGoalModal(i) { selectedGoalIndex.value = i; selectedGoalName.value = goals.value[i].name; addToGoalAmount.value = 1000; showAddToGoalModal.value = true; }
+                function closeAddToGoalModal() { showAddToGoalModal.value = false; selectedGoalIndex.value = null; }
+                function openRemoveGoalModal(i) { selectedGoalIndexForRemove.value = i; selectedGoalNameForRemove.value = goals.value[i].name; showRemoveGoalModal.value = true; }
+                function closeRemoveGoalModal() { showRemoveGoalModal.value = false; selectedGoalIndexForRemove.value = null; }
 
                 async function saveIncome() {
-                    if (newIncomeValue.value < 0) {
-                        showMessage('Доход не может быть отрицательным', 'error');
-                        return;
-                    }
-
-                    loading.value = true;
-                    loadingMessage.value = 'Сохранение...';
-                    
-                    try {
+                    if (newIncomeValue.value >= 0) {
                         currentUser.value.income = newIncomeValue.value;
-                        
-                        await db.collection('users').doc(currentUser.value.login).update({
-                            income: newIncomeValue.value
-                        });
-                        
+                        await db.collection('users').doc(currentUser.value.login).update({ income: newIncomeValue.value });
                         showMessage('Доход обновлен!', 'success');
                         closeIncomeModal();
-                    } catch (error) {
-                        showMessage('Ошибка', 'error');
-                    } finally {
-                        loading.value = false;
                     }
                 }
 
                 async function searchFriends() {
-                    searchPerformed.value = true;
-                    
-                    if (!friendSearchQuery.value.trim()) {
-                        searchResults.value = [];
-                        return;
-                    }
-                    
-                    const query = friendSearchQuery.value.toLowerCase().replace('@', '');
-                    
+                    const q = friendSearchQuery.value.toLowerCase().replace('@', '');
                     searchResults.value = users.value.filter(u => 
-                        u.nickname.toLowerCase() === query && 
-                        u.login !== currentUser.value?.login &&
-                        !friends.value.some(f => f.login === u.login) &&
-                        !friendRequests.value.includes(u.login) &&
-                        !pendingRequests.value.includes(u.login)
-                    ).map(u => ({
-                        ...u,
-                        kfg: calculateKFG(u)
-                    }));
+                        u.nickname.toLowerCase() === q && u.login !== currentUser.value?.login &&
+                        !friends.value.some(f => f.login === u.login)
+                    );
                 }
 
                 async function sendFriendRequest(user) {
-                    if (friendRequests.value.includes(user.login)) {
-                        showMessage('Заявка уже отправлена', 'error');
-                        return;
+                    if (!friendRequests.value.includes(user.login)) friendRequests.value.push(user.login);
+                    await db.collection('users').doc(currentUser.value.login).update({ friendRequests: friendRequests.value });
+                    const target = db.collection('users').doc(user.login);
+                    const targetPending = (await target.get()).data()?.pendingRequests || [];
+                    if (!targetPending.includes(currentUser.value.login)) {
+                        targetPending.push(currentUser.value.login);
+                        await target.update({ pendingRequests: targetPending });
                     }
+                    showMessage('Заявка отправлена', 'success');
+                    friendSearchQuery.value = '';
+                    searchResults.value = [];
+                }
+
+                async function acceptFriendRequest(req) {
+                    friends.value.push({ name: req.name, surname: req.surname, nickname: req.nickname, login: req.login, avatar: req.avatar });
+                    pendingRequests.value = pendingRequests.value.filter(l => l !== req.login);
+                    await db.collection('users').doc(currentUser.value.login).update({ friends: friends.value, pendingRequests: pendingRequests.value });
+                    const friendRef = db.collection('users').doc(req.login);
+                    const friendFriends = (await friendRef.get()).data()?.friends || [];
+                    friendFriends.push({ name: currentUser.value.name, surname: currentUser.value.surname, nickname: currentUser.value.nickname, login: currentUser.value.login, avatar: currentUser.value.avatar });
+                    await friendRef.update({ friends: friendFriends, friendRequests: [] });
+                    showMessage('Заявка принята', 'success');
+                }
+
+                async function rejectFriendRequest(req) {
+                    pendingRequests.value = pendingRequests.value.filter(l => l !== req.login);
+                    await db.collection('users').doc(currentUser.value.login).update({ pendingRequests: pendingRequests.value });
+                    const friendRef = db.collection('users').doc(req.login);
+                    const friendRequestsList = (await friendRef.get()).data()?.friendRequests || [];
+                    await friendRef.update({ friendRequests: friendRequestsList.filter(l => l !== currentUser.value.login) });
+                    showMessage('Заявка отклонена', 'info');
+                }
+
+                async function removeFriend(f) {
+                    friends.value = friends.value.filter(fr => fr.login !== f.login);
+                    await db.collection('users').doc(currentUser.value.login).update({ friends: friends.value });
+                    const friendRef = db.collection('users').doc(f.login);
+                    const friendFriends = (await friendRef.get()).data()?.friends || [];
+                    await friendRef.update({ friends: friendFriends.filter(fr => fr.login !== currentUser.value.login) });
+                    showMessage('Друг удален', 'success');
+                }
+
+                function claimReward(r) {
+                    if (r.kfgRequired <= kfg.value) showMessage(`Вы получили: ${r.name}`, 'success');
+                    else showMessage('Недостаточно КФГ', 'error');
+                }
+
+                // Чат
+                async function sendToDeepSeek(messages) {
+                    const res = await axios.post(DEEPSEEK_API_URL, {
+                        model: 'deepseek-chat',
+                        messages: messages,
+                        temperature: 0.7,
+                        max_tokens: 800
+                    }, {
+                        headers: { 'Authorization': `Bearer ${DEEPSEEK_API_KEY}`, 'Content-Type': 'application/json' }
+                    });
+                    return res.data.choices[0].message.content;
+                }
+
+                async function sendMessage() {
+                    if (!chatInput.value.trim() || aiLoading.value) return;
+                    const userMsg = chatInput.value.trim();
+                    chatMessages.value.push({ text: userMsg, sender: 'user' });
+                    chatHistory.value.push({ role: 'user', content: userMsg });
+                    chatInput.value = '';
                     
-                    if (friends.value.some(f => f.login === user.login)) {
-                        showMessage('Уже в друзьях', 'error');
-                        return;
-                    }
+                    const loadingIdx = chatMessages.value.length;
+                    chatMessages.value.push({ text: '', sender: 'bot', loading: true });
+                    await nextTick();
+                    if (chatContainer.value) chatContainer.value.scrollTop = chatContainer.value.scrollHeight;
                     
-                    loading.value = true;
-                    loadingMessage.value = 'Отправка...';
-                    
+                    aiLoading.value = true;
                     try {
-                        if (!friendRequests.value.includes(user.login)) {
-                            friendRequests.value.push(user.login);
-                        }
-                        
-                        const targetUserRef = db.collection('users').doc(user.login);
-                        const targetUserDoc = await targetUserRef.get();
-                        
-                        if (targetUserDoc.exists) {
-                            const targetPending = targetUserDoc.data().pendingRequests || [];
-                            if (!targetPending.includes(currentUser.value.login)) {
-                                targetPending.push(currentUser.value.login);
-                                await targetUserRef.update({
-                                    pendingRequests: targetPending
-                                });
-                            }
-                        }
-                        
-                        await db.collection('users').doc(currentUser.value.login).update({
-                            friendRequests: friendRequests.value
-                        });
-                        
-                        searchResults.value = [];
-                        friendSearchQuery.value = '';
-                        searchPerformed.value = false;
-                        
-                        showMessage(`Заявка отправлена`, 'success');
-                    } catch (error) {
-                        showMessage('Ошибка', 'error');
+                        const context = `Информация о пользователе: Имя ${currentUser.value?.name}, доход ${formatMoney(totalIncome.value)} ₽, расходы ${formatMoney(totalExpenses.value)} ₽, КФГ ${kfg.value}, остаток ${formatMoney(balance.value)} ₽.`;
+                        const messages = [{ role: 'system', content: `Вы финансовый ассистент. ${context}` }, ...chatHistory.value.slice(-10)];
+                        const response = await sendToDeepSeek(messages);
+                        chatMessages.value.splice(loadingIdx, 1);
+                        chatMessages.value.push({ text: response, sender: 'bot' });
+                        chatHistory.value.push({ role: 'assistant', content: response });
+                    } catch (e) {
+                        chatMessages.value.splice(loadingIdx, 1);
+                        chatMessages.value.push({ text: 'Ошибка API', sender: 'bot', error: true });
                     } finally {
-                        loading.value = false;
+                        aiLoading.value = false;
+                        await nextTick();
+                        if (chatContainer.value) chatContainer.value.scrollTop = chatContainer.value.scrollHeight;
                     }
                 }
 
-                async function acceptFriendRequest(request) {
-                    loading.value = true;
-                    loadingMessage.value = 'Принятие...';
-                    
-                    try {
-                        const newFriend = {
-                            name: request.name,
-                            surname: request.surname,
-                            nickname: request.nickname,
-                            login: request.login,
-                            avatar: request.avatar
-                        };
-                        
-                        friends.value.push(newFriend);
-                        pendingRequests.value = pendingRequests.value.filter(login => login !== request.login);
-                        
-                        const friendRef = db.collection('users').doc(request.login);
-                        const friendDoc = await friendRef.get();
-                        
-                        if (friendDoc.exists) {
-                            const friendFriends = friendDoc.data().friends || [];
-                            friendFriends.push({
-                                name: currentUser.value.name,
-                                surname: currentUser.value.surname,
-                                nickname: currentUser.value.nickname,
-                                login: currentUser.value.login,
-                                avatar: currentUser.value.avatar
-                            });
-                            
-                            const friendRequestsList = (friendDoc.data().friendRequests || []).filter(
-                                login => login !== currentUser.value.login
-                            );
-                            
-                            await friendRef.update({
-                                friends: friendFriends,
-                                friendRequests: friendRequestsList
-                            });
-                        }
-                        
-                        await db.collection('users').doc(currentUser.value.login).update({
-                            friends: friends.value,
-                            pendingRequests: pendingRequests.value
-                        });
-                        
-                        showMessage('Заявка принята', 'success');
-                    } catch (error) {
-                        showMessage('Ошибка', 'error');
-                    } finally {
-                        loading.value = false;
-                    }
+                function quickQuestion(q) {
+                    chatInput.value = q;
+                    sendMessage();
                 }
 
-                async function rejectFriendRequest(request) {
-                    loading.value = true;
-                    loadingMessage.value = 'Отклонение...';
-                    
-                    try {
-                        pendingRequests.value = pendingRequests.value.filter(login => login !== request.login);
-                        
-                        const friendRef = db.collection('users').doc(request.login);
-                        const friendDoc = await friendRef.get();
-                        
-                        if (friendDoc.exists) {
-                            const friendRequestsList = (friendDoc.data().friendRequests || []).filter(
-                                login => login !== currentUser.value.login
-                            );
-                            await friendRef.update({ friendRequests: friendRequestsList });
-                        }
-                        
-                        await db.collection('users').doc(currentUser.value.login).update({
-                            pendingRequests: pendingRequests.value
-                        });
-                        
-                        showMessage('Заявка отклонена', 'info');
-                    } catch (error) {
-                        showMessage('Ошибка', 'error');
-                    } finally {
-                        loading.value = false;
-                    }
-                }
-
-                async function removeFriend(friend) {
-                    loading.value = true;
-                    loadingMessage.value = 'Удаление...';
-                    
-                    try {
-                        friends.value = friends.value.filter(f => f.login !== friend.login);
-                        
-                        const friendRef = db.collection('users').doc(friend.login);
-                        const friendDoc = await friendRef.get();
-                        
-                        if (friendDoc.exists) {
-                            const friendFriends = (friendDoc.data().friends || []).filter(
-                                f => f.login !== currentUser.value.login
-                            );
-                            await friendRef.update({ friends: friendFriends });
-                        }
-                        
-                        await db.collection('users').doc(currentUser.value.login).update({
-                            friends: friends.value
-                        });
-                        
-                        showMessage('Друг удален', 'success');
-                    } catch (error) {
-                        showMessage('Ошибка', 'error');
-                    } finally {
-                        loading.value = false;
-                    }
-                }
-
-                async function changeAvatar(avatar) {
-                    if (!isAvatarUnlocked(avatar)) {
-                        showMessage('Аватар недоступен', 'error');
-                        return;
-                    }
-                    
-                    loading.value = true;
-                    loadingMessage.value = 'Смена аватара...';
-                    
-                    try {
-                        currentUser.value.avatar = avatar.id;
-                        
-                        await db.collection('users').doc(currentUser.value.login).update({
-                            avatar: avatar.id
-                        });
-                        
-                        showMessage(`Аватар изменен!`, 'success');
-                    } catch (error) {
-                        showMessage('Ошибка', 'error');
-                    } finally {
-                        loading.value = false;
-                    }
-                }
-
-                function claimReward(reward) {
-                    if (reward.kfgRequired <= kfg.value) {
-                        showMessage(`Вы получили: ${reward.name}`, 'success');
-                    } else {
-                        showMessage('Недостаточно КФГ', 'error');
-                    }
-                }
-
-                function openAddToGoalModal(index) {
-                    selectedGoalIndex.value = index;
-                    selectedGoalName.value = goals.value[index].name;
-                    addToGoalAmount.value = 1000;
-                    showAddToGoalModal.value = true;
-                }
-
-                function closeAddToGoalModal() {
-                    showAddToGoalModal.value = false;
-                    selectedGoalIndex.value = null;
-                    selectedGoalName.value = '';
-                    addToGoalAmount.value = 1000;
-                }
-
-                function openRemoveGoalModal(index) {
-                    selectedGoalIndexForRemove.value = index;
-                    selectedGoalNameForRemove.value = goals.value[index].name;
-                    showRemoveGoalModal.value = true;
-                }
-
-                function closeRemoveGoalModal() {
-                    showRemoveGoalModal.value = false;
-                    selectedGoalIndexForRemove.value = null;
-                    selectedGoalNameForRemove.value = '';
-                }
-
-                // Графики
+                // График
                 let chart = null;
-                let trendChart = null;
-                
                 function initChart() {
                     const ctx = document.getElementById('expenseChart');
                     if (!ctx) return;
-                    
-                    if (chart) { chart.destroy(); chart = null; }
-                    
-                    const activeCategories = {};
-                    Object.keys(filteredExpenses.value).forEach(key => {
-                        if (filteredExpenses.value[key] > 0) activeCategories[key] = filteredExpenses.value[key];
-                    });
-                    
-                    if (Object.keys(activeCategories).length === 0) return;
-                    
-                    const labels = Object.keys(activeCategories).map(key => categoryNames[key]);
-                    const data = Object.values(activeCategories);
-                    const colors = Object.keys(activeCategories).map(key => categoryColors[key]);
-                    
-                    chart = new Chart(ctx.getContext('2d'), {
+                    if (chart) chart.destroy();
+                    const active = {};
+                    Object.keys(filteredExpenses.value).forEach(k => { if (filteredExpenses.value[k] > 0) active[k] = filteredExpenses.value[k]; });
+                    if (Object.keys(active).length === 0) return;
+                    chart = new Chart(ctx, {
                         type: 'doughnut',
-                        data: { labels, datasets: [{ data, backgroundColor: colors, borderWidth: 1 }] },
-                        options: {
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            plugins: { 
-                                legend: { 
-                                    position: 'bottom', 
-                                    labels: { 
-                                        boxWidth: 10, 
-                                        padding: 10,
-                                        font: { size: 10 }
-                                    } 
-                                } 
-                            }
-                        }
+                        data: {
+                            labels: Object.keys(active).map(k => categoryNames[k]),
+                            datasets: [{ data: Object.values(active), backgroundColor: Object.keys(active).map(k => categoryColors[k]) }]
+                        },
+                        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
                     });
                 }
 
-                function updateChart() {
-                    if (!hasExpenses.value) {
-                        if (chart) { chart.destroy(); chart = null; }
-                        return;
-                    }
-                    
-                    nextTick(() => {
-                        if (chart) {
-                            const activeCategories = {};
-                            Object.keys(filteredExpenses.value).forEach(key => {
-                                if (filteredExpenses.value[key] > 0) activeCategories[key] = filteredExpenses.value[key];
-                            });
-                            
-                            chart.data.labels = Object.keys(activeCategories).map(key => categoryNames[key]);
-                            chart.data.datasets[0].data = Object.values(activeCategories);
-                            chart.data.datasets[0].backgroundColor = Object.keys(activeCategories).map(key => categoryColors[key]);
-                            chart.update();
-                        } else {
-                            initChart();
-                        }
-                    });
-                }
-
-                function updateTrendChart() {
-                    if (currentTab.value !== 'analytics') return;
-                    
-                    nextTick(() => {
-                        const ctx = document.getElementById('kfgTrendChart');
-                        if (!ctx) return;
-                        
-                        if (trendChart) {
-                            trendChart.destroy();
-                            trendChart = null;
-                        }
-                        
-                        if (savedSnapshots.value.length < 2) return;
-                        
-                        const labels = savedSnapshots.value.slice(0, 7).map(s => {
-                            return formatDate(s.timestamp);
-                        }).reverse();
-                        
-                        const data = savedSnapshots.value.slice(0, 7).map(s => s.kfg).reverse();
-                        
-                        trendChart = new Chart(ctx.getContext('2d'), {
-                            type: 'line',
-                            data: {
-                                labels,
-                                datasets: [{
-                                    label: 'КФГ',
-                                    data,
-                                    borderColor: '#667eea',
-                                    backgroundColor: 'rgba(102, 126, 234, 0.1)',
-                                    tension: 0.4,
-                                    fill: true,
-                                    pointBackgroundColor: data.map(v => 
-                                        v >= 90 ? '#50c878' : 
-                                        v >= 70 ? '#e5e4e2' : 
-                                        v >= 50 ? '#ffd700' : 
-                                        v >= 30 ? '#c0c0c0' : '#cd7f32'
-                                    )
-                                }]
-                            },
-                            options: {
-                                responsive: true,
-                                maintainAspectRatio: false,
-                                scales: {
-                                    y: {
-                                        beginAtZero: true,
-                                        max: 100,
-                                        grid: { color: 'rgba(0,0,0,0.05)' }
-                                    }
-                                },
-                                plugins: {
-                                    legend: { display: false },
-                                    tooltip: { enabled: true }
-                                }
-                            }
-                        });
-                    });
-                }
-
-                async function checkAuthState() {
+                // Авторизация
+                onMounted(async () => {
                     loading.value = true;
-                    loadingMessage.value = 'Проверка...';
-                    
                     auth.onAuthStateChanged(async (user) => {
                         if (user) {
-                            try {
-                                const emailQuery = await db.collection('users').where('email', '==', user.email).get();
-                                if (!emailQuery.empty) {
-                                    const userData = emailQuery.docs[0].data();
-                                    await loadCurrentUserData(userData.login);
-                                    await loadUsersFromFirestore();
-                                }
-                            } catch (error) {
-                                console.error('Ошибка восстановления сессии:', error);
+                            const q = await db.collection('users').where('email', '==', user.email).get();
+                            if (!q.empty) {
+                                const d = q.docs[0].data();
+                                currentUser.value = { ...d, login: q.docs[0].id };
+                                if (d.expenses) Object.assign(expenses, d.expenses);
+                                goals.value = d.goals || [];
+                                friends.value = d.friends || [];
+                                friendRequests.value = d.friendRequests || [];
+                                pendingRequests.value = d.pendingRequests || [];
                             }
                         }
+                        await loadUsers();
                         loading.value = false;
+                        setTimeout(() => initChart(), 100);
                     });
-                    
-                    setTimeout(() => { loading.value = false; }, 2000);
-                }
-
-                onMounted(async () => {
-                    const handled = await handleVKCallback();
-                    
-                    if (!handled) {
-                        await checkAuthState();
-                    }
-                    
-                    setTimeout(() => {
-                        if (hasExpenses.value) initChart();
-                    }, 500);
                 });
 
-                watch([expenses, currentTab, analyticsPeriod], () => {
-                    if (currentTab.value === 'analytics') {
-                        nextTick(() => { 
-                            updateChart();
-                            updateTrendChart();
-                        });
-                    }
-                }, { deep: true });
-
                 return {
-                    loading,
-                    loadingMessage,
-                    currentTab,
-                    message,
-                    currentUser,
-                    loginForm,
-                    registerForm,
-                    expenses,
-                    goals,
-                    newGoal,
-                    friends,
-                    friendRequests,
-                    pendingRequests,
-                    pendingFriendRequests,
-                    friendSearchQuery,
-                    searchResults,
-                    searchPerformed,
-                    chatMessages,
-                    chatInput,
-                    chatContainer,
-                    aiLoading,
-                    rewards,
-                    avatars,
-                    tabs,
-                    categoryNames,
-                    categoryIcons,
-                    analyticsPeriod,
-                    savedSnapshots,
-                    hasHistoricalData,
-                    incomeComparison,
-                    expensesComparison,
-                    kfgComparison,
-                    balanceComparison,
-                    totalExpenses,
-                    totalIncome,
-                    balance,
-                    hasExpenses,
-                    kfg,
-                    ratingParticipants,
-                    filteredExpenses,
-                    friendsWithDetails,
-                    aiContextLength,
-                    showIncomeModal,
-                    newIncomeValue,
-                    showAddToGoalModal,
-                    selectedGoalName,
-                    addToGoalAmount,
-                    showRemoveGoalModal,
-                    selectedGoalNameForRemove,
-                    handleRegister,
-                    handleLogin,
-                    logout,
-                    searchFriends,
-                    sendFriendRequest,
-                    acceptFriendRequest,
-                    rejectFriendRequest,
-                    removeFriend,
-                    saveExpenses,
-                    addGoal,
-                    openAddToGoalModal,
-                    closeAddToGoalModal,
-                    confirmAddToGoal,
-                    quickAddToGoal,
-                    openRemoveGoalModal,
-                    closeRemoveGoalModal,
-                    confirmRemoveGoal,
-                    sendMessage,
-                    resetChatContext,
-                    quickQuestion,
-                    formatBotMessage,
-                    loginWithVK,
-                    claimReward,
-                    getAvatarUrl,
-                    getAvatarName,
-                    changeAvatar,
-                    isAvatarUnlocked,
-                    isAvatarAvailableForRegister,
-                    selectRegisterAvatar,
-                    getUserRating,
-                    getUserRatingLevel,
-                    calculateKFG,
-                    formatMoney,
-                    editIncome,
-                    closeIncomeModal,
-                    saveIncome,
-                    loadHistoricalData,
-                    getComparisonClass,
-                    getComparisonIcon,
-                    formatDate,
-                    getExpensesSummary,
-                    getDetailedExpenses
+                    loading, loadingMessage, currentTab, message, currentUser, showRegister,
+                    loginForm, registerForm, expenses, goals, newGoal, friends, friendRequests,
+                    pendingRequests, pendingFriendRequests, friendSearchQuery, searchResults,
+                    chatMessages, chatInput, chatContainer, aiLoading,
+                    rewards, avatars, tabs, categoryNames, categoryIcons,
+                    totalExpenses, totalIncome, balance, hasExpenses, kfg,
+                    filteredExpenses, ratingParticipants, friendsWithDetails,
+                    showIncomeModal, newIncomeValue, showAddToGoalModal, selectedGoalName,
+                    addToGoalAmount, showRemoveGoalModal, selectedGoalNameForRemove,
+                    loginWithGoogle, loginWithMailRu, handleLogin, handleRegister, logout,
+                    saveExpenses, addGoal, quickAddToGoal, confirmAddToGoal, confirmRemoveGoal,
+                    editIncome, closeIncomeModal, saveIncome, searchFriends, sendFriendRequest,
+                    acceptFriendRequest, rejectFriendRequest, removeFriend, claimReward,
+                    openAddToGoalModal, closeAddToGoalModal, openRemoveGoalModal, closeRemoveGoalModal,
+                    sendMessage, quickQuestion, formatBotMessage, getAvatarUrl, formatMoney,
+                    getUserRating, getUserRatingLevel
                 };
             }
         });
