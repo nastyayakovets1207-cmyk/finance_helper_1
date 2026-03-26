@@ -674,7 +674,7 @@
                         </div>
                     </div>
 
-                    <!-- Вкладка ИИ-Ассистент с GigaChat (исправленная версия) -->
+                    <!-- Вкладка ИИ-Ассистент с GigaChat (исправленная версия с рабочим прокси) -->
                     <div v-show="currentTab === 'chat'">
                         <h2 class="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">ИИ-Ассистент GigaChat</h2>
                         <div class="bg-gray-50 rounded-lg p-3 sm:p-4">
@@ -861,7 +861,8 @@
         const googleProvider = new firebase.auth.GoogleAuthProvider();
         googleProvider.setCustomParameters({ prompt: 'select_account' });
 
-        // GigaChat API конфигурация (исправленная)
+        // GigaChat API конфигурация (исправленная: используем рабочий CORS-прокси)
+        const CORS_PROXY = 'https://cors.bridged.cc/';  // прокси, который корректно обрабатывает самоподписанные сертификаты
         const GIGACHAT_AUTH_URL = 'https://ngw.devices.sberbank.ru:9443/api/v2/oauth';
         const GIGACHAT_API_URL = 'https://gigachat.devices.sberbank.ru/api/v1/chat/completions';
         const AUTHORIZATION_KEY = 'Basic MDE5ZDFmOTgtNDQ4NC03ZmYwLWFhNjUtYzlmYzA1ZGI2MTA3OjYzMDY0OWEyLWUwYmQtNGZhOC1iMDY4LTU1ZjFkOWZmOTRlMQ==';
@@ -1126,14 +1127,15 @@
                     return `Пользователь: ${currentUser.value.name}\nДоход: ${formatMoney(totalIncome.value)} ₽\nРасходы: ${formatMoney(totalExpenses.value)} ₽\nКФГ: ${kfg.value}\nДетали: ${getDetailedExpenses()}`;
                 }
 
-                // --- GigaChat API функции (исправленные) ---
+                // --- GigaChat API функции (исправленные: работа через cors.bridged.cc) ---
                 async function getGigaChatAccessToken() {
                     if (cachedAccessToken && tokenExpiryTime && Date.now() < tokenExpiryTime) {
                         return cachedAccessToken;
                     }
                     try {
-                        // Используем fetch с правильными заголовками и без CORS прокси
-                        const response = await fetch(GIGACHAT_AUTH_URL, {
+                        // Формируем URL через прокси
+                        const proxyUrl = CORS_PROXY + GIGACHAT_AUTH_URL;
+                        const response = await fetch(proxyUrl, {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/x-www-form-urlencoded',
@@ -1168,7 +1170,8 @@
 
                 async function sendToGigaChat(messages) {
                     const token = await getGigaChatAccessToken();
-                    const response = await fetch(GIGACHAT_API_URL, {
+                    const proxyUrl = CORS_PROXY + GIGACHAT_API_URL;
+                    const response = await fetch(proxyUrl, {
                         method: 'POST',
                         headers: {
                             'Authorization': `Bearer ${token}`,
@@ -1239,7 +1242,7 @@
                     sendMessage();
                 }
 
-                // --- Firebase функции ---
+                // --- Firebase функции (без изменений) ---
                 async function loadUsersFromFirestore() {
                     try {
                         const snapshot = await db.collection('users').get();
