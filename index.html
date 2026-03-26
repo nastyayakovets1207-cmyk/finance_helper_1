@@ -674,7 +674,7 @@
                         </div>
                     </div>
 
-                    <!-- Вкладка ИИ-Ассистент с GigaChat (исправленная версия с рабочим прокси) -->
+                    <!-- Вкладка ИИ-Ассистент с GigaChat (через Netlify Function) -->
                     <div v-show="currentTab === 'chat'">
                         <h2 class="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">ИИ-Ассистент GigaChat</h2>
                         <div class="bg-gray-50 rounded-lg p-3 sm:p-4">
@@ -861,13 +861,9 @@
         const googleProvider = new firebase.auth.GoogleAuthProvider();
         googleProvider.setCustomParameters({ prompt: 'select_account' });
 
-        // GigaChat API конфигурация (исправленная: используем рабочий CORS-прокси)
-        const CORS_PROXY = 'https://cors.bridged.cc/';  // прокси, который корректно обрабатывает самоподписанные сертификаты
-        const GIGACHAT_AUTH_URL = 'https://ngw.devices.sberbank.ru:9443/api/v2/oauth';
-        const GIGACHAT_API_URL = 'https://gigachat.devices.sberbank.ru/api/v1/chat/completions';
-        const AUTHORIZATION_KEY = 'Basic MDE5ZDFmOTgtNDQ4NC03ZmYwLWFhNjUtYzlmYzA1ZGI2MTA3OjYzMDY0OWEyLWUwYmQtNGZhOC1iMDY4LTU1ZjFkOWZmOTRlMQ==';
-        const SCOPE = 'GIGACHAT_API_PERS';
-        const RQUID = 'b189f96a-b968-4970-a3c1-a86e2fd26cbf';
+        // --- Netlify Function прокси для GigaChat ---
+        // Замените URL на ваш домен Netlify, если он отличается
+        const PROXY_URL = 'https://fingrade.netlify.app/.netlify/functions/gigachat';
 
         let cachedAccessToken = null;
         let tokenExpiryTime = null;
@@ -1127,29 +1123,18 @@
                     return `Пользователь: ${currentUser.value.name}\nДоход: ${formatMoney(totalIncome.value)} ₽\nРасходы: ${formatMoney(totalExpenses.value)} ₽\nКФГ: ${kfg.value}\nДетали: ${getDetailedExpenses()}`;
                 }
 
-                // --- GigaChat API функции (исправленные: работа через cors.bridged.cc) ---
+                // --- GigaChat API функции (через Netlify) ---
                 async function getGigaChatAccessToken() {
                     if (cachedAccessToken && tokenExpiryTime && Date.now() < tokenExpiryTime) {
                         return cachedAccessToken;
                     }
                     try {
-                        // Формируем URL через прокси
-                        const proxyUrl = CORS_PROXY + GIGACHAT_AUTH_URL;
-                        const response = await fetch(proxyUrl, {
+                        const response = await fetch(PROXY_URL, {
                             method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/x-www-form-urlencoded',
-                                'Accept': 'application/json',
-                                'RqUID': RQUID,
-                                'Authorization': AUTHORIZATION_KEY
-                            },
-                            body: new URLSearchParams({ scope: SCOPE })
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ action: 'auth' }),
                         });
-                        
-                        if (!response.ok) {
-                            throw new Error(`Ошибка авторизации: ${response.status}`);
-                        }
-                        
+                        if (!response.ok) throw new Error(`Ошибка авторизации: ${response.status}`);
                         const data = await response.json();
                         if (data?.access_token) {
                             cachedAccessToken = data.access_token;
@@ -1159,36 +1144,22 @@
                         throw new Error('Не удалось получить токен');
                     } catch (error) {
                         console.error('GigaChat auth error:', error);
-                        if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
-                            showMessage('Не удалось подключиться к GigaChat. Проверьте интернет-соединение.', 'error');
-                        } else {
-                            showMessage('Ошибка подключения к GigaChat: ' + error.message, 'error');
-                        }
-                        throw new Error(error.message || 'Ошибка подключения');
+                        showMessage('Ошибка подключения к GigaChat: ' + error.message, 'error');
+                        throw error;
                     }
                 }
 
                 async function sendToGigaChat(messages) {
                     const token = await getGigaChatAccessToken();
-                    const proxyUrl = CORS_PROXY + GIGACHAT_API_URL;
-                    const response = await fetch(proxyUrl, {
+                    const response = await fetch(PROXY_URL, {
                         method: 'POST',
-                        headers: {
-                            'Authorization': `Bearer ${token}`,
-                            'Content-Type': 'application/json'
-                        },
+                        headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
-                            model: 'GigaChat',
-                            messages: messages,
-                            temperature: 0.7,
-                            max_tokens: 1000
-                        })
+                            action: 'chat',
+                            data: { messages, token },
+                        }),
                     });
-                    
-                    if (!response.ok) {
-                        throw new Error(`API ошибка: ${response.status}`);
-                    }
-                    
+                    if (!response.ok) throw new Error(`API ошибка: ${response.status}`);
                     const data = await response.json();
                     return data?.choices?.[0]?.message?.content || 'Извините, не удалось получить ответ';
                 }
@@ -1242,7 +1213,7 @@
                     sendMessage();
                 }
 
-                // --- Firebase функции (без изменений) ---
+                // --- Firebase функции ---
                 async function loadUsersFromFirestore() {
                     try {
                         const snapshot = await db.collection('users').get();
