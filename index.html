@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover">
-    <title>FinGrade - Мобильная версия с GigaChat AI</title>
+    <title>FinGrade - Мобильная версия с Qwen AI</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -166,7 +166,6 @@
         .trend-down { color: #ef4444; }
         .trend-neutral { color: #6b7280; }
 
-        /* Исправленная панель вкладок — кнопки не съезжают */
         .mobile-tab-bar {
             display: flex;
             flex-wrap: nowrap;
@@ -202,7 +201,6 @@
             gap: 6px;
         }
         
-        /* Адаптив для очень маленьких экранов: уменьшаем отступы */
         @media (max-width: 480px) {
             .mobile-tab-item {
                 padding: 10px 12px;
@@ -210,7 +208,6 @@
             }
         }
         
-        /* Стиль для активной вкладки */
         .mobile-tab-item-active {
             color: #7c3aed;
             border-bottom-color: #7c3aed;
@@ -220,7 +217,6 @@
             color: #6b7280;
         }
         
-        /* Бейдж уведомлений — фиксированное позиционирование относительно кнопки, не ломает layout */
         .tab-badge {
             display: inline-flex;
             align-items: center;
@@ -420,14 +416,12 @@
         <!-- Основной контейнер (для авторизованных пользователей) -->
         <div v-else class="container mx-auto px-4 py-4 sm:py-8">
             <div class="bg-white rounded-xl shadow-lg overflow-hidden">
-                <!-- Исправленная панель вкладок — кнопки не съезжают, бейдж внутри кнопки -->
                 <div class="mobile-tab-bar">
                     <button v-for="tab in tabs" :key="tab.id" 
                             @click="currentTab = tab.id"
                             :class="['mobile-tab-item', currentTab === tab.id ? 'mobile-tab-item-active' : 'mobile-tab-item-inactive']">
                         <i :class="['text-base', tab.icon]"></i>
                         <span>{{ tab.name }}</span>
-                        <!-- Бейдж теперь часть кнопки, не выламывает верстку -->
                         <span v-if="tab.id === 'friends' && pendingFriendRequests.length > 0" 
                               class="tab-badge">
                             {{ pendingFriendRequests.length }}
@@ -471,10 +465,10 @@
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6"><div class="bg-gray-50 rounded-xl p-3 sm:p-6"><h3 class="text-base sm:text-lg font-semibold mb-3">Структура расходов</h3><div class="h-48 sm:h-64"><canvas id="expenseChart"></canvas></div></div><div class="bg-gray-50 rounded-xl p-3 sm:p-6"><h3 class="text-base sm:text-lg font-semibold mb-3">Динамика КФГ</h3><div class="h-48 sm:h-64"><canvas id="kfgTrendChart"></canvas></div></div></div>
                     </div>
 
-                    <!-- ИИ-Ассистент -->
+                    <!-- ИИ-Ассистент Qwen -->
                     <div v-show="currentTab === 'chat'">
-                        <h2 class="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">ИИ-Ассистент GigaChat</h2>
-                        <div class="bg-gray-50 rounded-lg p-3 sm:p-4"><div class="h-96 overflow-y-auto flex flex-col space-y-2 mb-3 sm:mb-4 p-2" ref="chatContainer"><div v-for="(msg, index) in chatMessages" :key="index" :class="msg.sender === 'bot' ? 'message-bot' : 'message-user'"><div v-if="msg.sender === 'bot' && msg.loading" class="flex items-center space-x-2"><div class="typing-indicator"><span></span><span></span><span></span></div><span class="text-gray-500 text-xs">GigaChat анализирует...</span></div><div v-else-if="msg.sender === 'bot' && msg.error" class="text-red-500 text-sm"><i class="fas fa-exclamation-triangle mr-1"></i>{{ msg.text }}</div><div v-else class="text-sm sm:text-base break-words" v-html="formatBotMessage(msg.text, msg.sender)"></div></div></div><div class="overflow-x-auto mb-3 pb-1"><div class="flex space-x-2"><span @click="quickQuestion('Как сократить расходы?')" class="suggestion-chip text-xs sm:text-sm whitespace-nowrap">📉 Сократить расходы</span><span @click="quickQuestion('Как начать инвестировать?')" class="suggestion-chip text-xs sm:text-sm whitespace-nowrap">📈 Инвестировать</span><span @click="quickQuestion('Как улучшить КФГ?')" class="suggestion-chip text-xs sm:text-sm whitespace-nowrap">⭐ Улучшить КФГ</span><span @click="quickQuestion('Как создать подушку безопасности?')" class="suggestion-chip text-xs sm:text-sm whitespace-nowrap">🛡️ Подушка</span><span @click="resetChatContext" class="suggestion-chip text-xs sm:text-sm whitespace-nowrap bg-red-100 text-red-700">🔄 Сбросить контекст</span></div></div><div class="flex space-x-2"><textarea v-model="chatInput" @keyup.enter="sendMessage" rows="1" class="flex-1 px-3 sm:px-4 py-2 border rounded-lg focus:outline-none focus:border-purple-500 resize-none text-sm sm:text-base" placeholder="Спросите GigaChat о финансах..."></textarea><button @click="sendMessage" :disabled="aiLoading" class="gradient-bg text-white px-4 sm:px-6 rounded-lg font-semibold hover:shadow-lg disabled:opacity-50"><i class="fas fa-paper-plane" :class="{'fa-spinner fa-spin': aiLoading}"></i></button></div></div>
+                        <h2 class="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">ИИ-Ассистент Qwen</h2>
+                        <div class="bg-gray-50 rounded-lg p-3 sm:p-4"><div class="h-96 overflow-y-auto flex flex-col space-y-2 mb-3 sm:mb-4 p-2" ref="chatContainer"><div v-for="(msg, index) in chatMessages" :key="index" :class="msg.sender === 'bot' ? 'message-bot' : 'message-user'"><div v-if="msg.sender === 'bot' && msg.loading" class="flex items-center space-x-2"><div class="typing-indicator"><span></span><span></span><span></span></div><span class="text-gray-500 text-xs">Qwen анализирует...</span></div><div v-else-if="msg.sender === 'bot' && msg.error" class="text-red-500 text-sm"><i class="fas fa-exclamation-triangle mr-1"></i>{{ msg.text }}</div><div v-else class="text-sm sm:text-base break-words" v-html="formatBotMessage(msg.text, msg.sender)"></div></div></div><div class="overflow-x-auto mb-3 pb-1"><div class="flex space-x-2"><span @click="quickQuestion('Как сократить расходы?')" class="suggestion-chip text-xs sm:text-sm whitespace-nowrap">📉 Сократить расходы</span><span @click="quickQuestion('Как начать инвестировать?')" class="suggestion-chip text-xs sm:text-sm whitespace-nowrap">📈 Инвестировать</span><span @click="quickQuestion('Как улучшить КФГ?')" class="suggestion-chip text-xs sm:text-sm whitespace-nowrap">⭐ Улучшить КФГ</span><span @click="quickQuestion('Как создать подушку безопасности?')" class="suggestion-chip text-xs sm:text-sm whitespace-nowrap">🛡️ Подушка</span><span @click="resetChatContext" class="suggestion-chip text-xs sm:text-sm whitespace-nowrap bg-red-100 text-red-700">🔄 Сбросить контекст</span></div></div><div class="flex space-x-2"><textarea v-model="chatInput" @keyup.enter="sendMessage" rows="1" class="flex-1 px-3 sm:px-4 py-2 border rounded-lg focus:outline-none focus:border-purple-500 resize-none text-sm sm:text-base" placeholder="Спросите Qwen о финансах..."></textarea><button @click="sendMessage" :disabled="aiLoading" class="gradient-bg text-white px-4 sm:px-6 rounded-lg font-semibold hover:shadow-lg disabled:opacity-50"><i class="fas fa-paper-plane" :class="{'fa-spinner fa-spin': aiLoading}"></i></button></div></div>
                     </div>
 
                     <!-- Друзья и рейтинги -->
@@ -528,10 +522,8 @@
         const googleProvider = new firebase.auth.GoogleAuthProvider();
         googleProvider.setCustomParameters({ prompt: 'select_account' });
 
-        // Netlify Function прокси для GigaChat
-        const PROXY_URL = 'https://fingrade.netlify.app/.netlify/functions/gigachat';
-        let cachedAccessToken = null;
-        let tokenExpiryTime = null;
+        // Qwen API на Render
+        const PROXY_URL = 'https://finance-helper-1-8dp5.onrender.com/api/chat';
 
         const app = createApp({
             setup() {
@@ -576,13 +568,13 @@
                 
                 // Чат
                 const chatMessages = ref([
-                    { text: 'Привет! Я GigaChat AI, ваш финансовый ассистент. Задайте вопрос о финансах!', sender: 'bot' }
+                    { text: 'Привет! Я Qwen AI, ваш финансовый ассистент. Задайте вопрос о финансах!', sender: 'bot' }
                 ]);
                 const chatInput = ref('');
                 const chatContainer = ref(null);
                 const aiLoading = ref(false);
                 const chatHistory = ref([
-                    { role: 'system', content: 'Вы GigaChat AI, финансовый ассистент. Отвечайте на русском языке, давайте полезные советы.' }
+                    { role: 'system', content: 'Вы Qwen AI, финансовый ассистент. Отвечайте на русском языке, давайте полезные советы.' }
                 ]);
                 
                 // Аналитика
@@ -774,77 +766,82 @@
                     return `Пользователь: ${currentUser.value.name}\nДоход: ${formatMoney(totalIncome.value)} ₽\nРасходы: ${formatMoney(totalExpenses.value)} ₽\nКФГ: ${kfg.value}\nДетали: ${getDetailedExpenses()}`;
                 }
 
-                // GigaChat API функции
-                async function getGigaChatAccessToken() {
-                    if (cachedAccessToken && tokenExpiryTime && Date.now() < tokenExpiryTime) {
-                        return cachedAccessToken;
-                    }
+                // Функция отправки сообщений к Qwen (через ваш Render бэкенд)
+                async function sendToQwen(messages) {
                     try {
                         const response = await fetch(PROXY_URL, {
                             method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ action: 'auth' }),
+                            headers: { 
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({ 
+                                messages: messages
+                            }),
                         });
-                        if (!response.ok) throw new Error(`Ошибка авторизации: ${response.status}`);
-                        const data = await response.json();
-                        if (data?.access_token) {
-                            cachedAccessToken = data.access_token;
-                            tokenExpiryTime = Date.now() + (28 * 60 * 1000);
-                            return cachedAccessToken;
+                        
+                        if (!response.ok) {
+                            const errorData = await response.json().catch(() => ({}));
+                            throw new Error(errorData.error || `Ошибка сервера: ${response.status}`);
                         }
-                        throw new Error('Не удалось получить токен');
+                        
+                        const data = await response.json();
+                        return data.reply || 'Извините, не удалось получить ответ от ассистента.';
                     } catch (error) {
-                        console.error('GigaChat auth error:', error);
-                        showMessage('Ошибка подключения к GigaChat: ' + error.message, 'error');
-                        throw error;
+                        console.error('Qwen API Error:', error);
+                        throw new Error(error.message || 'Не удалось подключиться к AI-ассистенту');
                     }
                 }
 
-                async function sendToGigaChat(messages) {
-                    const token = await getGigaChatAccessToken();
-                    const response = await fetch(PROXY_URL, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            action: 'chat',
-                            data: { messages, token },
-                        }),
-                    });
-                    if (!response.ok) throw new Error(`API ошибка: ${response.status}`);
-                    const data = await response.json();
-                    return data?.choices?.[0]?.message?.content || 'Извините, не удалось получить ответ';
-                }
-
+                // Отправка сообщения
                 async function sendMessage() {
                     if (!chatInput.value.trim() || aiLoading.value) return;
+                    
                     const userMessage = chatInput.value.trim();
                     chatMessages.value.push({ text: userMessage, sender: 'user' });
                     chatHistory.value.push({ role: 'user', content: userMessage });
                     chatInput.value = '';
+                    
                     const loadingIndex = chatMessages.value.length;
                     chatMessages.value.push({ text: '', sender: 'bot', loading: true });
                     await nextTick();
                     if (chatContainer.value) chatContainer.value.scrollTop = chatContainer.value.scrollHeight;
+                    
                     aiLoading.value = true;
+                    
                     try {
-                        const messagesForAI = [...chatHistory.value];
-                        if (chatHistory.value.length === 1 && currentUser.value) {
-                            messagesForAI[0] = { role: 'system', content: messagesForAI[0].content + '\n\n' + getUserContext() };
+                        // Подготавливаем сообщения для отправки
+                        const messagesForAPI = [...chatHistory.value];
+                        
+                        // Добавляем контекст пользователя в первое сообщение, если это первый запрос
+                        if (chatHistory.value.length === 2 && currentUser.value) {
+                            const userContext = getUserContext();
+                            if (userContext) {
+                                messagesForAPI[0] = { 
+                                    role: 'system', 
+                                    content: `Вы - финансовый ассистент FinGrade. Отвечайте на русском языке, давайте полезные и конкретные советы.\n\nИнформация о пользователе:\n${userContext}` 
+                                };
+                            }
                         }
-                        const response = await sendToGigaChat(messagesForAI);
+                        
+                        const response = await sendToQwen(messagesForAPI);
+                        
+                        // Удаляем индикатор загрузки и добавляем ответ
                         chatMessages.value.splice(loadingIndex, 1);
                         chatMessages.value.push({ text: response, sender: 'bot' });
                         chatHistory.value.push({ role: 'assistant', content: response });
+                        
+                        // Ограничиваем историю (последние 10 сообщений + system)
                         if (chatHistory.value.length > 11) {
                             chatHistory.value = [chatHistory.value[0], ...chatHistory.value.slice(-10)];
                         }
+                        
                     } catch (error) {
                         chatMessages.value.splice(loadingIndex, 1);
-                        let errorMsg = error.message;
-                        if (error.message.includes('Failed to fetch')) {
-                            errorMsg = 'Не удалось подключиться к GigaChat API. Пожалуйста, проверьте интернет-соединение.';
-                        }
-                        chatMessages.value.push({ text: `⚠️ Ошибка: ${errorMsg}`, sender: 'bot', error: true });
+                        chatMessages.value.push({ 
+                            text: `⚠️ Ошибка: ${error.message}. Пожалуйста, проверьте подключение к интернету и попробуйте снова.`, 
+                            sender: 'bot', 
+                            error: true 
+                        });
                     } finally {
                         aiLoading.value = false;
                         await nextTick();
@@ -853,8 +850,14 @@
                 }
 
                 function resetChatContext() {
-                    chatHistory.value = [{ role: 'system', content: 'Вы GigaChat AI, финансовый ассистент. Отвечайте на русском языке.' }];
-                    chatMessages.value = [{ text: 'Контекст сброшен. Задайте вопрос!', sender: 'bot' }];
+                    chatHistory.value = [{ 
+                        role: 'system', 
+                        content: 'Вы - финансовый ассистент FinGrade. Отвечайте на русском языке, давайте полезные и конкретные советы.' 
+                    }];
+                    chatMessages.value = [{ 
+                        text: 'Контекст диалога сброшен. Задайте новый вопрос о финансах!', 
+                        sender: 'bot' 
+                    }];
                     showMessage('Контекст сброшен', 'success');
                 }
 
@@ -863,7 +866,7 @@
                     sendMessage();
                 }
 
-                // Firebase функции (сокращены для объема, но полная логика)
+                // Firebase функции
                 async function loadUsersFromFirestore() {
                     try {
                         const snapshot = await db.collection('users').get();
@@ -1015,7 +1018,7 @@
                         Object.assign(expenses, initialExpenses);
                         goals.value = [];
                         friends.value = [];
-                        chatMessages.value = [{ text: 'Привет! Я GigaChat AI, ваш финансовый ассистент.', sender: 'bot' }];
+                        chatMessages.value = [{ text: 'Привет! Я Qwen AI, ваш финансовый ассистент.', sender: 'bot' }];
                         showMessage('Вы вышли', 'success');
                     } catch (error) { showMessage('Ошибка', 'error'); }
                     finally { loading.value = false; }
