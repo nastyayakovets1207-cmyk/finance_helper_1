@@ -918,6 +918,12 @@
 
         const app = createApp({
             setup() {
+                // --- Константы, которые используются везде (должны быть объявлены первыми) ---
+                const initialExpenses = {
+                    food: 0, transport: 0, cafe: 0, hobby: 0, selfcare: 0,
+                    health: 0, housing: 0, entertainment: 0, subscriptions: 0, education: 0, travel: 0
+                };
+
                 // --- Состояния ---
                 const loading = ref(false);
                 const loadingMessage = ref('Загрузка...');
@@ -943,10 +949,6 @@
                 
                 // Формы
                 const loginForm = reactive({ login: '', password: '' });
-                const initialExpenses = {
-                    food: 0, transport: 0, cafe: 0, hobby: 0, selfcare: 0,
-                    health: 0, housing: 0, entertainment: 0, subscriptions: 0, education: 0, travel: 0
-                };
                 const registerForm = reactive({
                     name: '', surname: '', nickname: '', login: '', email: '', password: '',
                     income: 0, avatar: 1, expenses: { ...initialExpenses },
