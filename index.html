@@ -500,95 +500,134 @@
                 </div>
 
                 <div class="p-4 sm:p-6">
-                    <!-- Вкладка профиля -->
+                    <!-- Вкладка профиля (только личная информация) -->
                     <div v-show="currentTab === 'profile'">
                         <h2 class="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">Мой профиль</h2>
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-                            <div class="bg-gray-50 rounded-xl p-4 sm:p-6">
-                                <h3 class="text-lg font-semibold mb-3 sm:mb-4">Личная информация</h3>
-                                <div class="space-y-3">
-                                    <div class="flex items-center space-x-4 pb-2 border-b">
-                                        <div class="w-12 h-12 sm:w-16 sm:h-16 rounded-full overflow-hidden flex-shrink-0">
-                                            <img :src="getAvatarUrl(currentUser.avatar)" :alt="currentUser.name" class="w-full h-full object-cover">
-                                        </div>
-                                        <div class="min-w-0">
-                                            <span class="text-gray-600 text-sm">Аватар:</span>
-                                            <span class="font-semibold block truncate">{{ getAvatarName(currentUser.avatar) }}</span>
-                                        </div>
+                        <div class="bg-gray-50 rounded-xl p-4 sm:p-6 max-w-2xl">
+                            <h3 class="text-lg font-semibold mb-3 sm:mb-4">Личная информация</h3>
+                            <div class="space-y-3">
+                                <div class="flex items-center space-x-4 pb-2 border-b">
+                                    <div class="w-12 h-12 sm:w-16 sm:h-16 rounded-full overflow-hidden flex-shrink-0">
+                                        <img :src="getAvatarUrl(currentUser.avatar)" :alt="currentUser.name" class="w-full h-full object-cover">
                                     </div>
-                                    <div class="flex justify-between items-center pb-2 border-b">
-                                        <span class="text-gray-600 text-sm">Имя:</span>
-                                        <span class="font-semibold text-sm truncate ml-2">{{ currentUser.name }} {{ currentUser.surname }}</span>
-                                    </div>
-                                    <div class="flex justify-between items-center pb-2 border-b">
-                                        <span class="text-gray-600 text-sm">Никнейм:</span>
-                                        <span class="font-semibold text-purple-600 text-sm truncate ml-2">{{ currentUser.nickname }}</span>
-                                    </div>
-                                    <div class="flex justify-between items-center pb-2 border-b">
-                                        <span class="text-gray-600 text-sm">Доход:</span>
-                                        <span class="font-semibold text-sm truncate ml-2">{{ formatMoney(currentUser.income) }} ₽</span>
-                                        <button @click="editIncome" class="text-purple-600 hover:text-purple-800">
-                                            <i class="fas fa-edit ml-2"></i>
-                                        </button>
-                                    </div>
-                                    <div class="flex justify-between items-center pb-2 border-b">
-                                        <span class="text-gray-600 text-sm">КФГ:</span>
-                                        <span class="font-semibold text-purple-600">{{ kfg }}</span>
-                                    </div>
-                                    <div class="flex justify-between items-center pb-2 border-b">
-                                        <span class="text-gray-600 text-sm">Рейтинг:</span>
-                                        <span class="font-semibold text-xs px-2 py-1 rounded-full text-white" :class="'rating-' + getUserRatingLevel(currentUser)">
-                                            {{ getUserRating(currentUser) }}
-                                        </span>
-                                    </div>
-                                    <div class="flex justify-between items-center pb-2 border-b">
-                                        <span class="text-gray-600 text-sm">Разблокированные аватары:</span>
-                                        <span class="font-semibold text-sm truncate ml-2">{{ unlockedAvatars.join(', ') }}</span>
-                                    </div>
-                                    <div class="pt-2">
-                                        <button @click="openHistoricalModal" class="gradient-bg text-white px-4 py-2 rounded-lg w-full">
-                                            <i class="fas fa-history mr-2"></i>Добавить данные за прошлый месяц
-                                        </button>
+                                    <div class="min-w-0">
+                                        <span class="text-gray-600 text-sm">Аватар:</span>
+                                        <span class="font-semibold block truncate">{{ getAvatarName(currentUser.avatar) }}</span>
                                     </div>
                                 </div>
-                            </div>
-                            
-                            <div class="bg-gray-50 rounded-xl p-4 sm:p-6">
-                                <h3 class="text-lg font-semibold mb-3 sm:mb-4">Краткая статистика</h3>
-                                <div class="space-y-3 sm:space-y-4">
-                                    <div class="gradient-bg text-white rounded-lg p-3 sm:p-4">
-                                        <p class="text-xs sm:text-sm opacity-90">Общий доход</p>
-                                        <p class="text-xl sm:text-2xl font-bold">{{ formatMoney(totalIncome) }} ₽</p>
-                                    </div>
-                                    <div class="gradient-bg text-white rounded-lg p-3 sm:p-4">
-                                        <p class="text-xs sm:text-sm opacity-90">Общие расходы</p>
-                                        <p class="text-xl sm:text-2xl font-bold">{{ formatMoney(totalExpenses) }} ₽</p>
-                                    </div>
-                                    <div class="gradient-bg text-white rounded-lg p-3 sm:p-4">
-                                        <p class="text-xs sm:text-sm opacity-90">Остаток</p>
-                                        <p class="text-xl sm:text-2xl font-bold">{{ formatMoney(balance) }} ₽</p>
-                                    </div>
+                                <div class="flex justify-between items-center pb-2 border-b">
+                                    <span class="text-gray-600 text-sm">Имя:</span>
+                                    <span class="font-semibold text-sm truncate ml-2">{{ currentUser.name }} {{ currentUser.surname }}</span>
+                                </div>
+                                <div class="flex justify-between items-center pb-2 border-b">
+                                    <span class="text-gray-600 text-sm">Никнейм:</span>
+                                    <span class="font-semibold text-purple-600 text-sm truncate ml-2">{{ currentUser.nickname }}</span>
+                                </div>
+                                <div class="flex justify-between items-center pb-2 border-b">
+                                    <span class="text-gray-600 text-sm">Доход:</span>
+                                    <span class="font-semibold text-sm truncate ml-2">{{ formatMoney(currentUser.income) }} ₽</span>
+                                    <button @click="editIncome" class="text-purple-600 hover:text-purple-800">
+                                        <i class="fas fa-edit ml-2"></i>
+                                    </button>
+                                </div>
+                                <div class="flex justify-between items-center pb-2 border-b">
+                                    <span class="text-gray-600 text-sm">КФГ:</span>
+                                    <span class="font-semibold text-purple-600">{{ kfg }}</span>
+                                </div>
+                                <div class="flex justify-between items-center pb-2 border-b">
+                                    <span class="text-gray-600 text-sm">Рейтинг:</span>
+                                    <span class="font-semibold text-xs px-2 py-1 rounded-full text-white" :class="'rating-' + getUserRatingLevel(currentUser)">
+                                        {{ getUserRating(currentUser) }}
+                                    </span>
+                                </div>
+                                <div class="flex justify-between items-center pb-2 border-b">
+                                    <span class="text-gray-600 text-sm">Разблокированные аватары:</span>
+                                    <span class="font-semibold text-sm truncate ml-2">{{ unlockedAvatars.join(', ') }}</span>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Вкладка расходов -->
+                    <!-- Вкладка расходов (с выбором месяца, редактированием, таблицей всех месяцев) -->
                     <div v-show="currentTab === 'expenses'">
-                        <h2 class="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">Расходы по категориям (текущий месяц)</h2>
-                        <div class="expenses-grid">
-                            <div v-for="(value, category) in filteredExpenses" :key="category" class="bg-gray-50 rounded-lg p-3 sm:p-4">
-                                <label class="block text-gray-700 font-medium mb-1 sm:mb-2 text-sm">
-                                    <i :class="['mr-1', categoryIcons[category]]"></i>
-                                    {{ categoryNames[category] }}
-                                </label>
-                                <input v-model.number="expenses[category]" type="number" min="0" 
-                                       class="w-full px-2 sm:px-3 py-1.5 sm:py-2 border rounded-lg focus:outline-none focus:border-purple-500 text-sm sm:text-base">
+                        <h2 class="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">Управление расходами</h2>
+                        
+                        <!-- Выбор месяца и кнопка добавления -->
+                        <div class="bg-gray-50 rounded-lg p-4 mb-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                            <div class="flex items-center gap-2">
+                                <span class="font-medium">Месяц:</span>
+                                <select v-model="selectedExpenseMonth" @change="loadExpensesForSelectedMonth" class="border rounded-lg px-3 py-2 bg-white">
+                                    <option v-for="snap in monthlySnapshotsSorted" :value="snap.monthId">{{ snap.monthLabel }}</option>
+                                </select>
+                            </div>
+                            <button @click="openHistoricalModal" class="gradient-bg text-white px-4 py-2 rounded-lg text-sm">
+                                <i class="fas fa-plus-circle mr-1"></i> Добавить данные за прошлый месяц
+                            </button>
+                        </div>
+
+                        <!-- Редактируемые расходы для выбранного месяца -->
+                        <div class="mb-4">
+                            <h3 class="text-lg font-semibold mb-3">Расходы за {{ getMonthLabel(selectedExpenseMonth) }}</h3>
+                            <div class="expenses-grid">
+                                <div v-for="(value, category) in filteredExpensesForMonth" :key="category" class="bg-gray-50 rounded-lg p-3 sm:p-4">
+                                    <label class="block text-gray-700 font-medium mb-1 sm:mb-2 text-sm">
+                                        <i :class="['mr-1', categoryIcons[category]]"></i>
+                                        {{ categoryNames[category] }}
+                                    </label>
+                                    <input v-model.number="expensesForSelectedMonth[category]" type="number" min="0" 
+                                           class="w-full px-2 sm:px-3 py-1.5 sm:py-2 border rounded-lg focus:outline-none focus:border-purple-500 text-sm sm:text-base">
+                                </div>
+                            </div>
+                            <button @click="saveExpensesForSelectedMonth" class="mt-4 gradient-bg text-white px-6 sm:px-8 py-3 rounded-lg font-semibold hover:shadow-lg w-full sm:w-auto">
+                                <i class="fas fa-save mr-2"></i> Сохранить расходы за {{ getMonthLabel(selectedExpenseMonth) }}
+                            </button>
+                        </div>
+
+                        <!-- Таблица всех месяцев с итогами -->
+                        <div class="mt-6">
+                            <h3 class="text-lg font-semibold mb-3">Все месяцы</h3>
+                            <div class="overflow-x-auto">
+                                <table class="min-w-full bg-white border rounded-lg">
+                                    <thead class="bg-gray-100">
+                                        <tr>
+                                            <th class="px-4 py-2 text-left">Месяц</th>
+                                            <th class="px-4 py-2 text-left">Доход</th>
+                                            <th class="px-4 py-2 text-left">Расходы (всего)</th>
+                                            <th class="px-4 py-2 text-left">КФГ</th>
+                                            <th class="px-4 py-2 text-left">Детали</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr v-for="snap in monthlySnapshotsSorted" :key="snap.monthId" class="border-t">
+                                            <td class="px-4 py-2">{{ snap.monthLabel }}</td>
+                                            <td class="px-4 py-2">{{ formatMoney(snap.income) }} ₽</td>
+                                            <td class="px-4 py-2">{{ formatMoney(snap.totalExpenses) }} ₽</td>
+                                            <td class="px-4 py-2 font-semibold">{{ snap.kfg }}</td>
+                                            <td class="px-4 py-2">
+                                                <button @click="showMonthDetails(snap)" class="text-purple-600 text-sm">
+                                                    <i class="fas fa-eye"></i> Показать
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
                             </div>
                         </div>
-                        <button @click="saveExpenses" class="mt-4 sm:mt-6 gradient-bg text-white px-6 sm:px-8 py-3 rounded-lg font-semibold hover:shadow-lg w-full sm:w-auto">
-                            <i class="fas fa-save mr-2"></i>Сохранить расходы
-                        </button>
+
+                        <!-- Модалка деталей месяца -->
+                        <div v-if="detailsModalVisible" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                            <div class="bg-white rounded-xl p-4 sm:p-6 max-w-lg w-full max-h-[80vh] overflow-y-auto">
+                                <h3 class="text-lg font-bold mb-3">Детали за {{ detailsMonthLabel }}</h3>
+                                <div class="space-y-2">
+                                    <div v-for="(amount, cat) in detailsExpenses" v-if="amount > 0" class="flex justify-between border-b py-1">
+                                        <span><i :class="categoryIcons[cat]" class="mr-2"></i>{{ categoryNames[cat] }}</span>
+                                        <span>{{ formatMoney(amount) }} ₽</span>
+                                    </div>
+                                    <div v-if="Object.values(detailsExpenses).every(v => v === 0)" class="text-gray-500">Нет расходов</div>
+                                </div>
+                                <button @click="detailsModalVisible = false" class="mt-4 bg-gray-300 px-4 py-2 rounded-lg w-full">Закрыть</button>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Вкладка финансовых целей -->
@@ -670,32 +709,19 @@
                         </div>
                     </div>
 
-                    <!-- Вкладка аналитики (УЛУЧШЕНА) -->
+                    <!-- Вкладка аналитики (только структура расходов) -->
                     <div v-show="currentTab === 'analytics'">
-                        <h2 class="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">Аналитика</h2>
-                        
-                        <!-- Выбор месяца для структуры расходов -->
-                        <div class="bg-gray-50 rounded-xl p-4 mb-4">
-                            <label class="block text-gray-700 font-medium mb-2">Месяц для анализа расходов:</label>
-                            <select v-model="selectedAnalysisMonth" @change="loadExpensesForMonth" class="w-full border rounded-lg px-3 py-2">
+                        <h2 class="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">Аналитика расходов</h2>
+                        <div class="bg-gray-50 rounded-xl p-4">
+                            <label class="block text-gray-700 font-medium mb-2">Месяц для анализа:</label>
+                            <select v-model="selectedAnalysisMonth" @change="loadExpensesForMonth" class="w-full border rounded-lg px-3 py-2 mb-4">
                                 <option v-for="snap in monthlySnapshotsSorted" :value="snap.monthId">{{ snap.monthLabel }}</option>
                             </select>
-                        </div>
-
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-                            <div class="bg-gray-50 rounded-xl p-3 sm:p-6">
-                                <h3 class="text-base sm:text-lg font-semibold mb-3">Структура расходов</h3>
-                                <div class="h-48 sm:h-64"><canvas id="expenseChart"></canvas></div>
-                            </div>
-                            <div class="bg-gray-50 rounded-xl p-3 sm:p-6">
-                                <h3 class="text-base sm:text-lg font-semibold mb-3">Динамика КФГ по месяцам</h3>
-                                <div class="h-48 sm:h-64"><canvas id="kfgTrendChart"></canvas></div>
-                                <p class="text-xs text-gray-500 text-center mt-2">*Текущий месяц: {{ currentMonthLabel }}</p>
-                            </div>
+                            <div class="h-64"><canvas id="expenseChart"></canvas></div>
                         </div>
                     </div>
 
-                    <!-- Вкладка ИИ-Ассистент с GigaChat (через Netlify Function) -->
+                    <!-- Вкладка ИИ-Ассистент -->
                     <div v-show="currentTab === 'chat'">
                         <h2 class="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">ИИ-Ассистент GigaChat</h2>
                         <div class="bg-gray-50 rounded-lg p-3 sm:p-4">
@@ -817,6 +843,56 @@
                             </div>
                         </div>
                     </div>
+
+                    <!-- Новая вкладка: КФГ (динамика, формула, таблица) -->
+                    <div v-show="currentTab === 'kfg'">
+                        <h2 class="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">Коэффициент финансовой грамотности (КФГ)</h2>
+                        
+                        <!-- График динамики -->
+                        <div class="bg-gray-50 rounded-xl p-4 mb-6">
+                            <h3 class="text-lg font-semibold mb-3">Динамика КФГ по месяцам</h3>
+                            <div class="h-64"><canvas id="kfgTrendChart"></canvas></div>
+                        </div>
+
+                        <!-- Объяснение формулы -->
+                        <div class="bg-gray-50 rounded-xl p-4 mb-6">
+                            <h3 class="text-lg font-semibold mb-2">Как рассчитывается КФГ?</h3>
+                            <p class="text-sm text-gray-700 mb-2">КФГ = 100 − (Расходы / Доход × 100), но с учётом корректировок:</p>
+                            <ul class="list-disc list-inside text-sm text-gray-600 space-y-1">
+                                <li>Если расходы на развлечения > 30% дохода → −20 баллов</li>
+                                <li>Если расходы на еду (включая кафе) > 50% дохода → −15 баллов</li>
+                                <li>Если расходы на подписки > 10% дохода → −10 баллов</li>
+                                <li>Если есть расходы на образование → +5 баллов</li>
+                                <li>Если остаток после расходов > 20% дохода → +10 баллов</li>
+                            </ul>
+                            <p class="text-sm text-gray-700 mt-2">Итоговое значение ограничивается от 0 до 100.</p>
+                        </div>
+
+                        <!-- Таблица КФГ по месяцам -->
+                        <div class="bg-gray-50 rounded-xl p-4">
+                            <h3 class="text-lg font-semibold mb-3">КФГ за все месяцы</h3>
+                            <div class="overflow-x-auto">
+                                <table class="min-w-full bg-white border rounded-lg">
+                                    <thead class="bg-gray-100">
+                                        <tr>
+                                            <th class="px-4 py-2 text-left">Месяц</th>
+                                            <th class="px-4 py-2 text-left">Доход</th>
+                                            <th class="px-4 py-2 text-left">Расходы</th>
+                                            <th class="px-4 py-2 text-left">КФГ</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr v-for="snap in monthlySnapshotsSorted" :key="snap.monthId" class="border-t">
+                                            <td class="px-4 py-2">{{ snap.monthLabel }}</td>
+                                            <td class="px-4 py-2">{{ formatMoney(snap.income) }} ₽</td>
+                                            <td class="px-4 py-2">{{ formatMoney(snap.totalExpenses) }} ₽</td>
+                                            <td class="px-4 py-2 font-semibold" :class="{'text-green-600': snap.kfg >= 70, 'text-yellow-600': snap.kfg >= 40 && snap.kfg < 70, 'text-red-600': snap.kfg < 40}">{{ snap.kfg }}</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -910,7 +986,7 @@
         const googleProvider = new firebase.auth.GoogleAuthProvider();
         googleProvider.setCustomParameters({ prompt: 'select_account' });
 
-        // --- Netlify Function прокси для GigaChat ---
+        // Netlify Function прокси для GigaChat
         const PROXY_URL = 'https://fingrade.netlify.app/.netlify/functions/gigachat';
 
         let cachedAccessToken = null;
@@ -918,7 +994,7 @@
 
         const app = createApp({
             setup() {
-                // --- Константы, которые используются везде (должны быть объявлены первыми) ---
+                // --- Константы ---
                 const initialExpenses = {
                     food: 0, transport: 0, cafe: 0, hobby: 0, selfcare: 0,
                     health: 0, housing: 0, entertainment: 0, subscriptions: 0, education: 0, travel: 0
@@ -952,9 +1028,19 @@
                 const registerForm = reactive({
                     name: '', surname: '', nickname: '', login: '', email: '', password: '',
                     income: 0, avatar: 1, expenses: { ...initialExpenses },
-                    historicalMonths: [] // массив { month, income, expenses }
+                    historicalMonths: []
                 });
-                const expenses = reactive({ ...initialExpenses });
+                
+                // Расходы для выбранного месяца в разделе "Расходы"
+                const selectedExpenseMonth = ref('');
+                const expensesForSelectedMonth = reactive({ ...initialExpenses });
+                
+                // Детали месяца
+                const detailsModalVisible = ref(false);
+                const detailsMonthLabel = ref('');
+                const detailsExpenses = ref({});
+                
+                const expenses = reactive({ ...initialExpenses }); // текущие расходы (текущий месяц)
                 const goals = ref([]);
                 const newGoal = reactive({ name: '', targetAmount: 0 });
                 const friends = ref([]);
@@ -962,7 +1048,6 @@
                 const pendingRequests = ref([]);
                 const friendSearchQuery = ref('');
                 const searchResults = ref([]);
-                const searchPerformed = ref(false);
                 
                 // Чат
                 const chatMessages = ref([
@@ -976,7 +1061,7 @@
                 ]);
                 
                 // Аналитика (месячные снепшоты)
-                const monthlySnapshots = ref({}); // key: YYYY-MM, value: { monthId, monthLabel, income, expenses, totalExpenses, kfg }
+                const monthlySnapshots = ref({});
                 const selectedAnalysisMonth = ref('');
                 let expenseChart = null;
                 let trendChart = null;
@@ -1004,7 +1089,8 @@
                     { id: 'analytics', name: 'Аналитика', icon: 'fas fa-chart-pie' },
                     { id: 'chat', name: 'Ассистент', icon: 'fas fa-robot' },
                     { id: 'friends', name: 'Друзья', icon: 'fas fa-users' },
-                    { id: 'rewards', name: 'Награды', icon: 'fas fa-gift' }
+                    { id: 'rewards', name: 'Награды', icon: 'fas fa-gift' },
+                    { id: 'kfg', name: 'КФГ', icon: 'fas fa-chart-line' }
                 ];
                 
                 const categoryNames = {
@@ -1075,6 +1161,13 @@
                 const filteredExpenses = computed(() => {
                     const filtered = {};
                     Object.keys(expenses).forEach(k => { if (categoryNames[k]) filtered[k] = expenses[k]; });
+                    return filtered;
+                });
+                
+                // Для отображения в разделе расходов (выбранный месяц)
+                const filteredExpensesForMonth = computed(() => {
+                    const filtered = {};
+                    Object.keys(expensesForSelectedMonth).forEach(k => { if (categoryNames[k]) filtered[k] = expensesForSelectedMonth[k]; });
                     return filtered;
                 });
 
@@ -1159,9 +1252,14 @@
                     return new Intl.NumberFormat('ru-RU').format(Math.round(amount || 0));
                 }
 
-                function formatDate(dateString) { return new Date(dateString).toLocaleDateString('ru-RU'); }
                 function formatBotMessage(text, sender) { return sender !== 'bot' ? text : text.replace(/\n/g, '<br>'); }
                 
+                function getMonthLabel(monthId) {
+                    if (!monthId) return '';
+                    const snap = monthlySnapshots.value[monthId];
+                    return snap ? snap.monthLabel : monthId;
+                }
+
                 function getExpensesSummary() {
                     const cats = Object.entries(expenses).filter(([k,v]) => v > 0 && categoryNames[k]);
                     return cats.map(([k,v]) => `${categoryNames[k]}: ${formatMoney(v)} ₽`).join(', ') || 'нет расходов';
@@ -1226,14 +1324,19 @@
                                 };
                             }
                         });
-                        // Если нет текущего месяца, создадим его из текущих данных
                         const currentId = getCurrentMonthId();
                         if (!monthlySnapshots.value[currentId] && currentUser.value.income > 0) {
                             await saveMonthlySnapshot(currentId, currentUser.value.income, expenses);
                         }
-                        // Выбираем последний месяц для анализа
                         const sorted = Object.keys(monthlySnapshots.value).sort();
-                        if (sorted.length > 0) selectedAnalysisMonth.value = sorted[sorted.length - 1];
+                        if (sorted.length > 0) {
+                            selectedAnalysisMonth.value = sorted[sorted.length - 1];
+                            // Для раздела расходов выберем последний месяц (или текущий)
+                            if (!selectedExpenseMonth.value || !monthlySnapshots.value[selectedExpenseMonth.value]) {
+                                selectedExpenseMonth.value = sorted[sorted.length - 1];
+                            }
+                            await loadExpensesForSelectedMonth();
+                        }
                         updateTrendChart();
                         if (selectedAnalysisMonth.value) loadExpensesForMonth();
                     } catch (e) { console.error('Ошибка загрузки снепшотов:', e); }
@@ -1250,6 +1353,42 @@
                     await saveMonthlySnapshot(monthId, incomeVal, expensesObj);
                     await loadMonthlySnapshots();
                     showMessage(`Данные за ${formatMonthLabel(monthId)} добавлены`, 'success');
+                }
+
+                // Загрузка расходов для выбранного месяца в разделе "Расходы"
+                async function loadExpensesForSelectedMonth() {
+                    if (!selectedExpenseMonth.value || !monthlySnapshots.value[selectedExpenseMonth.value]) return;
+                    const snap = monthlySnapshots.value[selectedExpenseMonth.value];
+                    if (snap && snap.expenses) {
+                        Object.keys(expensesForSelectedMonth).forEach(key => {
+                            expensesForSelectedMonth[key] = snap.expenses[key] || 0;
+                        });
+                    } else {
+                        Object.keys(expensesForSelectedMonth).forEach(key => expensesForSelectedMonth[key] = 0);
+                    }
+                }
+
+                // Сохранение расходов для выбранного месяца
+                async function saveExpensesForSelectedMonth() {
+                    if (!selectedExpenseMonth.value) return;
+                    loading.value = true;
+                    try {
+                        const incomeVal = monthlySnapshots.value[selectedExpenseMonth.value]?.income || currentUser.value.income;
+                        await saveMonthlySnapshot(selectedExpenseMonth.value, incomeVal, expensesForSelectedMonth);
+                        await loadMonthlySnapshots();
+                        showMessage(`Расходы за ${getMonthLabel(selectedExpenseMonth.value)} сохранены`, 'success');
+                    } catch (error) {
+                        showMessage('Ошибка сохранения', 'error');
+                    } finally {
+                        loading.value = false;
+                    }
+                }
+
+                // Показать детали месяца
+                function showMonthDetails(snap) {
+                    detailsMonthLabel.value = snap.monthLabel;
+                    detailsExpenses.value = { ...snap.expenses };
+                    detailsModalVisible.value = true;
                 }
 
                 // --- Графики ---
@@ -1342,7 +1481,6 @@
                     return data?.choices?.[0]?.message?.content || 'Извините, не удалось получить ответ';
                 }
 
-                // --- Отправка сообщения ---
                 async function sendMessage() {
                     if (!chatInput.value.trim() || aiLoading.value) return;
                     const userMessage = chatInput.value.trim();
@@ -1482,9 +1620,7 @@
                         };
                         await db.collection('users').doc(registerForm.login).set(newUser);
                         await loadCurrentUserData(registerForm.login);
-                        // Сохраняем текущий месяц
                         await saveMonthlySnapshot(getCurrentMonthId(), registerForm.income, registerForm.expenses);
-                        // Сохраняем исторические месяцы
                         for (const hist of registerForm.historicalMonths) {
                             if (hist.month && hist.income !== undefined) {
                                 await saveMonthlySnapshot(hist.month, hist.income, hist.expenses);
@@ -1492,7 +1628,6 @@
                         }
                         await loadMonthlySnapshots();
                         showMessage('Регистрация успешна!', 'success');
-                        // Очистка формы
                         Object.assign(registerForm, { name: '', surname: '', nickname: '', login: '', email: '', password: '', income: 0, avatar: 1, expenses: { ...initialExpenses }, historicalMonths: [] });
                     } catch (error) {
                         showMessage('Ошибка: ' + error.message, 'error');
@@ -1710,7 +1845,6 @@
                 function openRemoveGoalModal(index) { selectedGoalIndexForRemove.value = index; selectedGoalNameForRemove.value = goals.value[index].name; showRemoveGoalModal.value = true; }
                 function closeRemoveGoalModal() { showRemoveGoalModal.value = false; selectedGoalIndexForRemove.value = null; selectedGoalNameForRemove.value = ''; }
 
-                // Исторические месяцы в регистрации
                 function addHistoricalMonthField() {
                     registerForm.historicalMonths.push({ month: '', income: 0, expenses: { ...initialExpenses } });
                 }
@@ -1718,7 +1852,6 @@
                     registerForm.historicalMonths.splice(idx, 1);
                 }
 
-                // Модалка добавления истории после регистрации
                 function openHistoricalModal() {
                     historicalMonth.value = '';
                     historicalIncome.value = currentUser.value.income;
@@ -1763,7 +1896,7 @@
                 return {
                     loading, loadingMessage, currentTab, message, currentUser,
                     loginForm, registerForm, expenses, goals, newGoal, friends, friendRequests, pendingRequests,
-                    pendingFriendRequests, friendSearchQuery, searchResults, searchPerformed,
+                    pendingFriendRequests, friendSearchQuery, searchResults,
                     chatMessages, chatInput, chatContainer, aiLoading,
                     rewards, avatars, tabs, categoryNames, categoryIcons,
                     totalExpenses, totalIncome, balance, hasExpenses, kfg,
@@ -1772,6 +1905,9 @@
                     showRemoveGoalModal, selectedGoalNameForRemove,
                     showHistoricalModal, historicalMonth, historicalIncome, historicalExpenses,
                     monthlySnapshotsSorted, selectedAnalysisMonth, currentMonthLabel,
+                    // Новые переменные для расходов
+                    selectedExpenseMonth, expensesForSelectedMonth, filteredExpensesForMonth,
+                    detailsModalVisible, detailsMonthLabel, detailsExpenses,
                     handleRegister, handleLogin, loginWithGoogle, logout,
                     searchFriends, sendFriendRequest, acceptFriendRequest, rejectFriendRequest, removeFriend,
                     saveExpenses, addGoal, openAddToGoalModal, closeAddToGoalModal, confirmAddToGoal,
@@ -1783,7 +1919,8 @@
                     editIncome, closeIncomeModal, saveIncome,
                     addHistoricalMonthField, removeHistoricalMonthField,
                     openHistoricalModal, closeHistoricalModal, saveHistoricalData,
-                    loadExpensesForMonth
+                    loadExpensesForMonth, loadExpensesForSelectedMonth, saveExpensesForSelectedMonth,
+                    showMonthDetails, getMonthLabel
                 };
             }
         });
