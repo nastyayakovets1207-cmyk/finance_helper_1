@@ -161,10 +161,6 @@
             background-color: #e9d5ff;
         }
 
-        .trend-up { color: #10b981; }
-        .trend-down { color: #ef4444; }
-        .trend-neutral { color: #6b7280; }
-
         .mobile-tab-bar {
             display: flex;
             overflow-x: auto;
@@ -548,7 +544,7 @@
                         </div>
                     </div>
 
-                    <!-- Вкладка расходов (с выбором месяца, редактированием, таблицей всех месяцев) -->
+                    <!-- Вкладка расходов (с выбором месяца, редактированием, таблицей всех месяцев и кнопкой деталей) -->
                     <div v-show="currentTab === 'expenses'">
                         <h2 class="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">Управление расходами</h2>
                         
@@ -583,7 +579,7 @@
                             </button>
                         </div>
 
-                        <!-- Таблица всех месяцев с итогами -->
+                        <!-- Таблица всех месяцев с итогами и кнопкой "Показать" -->
                         <div class="mt-6">
                             <h3 class="text-lg font-semibold mb-3">Все месяцы</h3>
                             <div class="overflow-x-auto">
@@ -614,16 +610,23 @@
                             </div>
                         </div>
 
-                        <!-- Модалка деталей месяца -->
+                        <!-- Модалка деталей месяца (исправлено: отображаются расходы по категориям) -->
                         <div v-if="detailsModalVisible" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
                             <div class="bg-white rounded-xl p-4 sm:p-6 max-w-lg w-full max-h-[80vh] overflow-y-auto">
-                                <h3 class="text-lg font-bold mb-3">Детали за {{ detailsMonthLabel }}</h3>
+                                <div class="flex justify-between items-center mb-3">
+                                    <h3 class="text-lg font-bold">Детали за {{ detailsMonthLabel }}</h3>
+                                    <button @click="detailsModalVisible = false" class="text-gray-500 hover:text-gray-700">
+                                        <i class="fas fa-times text-xl"></i>
+                                    </button>
+                                </div>
                                 <div class="space-y-2">
                                     <div v-for="(amount, cat) in detailsExpenses" v-if="amount > 0" class="flex justify-between border-b py-1">
                                         <span><i :class="categoryIcons[cat]" class="mr-2"></i>{{ categoryNames[cat] }}</span>
                                         <span>{{ formatMoney(amount) }} ₽</span>
                                     </div>
-                                    <div v-if="Object.values(detailsExpenses).every(v => v === 0)" class="text-gray-500">Нет расходов</div>
+                                    <div v-if="Object.values(detailsExpenses).every(v => v === 0)" class="text-gray-500 text-center py-4">
+                                        Нет расходов
+                                    </div>
                                 </div>
                                 <button @click="detailsModalVisible = false" class="mt-4 bg-gray-300 px-4 py-2 rounded-lg w-full">Закрыть</button>
                             </div>
@@ -709,15 +712,24 @@
                         </div>
                     </div>
 
-                    <!-- Вкладка аналитики (только структура расходов) -->
+                    <!-- Вкладка аналитики (два графика: круговая + линейный динамика расходов) -->
                     <div v-show="currentTab === 'analytics'">
                         <h2 class="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">Аналитика расходов</h2>
-                        <div class="bg-gray-50 rounded-xl p-4">
-                            <label class="block text-gray-700 font-medium mb-2">Месяц для анализа:</label>
+                        
+                        <!-- Круговая диаграмма структуры расходов за выбранный месяц -->
+                        <div class="bg-gray-50 rounded-xl p-4 mb-6">
+                            <label class="block text-gray-700 font-medium mb-2">Месяц для анализа структуры:</label>
                             <select v-model="selectedAnalysisMonth" @change="loadExpensesForMonth" class="w-full border rounded-lg px-3 py-2 mb-4">
                                 <option v-for="snap in monthlySnapshotsSorted" :value="snap.monthId">{{ snap.monthLabel }}</option>
                             </select>
                             <div class="h-64"><canvas id="expenseChart"></canvas></div>
+                        </div>
+
+                        <!-- Линейный график динамики общих расходов по месяцам -->
+                        <div class="bg-gray-50 rounded-xl p-4">
+                            <h3 class="text-lg font-semibold mb-3">Динамика общих расходов по месяцам</h3>
+                            <div class="h-64"><canvas id="expenseTrendChart"></canvas></div>
+                            <p class="text-xs text-gray-500 text-center mt-2">*Линия показывает изменение суммы расходов от месяца к месяцу</p>
                         </div>
                     </div>
 
@@ -844,17 +856,15 @@
                         </div>
                     </div>
 
-                    <!-- Новая вкладка: КФГ (динамика, формула, таблица) -->
+                    <!-- Вкладка КФГ (динамика, формула, таблица) -->
                     <div v-show="currentTab === 'kfg'">
                         <h2 class="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">Коэффициент финансовой грамотности (КФГ)</h2>
                         
-                        <!-- График динамики -->
                         <div class="bg-gray-50 rounded-xl p-4 mb-6">
                             <h3 class="text-lg font-semibold mb-3">Динамика КФГ по месяцам</h3>
                             <div class="h-64"><canvas id="kfgTrendChart"></canvas></div>
                         </div>
 
-                        <!-- Объяснение формулы -->
                         <div class="bg-gray-50 rounded-xl p-4 mb-6">
                             <h3 class="text-lg font-semibold mb-2">Как рассчитывается КФГ?</h3>
                             <p class="text-sm text-gray-700 mb-2">КФГ = 100 − (Расходы / Доход × 100), но с учётом корректировок:</p>
@@ -868,7 +878,6 @@
                             <p class="text-sm text-gray-700 mt-2">Итоговое значение ограничивается от 0 до 100.</p>
                         </div>
 
-                        <!-- Таблица КФГ по месяцам -->
                         <div class="bg-gray-50 rounded-xl p-4">
                             <h3 class="text-lg font-semibold mb-3">КФГ за все месяцы</h3>
                             <div class="overflow-x-auto">
@@ -1063,8 +1072,9 @@
                 // Аналитика (месячные снепшоты)
                 const monthlySnapshots = ref({});
                 const selectedAnalysisMonth = ref('');
-                let expenseChart = null;
-                let trendChart = null;
+                let expenseChart = null;      // круговая диаграмма
+                let expenseTrendChart = null; // линейный график расходов
+                let kfgTrendChart = null;     // график КФГ
                 
                 const rewards = [
                     { id: 1, name: 'Кофе', kfgRequired: 50, icon: 'fa-coffee' },
@@ -1164,7 +1174,6 @@
                     return filtered;
                 });
                 
-                // Для отображения в разделе расходов (выбранный месяц)
                 const filteredExpensesForMonth = computed(() => {
                     const filtered = {};
                     Object.keys(expensesForSelectedMonth).forEach(k => { if (categoryNames[k]) filtered[k] = expensesForSelectedMonth[k]; });
@@ -1331,14 +1340,12 @@
                         const sorted = Object.keys(monthlySnapshots.value).sort();
                         if (sorted.length > 0) {
                             selectedAnalysisMonth.value = sorted[sorted.length - 1];
-                            // Для раздела расходов выберем последний месяц (или текущий)
                             if (!selectedExpenseMonth.value || !monthlySnapshots.value[selectedExpenseMonth.value]) {
                                 selectedExpenseMonth.value = sorted[sorted.length - 1];
                             }
                             await loadExpensesForSelectedMonth();
                         }
-                        updateTrendChart();
-                        if (selectedAnalysisMonth.value) loadExpensesForMonth();
+                        updateAllCharts();
                     } catch (e) { console.error('Ошибка загрузки снепшотов:', e); }
                 }
 
@@ -1384,23 +1391,30 @@
                     }
                 }
 
-                // Показать детали месяца
+                // Показать детали месяца (исправлено: отображаем расходы по категориям)
                 function showMonthDetails(snap) {
                     detailsMonthLabel.value = snap.monthLabel;
                     detailsExpenses.value = { ...snap.expenses };
                     detailsModalVisible.value = true;
                 }
 
-                // --- Графики ---
-                function updateTrendChart() {
+                // --- Графики (обновление всех) ---
+                function updateAllCharts() {
+                    updateKfgTrendChart();
+                    updateExpenseTrendChart();
+                    loadExpensesForMonth(); // круговая диаграмма
+                }
+
+                // График КФГ (на вкладке КФГ)
+                function updateKfgTrendChart() {
                     const ctx = document.getElementById('kfgTrendChart');
                     if (!ctx) return;
-                    if (trendChart) trendChart.destroy();
+                    if (kfgTrendChart) kfgTrendChart.destroy();
                     const sorted = monthlySnapshotsSorted.value;
                     if (sorted.length === 0) return;
                     const labels = sorted.map(s => s.monthLabel);
                     const data = sorted.map(s => s.kfg);
-                    trendChart = new Chart(ctx, {
+                    kfgTrendChart = new Chart(ctx, {
                         type: 'line',
                         data: {
                             labels,
@@ -1421,6 +1435,37 @@
                     });
                 }
 
+                // Линейный график динамики общих расходов (на вкладке Аналитика)
+                function updateExpenseTrendChart() {
+                    const ctx = document.getElementById('expenseTrendChart');
+                    if (!ctx) return;
+                    if (expenseTrendChart) expenseTrendChart.destroy();
+                    const sorted = monthlySnapshotsSorted.value;
+                    if (sorted.length === 0) return;
+                    const labels = sorted.map(s => s.monthLabel);
+                    const data = sorted.map(s => s.totalExpenses);
+                    expenseTrendChart = new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels,
+                            datasets: [{
+                                label: 'Общие расходы (₽)',
+                                data,
+                                borderColor: '#ef4444',
+                                backgroundColor: 'rgba(239,68,68,0.1)',
+                                tension: 0.3,
+                                fill: true
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            scales: { y: { beginAtZero: true, ticks: { callback: (val) => formatMoney(val) } } }
+                        }
+                    });
+                }
+
+                // Круговая диаграмма структуры расходов за выбранный месяц
                 function loadExpensesForMonth() {
                     if (!selectedAnalysisMonth.value) return;
                     const snap = monthlySnapshots.value[selectedAnalysisMonth.value];
@@ -1893,6 +1938,10 @@
                     }
                 });
 
+                watch(monthlySnapshotsSorted, () => {
+                    updateAllCharts();
+                });
+
                 return {
                     loading, loadingMessage, currentTab, message, currentUser,
                     loginForm, registerForm, expenses, goals, newGoal, friends, friendRequests, pendingRequests,
@@ -1905,7 +1954,6 @@
                     showRemoveGoalModal, selectedGoalNameForRemove,
                     showHistoricalModal, historicalMonth, historicalIncome, historicalExpenses,
                     monthlySnapshotsSorted, selectedAnalysisMonth, currentMonthLabel,
-                    // Новые переменные для расходов
                     selectedExpenseMonth, expensesForSelectedMonth, filteredExpensesForMonth,
                     detailsModalVisible, detailsMonthLabel, detailsExpenses,
                     handleRegister, handleLogin, loginWithGoogle, logout,
