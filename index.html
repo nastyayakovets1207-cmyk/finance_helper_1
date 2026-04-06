@@ -952,7 +952,7 @@
             </div>
         </div>
 
-        <!-- ФУТЕР С ССЫЛКОЙ НА VK -->
+        <!-- ФУТЕР С ССЫЛКОЙ НА VK (исправлен текст) -->
         <footer class="footer" v-if="currentUser">
             <div class="container mx-auto px-4">
                 <a href="https://vk.ru/mvikirriaa" target="_blank" rel="noopener noreferrer" class="vk-link">
@@ -960,7 +960,7 @@
                     <span>Разработчик: Виктория</span>
                     <i class="fas fa-external-link-alt"></i>
                 </a>
-                <p class="footer-text">© 2024 FinGrade - Умный финансовый помощник</p>
+                <p class="footer-text">© 2026 FinGrade - Умный финансовый помощник (Проект кафедры АСУ, МАДИ)</p>
             </div>
         </footer>
 
@@ -1449,10 +1449,11 @@
                     }
                 }
 
-                // Показать детали месяца (исправлено: отображаем расходы по категориям)
+                // Показать детали месяца
                 function showMonthDetails(snap) {
                     detailsMonthLabel.value = snap.monthLabel;
-                    detailsExpenses.value = { ...snap.expenses };
+                    // Убеждаемся, что expenses - это объект с категориями
+                    detailsExpenses.value = snap.expenses ? { ...snap.expenses } : {};
                     detailsModalVisible.value = true;
                 }
 
