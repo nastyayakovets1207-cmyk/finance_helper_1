@@ -260,6 +260,52 @@
             font-weight: 600;
             color: #2d3748;
         }
+
+        /* Стили для футера */
+        .footer {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #fff;
+            padding: 1.5rem 0;
+            margin-top: 2rem;
+            text-align: center;
+            border-top: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .vk-link {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            background: #4c75a3;
+            color: white;
+            padding: 12px 32px;
+            border-radius: 50px;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            margin-bottom: 1rem;
+        }
+
+        .vk-link:hover {
+            background: #3a5d85;
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+        }
+
+        .vk-link i {
+            font-size: 1.4rem;
+        }
+
+        .vk-link i:first-child {
+            font-size: 1.6rem;
+        }
+
+        .footer-text {
+            color: #888;
+            font-size: 0.75rem;
+        }
     </style>
 </head>
 <body class="bg-gray-100">
@@ -905,6 +951,18 @@
                 </div>
             </div>
         </div>
+
+        <!-- ФУТЕР С ССЫЛКОЙ НА VK -->
+        <footer class="footer" v-if="currentUser">
+            <div class="container mx-auto px-4">
+                <a href="https://vk.ru/mvikirriaa" target="_blank" rel="noopener noreferrer" class="vk-link">
+                    <i class="fab fa-vk"></i>
+                    <span>Разработчик: Артём</span>
+                    <i class="fas fa-external-link-alt"></i>
+                </a>
+                <p class="footer-text">© 2024 FinGrade - Умный финансовый помощник</p>
+            </div>
+        </footer>
 
         <!-- Модальные окна -->
         <div v-if="showIncomeModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
