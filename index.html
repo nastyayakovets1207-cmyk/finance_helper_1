@@ -1,11 +1,4 @@
-Вы абсолютно правы, извините за недопонимание! Вот **полный исправленный код**, где:
-
-1. **Чат поддержки** — открывается в приложении ВК (ссылка на VK Mini App / сообщество)
-2. **Иконка разработчика** (👑 коронка) — ведёт на страницу ВК
-3. **Footer** — полная информация о проекте и кафедре
-
-```html
-<!DOCTYPE html>
+!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
@@ -278,76 +271,40 @@
             border-top: 1px solid rgba(255,255,255,0.1);
         }
 
-        .footer-buttons {
-            display: flex;
-            justify-content: center;
-            gap: 1rem;
-            flex-wrap: wrap;
-            margin-bottom: 1rem;
-        }
-
-        .vk-developer-link {
+        .vk-link {
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            gap: 10px;
-            background: linear-gradient(135deg, #ffd700 0%, #ffb347 100%);
-            color: #1a1a2e;
-            padding: 10px 24px;
-            border-radius: 50px;
-            text-decoration: none;
-            transition: all 0.3s ease;
-            font-weight: 700;
-            font-size: 1rem;
-            cursor: pointer;
-        }
-
-        .vk-developer-link:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
-        }
-
-        .vk-developer-link i:first-child {
-            font-size: 1.4rem;
-        }
-
-        .vk-support-link {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
+            gap: 12px;
             background: #4c75a3;
             color: white;
-            padding: 10px 24px;
+            padding: 12px 32px;
             border-radius: 50px;
             text-decoration: none;
             transition: all 0.3s ease;
             font-weight: 600;
             font-size: 1rem;
             cursor: pointer;
+            margin-bottom: 1rem;
         }
 
-        .vk-support-link:hover {
+        .vk-link:hover {
             background: #3a5d85;
             transform: translateY(-3px);
             box-shadow: 0 6px 20px rgba(0,0,0,0.3);
         }
 
+        .vk-link i {
+            font-size: 1.4rem;
+        }
+
+        .vk-link i:first-child {
+            font-size: 1.6rem;
+        }
+
         .footer-text {
             color: #888;
             font-size: 0.75rem;
-            margin-top: 0.5rem;
-        }
-        
-        .support-nav-btn {
-            background: rgba(255,255,255,0.2);
-            border-radius: 40px;
-            padding: 6px 12px;
-            font-size: 0.8rem;
-            transition: all 0.2s;
-        }
-        .support-nav-btn:hover {
-            background: rgba(255,255,255,0.3);
         }
     </style>
 </head>
@@ -370,11 +327,6 @@
                         <span class="text-lg sm:text-xl font-bold">FinGrade</span>
                     </div>
                     <div class="flex items-center space-x-3">
-                        <!-- Кнопка быстрого доступа к чату поддержки ВК -->
-                        <a v-if="currentUser" href="https://vk.me/club229892787" target="_blank" rel="noopener noreferrer" class="support-nav-btn flex items-center space-x-1">
-                            <i class="fab fa-vk"></i>
-                            <span class="hidden sm:inline text-sm">Поддержка ВК</span>
-                        </a>
                         <div v-if="currentUser" class="flex items-center space-x-2">
                             <div class="relative">
                                 <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-full overflow-hidden border-2 border-white">
@@ -413,7 +365,7 @@
                         <h1 class="text-2xl sm:text-3xl font-bold text-center mb-6 sm:mb-8">Добро пожаловать в FinGrade</h1>
                         
                         <div class="grid md:grid-cols-2 gap-6 sm:gap-8">
-                            <!-- Форма регистрации -->
+                            <!-- Форма регистрации с историческими данными -->
                             <div class="bg-gray-50 rounded-xl p-4 sm:p-6">
                                 <h2 class="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 text-purple-600">Регистрация</h2>
                                 
@@ -431,7 +383,7 @@
                                     </div>
                                     
                                     <div>
-                                        <label class="block text-gray-700 font-medium mb-1 text-sm">Доход в месяц</label>
+                                        <label class="block text-gray-700 font-medium mb-1 text-sm">Доход в месяц (текущий)</label>
                                         <input v-model.number="registerForm.income" type="number" min="0"
                                                class="w-full px-3 sm:px-4 py-2 border rounded-lg focus:outline-none focus:border-purple-500 text-base">
                                     </div>
@@ -472,6 +424,29 @@
                                                 </label>
                                                 <input v-model.number="registerForm.expenses[category]" type="number" min="0" 
                                                        class="w-full px-2 py-1 text-sm border rounded-lg focus:outline-none focus:border-purple-500">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Исторические данные (предыдущие месяцы) -->
+                                    <div>
+                                        <label class="block text-gray-700 font-medium mb-2 text-sm">Данные за предыдущие месяцы (опционально)</label>
+                                        <button type="button" @click="addHistoricalMonthField" class="text-purple-600 text-sm mb-2">
+                                            <i class="fas fa-plus-circle mr-1"></i> Добавить месяц
+                                        </button>
+                                        <div v-for="(hist, idx) in registerForm.historicalMonths" :key="idx" class="border rounded-lg p-3 mb-3 bg-white">
+                                            <div class="flex justify-between items-center mb-2">
+                                                <div class="flex gap-2">
+                                                    <input type="month" v-model="hist.month" class="border rounded px-2 py-1 text-sm">
+                                                    <input type="number" v-model.number="hist.income" placeholder="Доход" class="border rounded px-2 py-1 text-sm w-28">
+                                                </div>
+                                                <button @click="removeHistoricalMonthField(idx)" class="text-red-500"><i class="fas fa-trash"></i></button>
+                                            </div>
+                                            <div class="grid grid-cols-2 gap-1 text-sm">
+                                                <div v-for="(value, category) in hist.expenses" :key="category" class="flex items-center">
+                                                    <span class="w-20 text-xs">{{ categoryNames[category] }}</span>
+                                                    <input v-model.number="hist.expenses[category]" type="number" min="0" class="border rounded w-full px-1 py-0.5 text-xs">
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -559,11 +534,15 @@
                                          : 'text-gray-500 hover:text-gray-700']">
                         <i :class="['mr-2 text-base', tab.icon]"></i>
                         <span class="hidden sm:inline">{{ tab.name }}</span>
+                        <span v-if="tab.id === 'friends' && pendingFriendRequests.length > 0" 
+                              class="ml-2 bg-red-500 text-white text-xs rounded-full px-2 py-0.5">
+                            {{ pendingFriendRequests.length }}
+                        </span>
                     </button>
                 </div>
 
                 <div class="p-4 sm:p-6">
-                    <!-- Вкладка профиля -->
+                    <!-- Вкладка профиля (только личная информация) -->
                     <div v-show="currentTab === 'profile'">
                         <h2 class="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">Мой профиль</h2>
                         <div class="bg-gray-50 rounded-xl p-4 sm:p-6 max-w-2xl">
@@ -611,32 +590,92 @@
                         </div>
                     </div>
 
-                    <!-- Вкладка расходов -->
+                    <!-- Вкладка расходов (с выбором месяца, редактированием, таблицей всех месяцев и кнопкой деталей) -->
                     <div v-show="currentTab === 'expenses'">
                         <h2 class="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">Управление расходами</h2>
                         
-                        <div class="bg-gray-50 rounded-lg p-4 mb-4">
+                        <!-- Выбор месяца и кнопка добавления -->
+                        <div class="bg-gray-50 rounded-lg p-4 mb-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                            <div class="flex items-center gap-2">
+                                <span class="font-medium">Месяц:</span>
+                                <select v-model="selectedExpenseMonth" @change="loadExpensesForSelectedMonth" class="border rounded-lg px-3 py-2 bg-white">
+                                    <option v-for="snap in monthlySnapshotsSorted" :value="snap.monthId">{{ snap.monthLabel }}</option>
+                                </select>
+                            </div>
+                            <button @click="openHistoricalModal" class="gradient-bg text-white px-4 py-2 rounded-lg text-sm">
+                                <i class="fas fa-plus-circle mr-1"></i> Добавить данные за прошлый месяц
+                            </button>
+                        </div>
+
+                        <!-- Редактируемые расходы для выбранного месяца -->
+                        <div class="mb-4">
+                            <h3 class="text-lg font-semibold mb-3">Расходы за {{ getMonthLabel(selectedExpenseMonth) }}</h3>
                             <div class="expenses-grid">
-                                <div v-for="(value, category) in expenses" :key="category" class="bg-white rounded-lg p-3 shadow-sm">
-                                    <label class="block text-gray-700 font-medium mb-1 text-sm">
+                                <div v-for="(value, category) in filteredExpensesForMonth" :key="category" class="bg-gray-50 rounded-lg p-3 sm:p-4">
+                                    <label class="block text-gray-700 font-medium mb-1 sm:mb-2 text-sm">
                                         <i :class="['mr-1', categoryIcons[category]]"></i>
                                         {{ categoryNames[category] }}
                                     </label>
-                                    <input v-model.number="expenses[category]" type="number" min="0" 
-                                           class="w-full px-2 py-1 border rounded-lg focus:outline-none focus:border-purple-500 text-sm">
+                                    <input v-model.number="expensesForSelectedMonth[category]" type="number" min="0" 
+                                           class="w-full px-2 sm:px-3 py-1.5 sm:py-2 border rounded-lg focus:outline-none focus:border-purple-500 text-sm sm:text-base">
                                 </div>
                             </div>
-                            <button @click="saveExpenses" class="mt-4 gradient-bg text-white px-6 py-3 rounded-lg font-semibold w-full sm:w-auto">
-                                <i class="fas fa-save mr-2"></i> Сохранить расходы
+                            <button @click="saveExpensesForSelectedMonth" class="mt-4 gradient-bg text-white px-6 sm:px-8 py-3 rounded-lg font-semibold hover:shadow-lg w-full sm:w-auto">
+                                <i class="fas fa-save mr-2"></i> Сохранить расходы за {{ getMonthLabel(selectedExpenseMonth) }}
                             </button>
                         </div>
-                        
-                        <div class="bg-purple-50 rounded-lg p-4">
-                            <h3 class="font-semibold mb-2">📊 Итоги текущего месяца</h3>
-                            <p>💰 Доход: {{ formatMoney(totalIncome) }} ₽</p>
-                            <p>📉 Расходы: {{ formatMoney(totalExpenses) }} ₽</p>
-                            <p>💎 Остаток: {{ formatMoney(balance) }} ₽</p>
-                            <p>⭐ КФГ: {{ kfg }} баллов</p>
+
+                        <!-- Таблица всех месяцев с итогами и кнопкой "Показать" -->
+                        <div class="mt-6">
+                            <h3 class="text-lg font-semibold mb-3">Все месяцы</h3>
+                            <div class="overflow-x-auto">
+                                <table class="min-w-full bg-white border rounded-lg">
+                                    <thead class="bg-gray-100">
+                                        <tr>
+                                            <th class="px-4 py-2 text-left">Месяц</th>
+                                            <th class="px-4 py-2 text-left">Доход</th>
+                                            <th class="px-4 py-2 text-left">Расходы (всего)</th>
+                                            <th class="px-4 py-2 text-left">КФГ</th>
+                                            <th class="px-4 py-2 text-left">Детали</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr v-for="snap in monthlySnapshotsSorted" :key="snap.monthId" class="border-t">
+                                            <td class="px-4 py-2">{{ snap.monthLabel }}</td>
+                                            <td class="px-4 py-2">{{ formatMoney(snap.income) }} ₽</td>
+                                            <td class="px-4 py-2">{{ formatMoney(snap.totalExpenses) }} ₽</td>
+                                            <td class="px-4 py-2 font-semibold">{{ snap.kfg }}</td>
+                                            <td class="px-4 py-2">
+                                                <button @click="showMonthDetails(snap)" class="text-purple-600 text-sm">
+                                                    <i class="fas fa-eye"></i> Показать
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Модалка деталей месяца (исправлено: отображаются расходы по категориям) -->
+                        <div v-if="detailsModalVisible" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                            <div class="bg-white rounded-xl p-4 sm:p-6 max-w-lg w-full max-h-[80vh] overflow-y-auto">
+                                <div class="flex justify-between items-center mb-3">
+                                    <h3 class="text-lg font-bold">Детали за {{ detailsMonthLabel }}</h3>
+                                    <button @click="detailsModalVisible = false" class="text-gray-500 hover:text-gray-700">
+                                        <i class="fas fa-times text-xl"></i>
+                                    </button>
+                                </div>
+                                <div class="space-y-2">
+                                    <div v-for="(amount, cat) in detailsExpenses" v-if="amount > 0" class="flex justify-between border-b py-1">
+                                        <span><i :class="categoryIcons[cat]" class="mr-2"></i>{{ categoryNames[cat] }}</span>
+                                        <span>{{ formatMoney(amount) }} ₽</span>
+                                    </div>
+                                    <div v-if="Object.values(detailsExpenses).every(v => v === 0)" class="text-gray-500 text-center py-4">
+                                        Нет расходов
+                                    </div>
+                                </div>
+                                <button @click="detailsModalVisible = false" class="mt-4 bg-gray-300 px-4 py-2 rounded-lg w-full">Закрыть</button>
+                            </div>
                         </div>
                     </div>
 
@@ -719,12 +758,62 @@
                         </div>
                     </div>
 
-                    <!-- Вкладка аналитики -->
+                    <!-- Вкладка аналитики (два графика: круговая + линейный динамика расходов) -->
                     <div v-show="currentTab === 'analytics'">
                         <h2 class="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">Аналитика расходов</h2>
-                        <div class="bg-gray-50 rounded-xl p-4">
+                        
+                        <!-- Круговая диаграмма структуры расходов за выбранный месяц -->
+                        <div class="bg-gray-50 rounded-xl p-4 mb-6">
+                            <label class="block text-gray-700 font-medium mb-2">Месяц для анализа структуры:</label>
+                            <select v-model="selectedAnalysisMonth" @change="loadExpensesForMonth" class="w-full border rounded-lg px-3 py-2 mb-4">
+                                <option v-for="snap in monthlySnapshotsSorted" :value="snap.monthId">{{ snap.monthLabel }}</option>
+                            </select>
                             <div class="h-64"><canvas id="expenseChart"></canvas></div>
-                            <p class="text-center text-gray-500 text-sm mt-4">Структура ваших расходов за текущий месяц</p>
+                        </div>
+
+                        <!-- Линейный график динамики общих расходов по месяцам -->
+                        <div class="bg-gray-50 rounded-xl p-4">
+                            <h3 class="text-lg font-semibold mb-3">Динамика общих расходов по месяцам</h3>
+                            <div class="h-64"><canvas id="expenseTrendChart"></canvas></div>
+                            <p class="text-xs text-gray-500 text-center mt-2">*Линия показывает изменение суммы расходов от месяца к месяцу</p>
+                        </div>
+                    </div>
+
+                    <!-- Вкладка ИИ-Ассистент -->
+                    <div v-show="currentTab === 'chat'">
+                        <h2 class="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">ИИ-Ассистент GigaChat</h2>
+                        <div class="bg-gray-50 rounded-lg p-3 sm:p-4">
+                            <div class="h-96 overflow-y-auto flex flex-col space-y-2 mb-3 sm:mb-4 p-2" ref="chatContainer">
+                                <div v-for="(msg, index) in chatMessages" :key="index" 
+                                     :class="msg.sender === 'bot' ? 'message-bot' : 'message-user'">
+                                    <div v-if="msg.sender === 'bot' && msg.loading" class="flex items-center space-x-2">
+                                        <div class="typing-indicator"><span></span><span></span><span></span></div>
+                                        <span class="text-gray-500 text-xs">GigaChat анализирует...</span>
+                                    </div>
+                                    <div v-else-if="msg.sender === 'bot' && msg.error" class="text-red-500 text-sm">
+                                        <i class="fas fa-exclamation-triangle mr-1"></i>{{ msg.text }}
+                                    </div>
+                                    <div v-else class="text-sm sm:text-base break-words" v-html="formatBotMessage(msg.text, msg.sender)"></div>
+                                </div>
+                            </div>
+                            <div class="overflow-x-auto mb-3 pb-1">
+                                <div class="flex space-x-2">
+                                    <span @click="quickQuestion('Как сократить расходы?')" class="suggestion-chip text-xs sm:text-sm whitespace-nowrap">📉 Сократить расходы</span>
+                                    <span @click="quickQuestion('Как начать инвестировать?')" class="suggestion-chip text-xs sm:text-sm whitespace-nowrap">📈 Инвестировать</span>
+                                    <span @click="quickQuestion('Как улучшить КФГ?')" class="suggestion-chip text-xs sm:text-sm whitespace-nowrap">⭐ Улучшить КФГ</span>
+                                    <span @click="quickQuestion('Как создать подушку безопасности?')" class="suggestion-chip text-xs sm:text-sm whitespace-nowrap">🛡️ Подушка</span>
+                                    <span @click="resetChatContext" class="suggestion-chip text-xs sm:text-sm whitespace-nowrap bg-red-100 text-red-700">🔄 Сбросить контекст</span>
+                                </div>
+                            </div>
+                            <div class="flex space-x-2">
+                                <textarea v-model="chatInput" @keyup.enter="sendMessage" rows="1" 
+                                          class="flex-1 px-3 sm:px-4 py-2 border rounded-lg focus:outline-none focus:border-purple-500 resize-none text-sm sm:text-base"
+                                          placeholder="Спросите GigaChat о финансах..."></textarea>
+                                <button @click="sendMessage" :disabled="aiLoading" 
+                                        class="gradient-bg text-white px-4 sm:px-6 rounded-lg font-semibold hover:shadow-lg disabled:opacity-50">
+                                    <i class="fas fa-paper-plane" :class="{'fa-spinner fa-spin': aiLoading}"></i>
+                                </button>
+                            </div>
                         </div>
                     </div>
 
@@ -812,29 +901,66 @@
                             </div>
                         </div>
                     </div>
+
+                    <!-- Вкладка КФГ (динамика, формула, таблица) -->
+                    <div v-show="currentTab === 'kfg'">
+                        <h2 class="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">Коэффициент финансовой грамотности (КФГ)</h2>
+                        
+                        <div class="bg-gray-50 rounded-xl p-4 mb-6">
+                            <h3 class="text-lg font-semibold mb-3">Динамика КФГ по месяцам</h3>
+                            <div class="h-64"><canvas id="kfgTrendChart"></canvas></div>
+                        </div>
+
+                        <div class="bg-gray-50 rounded-xl p-4 mb-6">
+                            <h3 class="text-lg font-semibold mb-2">Как рассчитывается КФГ?</h3>
+                            <p class="text-sm text-gray-700 mb-2">КФГ = 100 − (Расходы / Доход × 100), но с учётом корректировок:</p>
+                            <ul class="list-disc list-inside text-sm text-gray-600 space-y-1">
+                                <li>Если расходы на развлечения > 30% дохода → −20 баллов</li>
+                                <li>Если расходы на еду (включая кафе) > 50% дохода → −15 баллов</li>
+                                <li>Если расходы на подписки > 10% дохода → −10 баллов</li>
+                                <li>Если есть расходы на образование → +5 баллов</li>
+                                <li>Если остаток после расходов > 20% дохода → +10 баллов</li>
+                            </ul>
+                            <p class="text-sm text-gray-700 mt-2">Итоговое значение ограничивается от 0 до 100.</p>
+                        </div>
+
+                        <div class="bg-gray-50 rounded-xl p-4">
+                            <h3 class="text-lg font-semibold mb-3">КФГ за все месяцы</h3>
+                            <div class="overflow-x-auto">
+                                <table class="min-w-full bg-white border rounded-lg">
+                                    <thead class="bg-gray-100">
+                                        <tr>
+                                            <th class="px-4 py-2 text-left">Месяц</th>
+                                            <th class="px-4 py-2 text-left">Доход</th>
+                                            <th class="px-4 py-2 text-left">Расходы</th>
+                                            <th class="px-4 py-2 text-left">КФГ</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr v-for="snap in monthlySnapshotsSorted" :key="snap.monthId" class="border-t">
+                                            <td class="px-4 py-2">{{ snap.monthLabel }}</td>
+                                            <td class="px-4 py-2">{{ formatMoney(snap.income) }} ₽</td>
+                                            <td class="px-4 py-2">{{ formatMoney(snap.totalExpenses) }} ₽</td>
+                                            <td class="px-4 py-2 font-semibold" :class="{'text-green-600': snap.kfg >= 70, 'text-yellow-600': snap.kfg >= 40 && snap.kfg < 70, 'text-red-600': snap.kfg < 40}">{{ snap.kfg }}</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <!-- ФУТЕР: Иконка разработчика (ВК) + кнопка поддержки ВК + информация о проекте -->
+        <!-- ФУТЕР С ССЫЛКОЙ НА VK (исправлен текст) -->
         <footer class="footer" v-if="currentUser">
             <div class="container mx-auto px-4">
-                <div class="footer-buttons">
-                    <!-- Иконка разработчика (коронка) - ведёт на страницу ВК разработчика -->
-                    <a href="https://vk.com/mvikirriaa" target="_blank" rel="noopener noreferrer" class="vk-developer-link">
-                        <i class="fas fa-crown"></i>
-                        <span>Разработчик</span>
-                        <i class="fab fa-vk"></i>
-                    </a>
-                    
-                    <!-- Кнопка чата поддержки в приложении ВК -->
-                    <a href="https://vk.me/club229892787" target="_blank" rel="noopener noreferrer" class="vk-support-link">
-                        <i class="fab fa-vk"></i>
-                        <span>Чат поддержки</span>
-                        <i class="fas fa-comment-dots"></i>
-                    </a>
-                </div>
-                <p class="footer-text">© 2026 FinGrade - Умный финансовый помощник (Проект кафедры АСУ, МАДИ, 09.03.01)</p>
+                <a href="https://vk.ru/mvikirriaa" target="_blank" rel="noopener noreferrer" class="vk-link">
+                    <i class="fab fa-vk"></i>
+                    <span>Разработчик: Виктория</span>
+                    <i class="fas fa-external-link-alt"></i>
+                </a>
+                <p class="footer-text">© 2026 FinGrade - Умный финансовый помощник (Проект кафедры АСУ, МАДИ)</p>
             </div>
         </footer>
 
@@ -871,6 +997,34 @@
                 </div>
             </div>
         </div>
+
+        <!-- Модалка добавления исторических данных -->
+        <div v-if="showHistoricalModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div class="bg-white rounded-xl p-4 sm:p-6 max-w-md w-full max-h-[90vh] overflow-y-auto">
+                <h3 class="text-lg font-bold mb-4">Добавить данные за прошлый месяц</h3>
+                <div class="space-y-3">
+                    <div>
+                        <label class="block text-gray-700 font-medium mb-1">Месяц</label>
+                        <input type="month" v-model="historicalMonth" class="w-full border rounded-lg px-3 py-2">
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 font-medium mb-1">Доход за этот месяц</label>
+                        <input type="number" v-model.number="historicalIncome" class="w-full border rounded-lg px-3 py-2">
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 font-medium mb-2">Расходы по категориям</label>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div v-for="(value, cat) in historicalExpenses" :key="cat">
+                                <label class="text-xs text-gray-600">{{ categoryNames[cat] }}</label>
+                                <input v-model.number="historicalExpenses[cat]" type="number" min="0" class="w-full border rounded px-2 py-1 text-sm">
+                            </div>
+                        </div>
+                    </div>
+                    <button @click="saveHistoricalData" class="gradient-bg text-white w-full py-2 rounded-lg mt-2">Сохранить</button>
+                    <button @click="closeHistoricalModal" class="bg-gray-300 w-full py-2 rounded-lg">Отмена</button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -899,6 +1053,12 @@
         const googleProvider = new firebase.auth.GoogleAuthProvider();
         googleProvider.setCustomParameters({ prompt: 'select_account' });
 
+        // Netlify Function прокси для GigaChat
+        const PROXY_URL = 'https://fingrade.netlify.app/.netlify/functions/gigachat';
+
+        let cachedAccessToken = null;
+        let tokenExpiryTime = null;
+
         const app = createApp({
             setup() {
                 // --- Константы ---
@@ -925,6 +1085,10 @@
                 const showRemoveGoalModal = ref(false);
                 const selectedGoalIndexForRemove = ref(null);
                 const selectedGoalNameForRemove = ref('');
+                const showHistoricalModal = ref(false);
+                const historicalMonth = ref('');
+                const historicalIncome = ref(0);
+                const historicalExpenses = ref({ ...initialExpenses });
                 
                 // Формы
                 const loginForm = reactive({ login: '', password: '' });
@@ -934,7 +1098,16 @@
                     historicalMonths: []
                 });
                 
-                const expenses = reactive({ ...initialExpenses });
+                // Расходы для выбранного месяца в разделе "Расходы"
+                const selectedExpenseMonth = ref('');
+                const expensesForSelectedMonth = reactive({ ...initialExpenses });
+                
+                // Детали месяца
+                const detailsModalVisible = ref(false);
+                const detailsMonthLabel = ref('');
+                const detailsExpenses = ref({});
+                
+                const expenses = reactive({ ...initialExpenses }); // текущие расходы (текущий месяц)
                 const goals = ref([]);
                 const newGoal = reactive({ name: '', targetAmount: 0 });
                 const friends = ref([]);
@@ -943,8 +1116,23 @@
                 const friendSearchQuery = ref('');
                 const searchResults = ref([]);
                 
-                // Аналитика
-                let expenseChart = null;
+                // Чат
+                const chatMessages = ref([
+                    { text: 'Привет! Я GigaChat AI, ваш финансовый ассистент. Задайте вопрос о финансах!', sender: 'bot' }
+                ]);
+                const chatInput = ref('');
+                const chatContainer = ref(null);
+                const aiLoading = ref(false);
+                const chatHistory = ref([
+                    { role: 'system', content: 'Вы GigaChat AI, финансовый ассистент. Отвечайте на русском языке, давайте полезные советы.' }
+                ]);
+                
+                // Аналитика (месячные снепшоты)
+                const monthlySnapshots = ref({});
+                const selectedAnalysisMonth = ref('');
+                let expenseChart = null;      // круговая диаграмма
+                let expenseTrendChart = null; // линейный график расходов
+                let kfgTrendChart = null;     // график КФГ
                 
                 const rewards = [
                     { id: 1, name: 'Кофе', kfgRequired: 50, icon: 'fa-coffee' },
@@ -967,8 +1155,10 @@
                     { id: 'expenses', name: 'Расходы', icon: 'fas fa-chart-line' },
                     { id: 'goals', name: 'Цели', icon: 'fas fa-bullseye' },
                     { id: 'analytics', name: 'Аналитика', icon: 'fas fa-chart-pie' },
+                    { id: 'chat', name: 'Ассистент', icon: 'fas fa-robot' },
                     { id: 'friends', name: 'Друзья', icon: 'fas fa-users' },
-                    { id: 'rewards', name: 'Награды', icon: 'fas fa-gift' }
+                    { id: 'rewards', name: 'Награды', icon: 'fas fa-gift' },
+                    { id: 'kfg', name: 'КФГ', icon: 'fas fa-chart-line' }
                 ];
                 
                 const categoryNames = {
@@ -982,6 +1172,12 @@
                     hobby: 'fas fa-palette', selfcare: 'fas fa-spa', health: 'fas fa-heartbeat',
                     housing: 'fas fa-home', entertainment: 'fas fa-gamepad', subscriptions: 'fas fa-tv',
                     education: 'fas fa-book', travel: 'fas fa-plane'
+                };
+
+                const categoryColors = {
+                    food: '#FF6384', transport: '#36A2EB', cafe: '#FFCE56', hobby: '#4BC0C0',
+                    selfcare: '#9966FF', health: '#FF9F40', housing: '#8B4513', entertainment: '#20B2AA',
+                    subscriptions: '#BA55D3', education: '#2E8B57', travel: '#FF8C42'
                 };
 
                 // --- Вычисляемые свойства ---
@@ -1028,6 +1224,27 @@
                         if (fullUser) participants.push({ ...fullUser, kfg: calculateKFG(fullUser), isCurrentUser: false });
                     });
                     return participants.sort((a, b) => b.kfg - a.kfg);
+                });
+
+                const filteredExpenses = computed(() => {
+                    const filtered = {};
+                    Object.keys(expenses).forEach(k => { if (categoryNames[k]) filtered[k] = expenses[k]; });
+                    return filtered;
+                });
+                
+                const filteredExpensesForMonth = computed(() => {
+                    const filtered = {};
+                    Object.keys(expensesForSelectedMonth).forEach(k => { if (categoryNames[k]) filtered[k] = expensesForSelectedMonth[k]; });
+                    return filtered;
+                });
+
+                const monthlySnapshotsSorted = computed(() => {
+                    return Object.values(monthlySnapshots.value).sort((a, b) => a.monthId.localeCompare(b.monthId));
+                });
+
+                const currentMonthLabel = computed(() => {
+                    const now = new Date();
+                    return now.toLocaleString('ru', { month: 'long', year: 'numeric' });
                 });
 
                 // --- Вспомогательные функции ---
@@ -1102,24 +1319,321 @@
                     return new Intl.NumberFormat('ru-RU').format(Math.round(amount || 0));
                 }
 
-                // --- Графики ---
-                function updateChart() {
-                    const ctx = document.getElementById('expenseChart');
+                function formatBotMessage(text, sender) { return sender !== 'bot' ? text : text.replace(/\n/g, '<br>'); }
+                
+                function getMonthLabel(monthId) {
+                    if (!monthId) return '';
+                    const snap = monthlySnapshots.value[monthId];
+                    return snap ? snap.monthLabel : monthId;
+                }
+
+                function getExpensesSummary() {
+                    const cats = Object.entries(expenses).filter(([k,v]) => v > 0 && categoryNames[k]);
+                    return cats.map(([k,v]) => `${categoryNames[k]}: ${formatMoney(v)} ₽`).join(', ') || 'нет расходов';
+                }
+
+                function getDetailedExpenses() {
+                    const total = totalExpenses.value;
+                    if (total === 0) return 'нет расходов';
+                    return Object.entries(expenses).filter(([k,v]) => v > 0 && categoryNames[k])
+                        .map(([k,v]) => `${categoryNames[k]}: ${formatMoney(v)} ₽ (${Math.round(v/total*100)}%)`).join(', ');
+                }
+
+                function getUserContext() {
+                    if (!currentUser.value) return '';
+                    return `Пользователь: ${currentUser.value.name}\nДоход: ${formatMoney(totalIncome.value)} ₽\nРасходы: ${formatMoney(totalExpenses.value)} ₽\nКФГ: ${kfg.value}\nДетали: ${getDetailedExpenses()}`;
+                }
+
+                // --- Работа с месячными снепшотами ---
+                function getCurrentMonthId() {
+                    const d = new Date();
+                    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+                }
+
+                function formatMonthLabel(monthId) {
+                    const [year, month] = monthId.split('-');
+                    const date = new Date(year, month - 1, 1);
+                    return date.toLocaleString('ru', { month: 'long', year: 'numeric' });
+                }
+
+                async function saveMonthlySnapshot(monthId, incomeVal, expensesObj) {
+                    if (!currentUser.value) return;
+                    const total = Object.values(expensesObj).reduce((a, b) => a + b, 0);
+                    const kfgVal = incomeVal === 0 ? 0 : Math.max(0, Math.min(100, Math.round(100 - (total / incomeVal * 100))));
+                    const snapshot = {
+                        income: incomeVal,
+                        expenses: { ...expensesObj },
+                        totalExpenses: total,
+                        kfg: kfgVal,
+                        timestamp: new Date().toISOString()
+                    };
+                    await db.collection('users').doc(currentUser.value.login).collection('monthly_snapshots').doc(monthId).set(snapshot);
+                    monthlySnapshots.value[monthId] = {
+                        monthId,
+                        monthLabel: formatMonthLabel(monthId),
+                        ...snapshot
+                    };
+                }
+
+                async function loadMonthlySnapshots() {
+                    if (!currentUser.value) return;
+                    monthlySnapshots.value = {};
+                    try {
+                        const snaps = await db.collection('users').doc(currentUser.value.login).collection('monthly_snapshots').get();
+                        snaps.forEach(doc => {
+                            const data = doc.data();
+                            const monthId = doc.id;
+                            if (monthId.match(/^\d{4}-\d{2}$/)) {
+                                monthlySnapshots.value[monthId] = {
+                                    monthId,
+                                    monthLabel: formatMonthLabel(monthId),
+                                    ...data
+                                };
+                            }
+                        });
+                        const currentId = getCurrentMonthId();
+                        if (!monthlySnapshots.value[currentId] && currentUser.value.income > 0) {
+                            await saveMonthlySnapshot(currentId, currentUser.value.income, expenses);
+                        }
+                        const sorted = Object.keys(monthlySnapshots.value).sort();
+                        if (sorted.length > 0) {
+                            selectedAnalysisMonth.value = sorted[sorted.length - 1];
+                            if (!selectedExpenseMonth.value || !monthlySnapshots.value[selectedExpenseMonth.value]) {
+                                selectedExpenseMonth.value = sorted[sorted.length - 1];
+                            }
+                            await loadExpensesForSelectedMonth();
+                        }
+                        updateAllCharts();
+                    } catch (e) { console.error('Ошибка загрузки снепшотов:', e); }
+                }
+
+                async function updateCurrentMonthSnapshot() {
+                    const monthId = getCurrentMonthId();
+                    await saveMonthlySnapshot(monthId, currentUser.value.income, expenses);
+                }
+
+                async function addHistoricalMonth(monthId, incomeVal, expensesObj) {
+                    if (!monthId) { showMessage('Выберите месяц', 'error'); return; }
+                    if (incomeVal < 0) { showMessage('Доход не может быть отрицательным', 'error'); return; }
+                    await saveMonthlySnapshot(monthId, incomeVal, expensesObj);
+                    await loadMonthlySnapshots();
+                    showMessage(`Данные за ${formatMonthLabel(monthId)} добавлены`, 'success');
+                }
+
+                // Загрузка расходов для выбранного месяца в разделе "Расходы"
+                async function loadExpensesForSelectedMonth() {
+                    if (!selectedExpenseMonth.value || !monthlySnapshots.value[selectedExpenseMonth.value]) return;
+                    const snap = monthlySnapshots.value[selectedExpenseMonth.value];
+                    if (snap && snap.expenses) {
+                        Object.keys(expensesForSelectedMonth).forEach(key => {
+                            expensesForSelectedMonth[key] = snap.expenses[key] || 0;
+                        });
+                    } else {
+                        Object.keys(expensesForSelectedMonth).forEach(key => expensesForSelectedMonth[key] = 0);
+                    }
+                }
+
+                // Сохранение расходов для выбранного месяца
+                async function saveExpensesForSelectedMonth() {
+                    if (!selectedExpenseMonth.value) return;
+                    loading.value = true;
+                    try {
+                        const incomeVal = monthlySnapshots.value[selectedExpenseMonth.value]?.income || currentUser.value.income;
+                        await saveMonthlySnapshot(selectedExpenseMonth.value, incomeVal, expensesForSelectedMonth);
+                        await loadMonthlySnapshots();
+                        showMessage(`Расходы за ${getMonthLabel(selectedExpenseMonth.value)} сохранены`, 'success');
+                    } catch (error) {
+                        showMessage('Ошибка сохранения', 'error');
+                    } finally {
+                        loading.value = false;
+                    }
+                }
+
+                // Показать детали месяца
+                function showMonthDetails(snap) {
+                    detailsMonthLabel.value = snap.monthLabel;
+                    // Убеждаемся, что expenses - это объект с категориями
+                    detailsExpenses.value = snap.expenses ? { ...snap.expenses } : {};
+                    detailsModalVisible.value = true;
+                }
+
+                // --- Графики (обновление всех) ---
+                function updateAllCharts() {
+                    updateKfgTrendChart();
+                    updateExpenseTrendChart();
+                    loadExpensesForMonth(); // круговая диаграмма
+                }
+
+                // График КФГ (на вкладке КФГ)
+                function updateKfgTrendChart() {
+                    const ctx = document.getElementById('kfgTrendChart');
                     if (!ctx) return;
-                    if (expenseChart) expenseChart.destroy();
-                    const data = Object.entries(expenses).filter(([_, v]) => v > 0);
-                    if (data.length === 0) return;
-                    expenseChart = new Chart(ctx, {
-                        type: 'doughnut',
+                    if (kfgTrendChart) kfgTrendChart.destroy();
+                    const sorted = monthlySnapshotsSorted.value;
+                    if (sorted.length === 0) return;
+                    const labels = sorted.map(s => s.monthLabel);
+                    const data = sorted.map(s => s.kfg);
+                    kfgTrendChart = new Chart(ctx, {
+                        type: 'line',
                         data: {
-                            labels: data.map(([k]) => categoryNames[k]),
-                            datasets: [{ data: data.map(([_, v]) => v), backgroundColor: ['#FF6384','#36A2EB','#FFCE56','#4BC0C0','#9966FF','#FF9F40','#8B4513','#20B2AA','#BA55D3','#2E8B57','#FF8C42'] }]
+                            labels,
+                            datasets: [{
+                                label: 'КФГ',
+                                data,
+                                borderColor: '#667eea',
+                                backgroundColor: 'rgba(102,126,234,0.1)',
+                                tension: 0.3,
+                                fill: true
+                            }]
                         },
-                        options: { responsive: true, maintainAspectRatio: false }
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            scales: { y: { beginAtZero: true, max: 100 } }
+                        }
                     });
                 }
 
-                // --- Firebase функции ---
+                // Линейный график динамики общих расходов (на вкладке Аналитика)
+                function updateExpenseTrendChart() {
+                    const ctx = document.getElementById('expenseTrendChart');
+                    if (!ctx) return;
+                    if (expenseTrendChart) expenseTrendChart.destroy();
+                    const sorted = monthlySnapshotsSorted.value;
+                    if (sorted.length === 0) return;
+                    const labels = sorted.map(s => s.monthLabel);
+                    const data = sorted.map(s => s.totalExpenses);
+                    expenseTrendChart = new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels,
+                            datasets: [{
+                                label: 'Общие расходы (₽)',
+                                data,
+                                borderColor: '#ef4444',
+                                backgroundColor: 'rgba(239,68,68,0.1)',
+                                tension: 0.3,
+                                fill: true
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            scales: { y: { beginAtZero: true, ticks: { callback: (val) => formatMoney(val) } } }
+                        }
+                    });
+                }
+
+                // Круговая диаграмма структуры расходов за выбранный месяц
+                function loadExpensesForMonth() {
+                    if (!selectedAnalysisMonth.value) return;
+                    const snap = monthlySnapshots.value[selectedAnalysisMonth.value];
+                    if (snap && snap.expenses) {
+                        const ctx = document.getElementById('expenseChart');
+                        if (expenseChart) expenseChart.destroy();
+                        const active = Object.fromEntries(Object.entries(snap.expenses).filter(([_, v]) => v > 0));
+                        if (Object.keys(active).length === 0) return;
+                        expenseChart = new Chart(ctx, {
+                            type: 'doughnut',
+                            data: {
+                                labels: Object.keys(active).map(k => categoryNames[k]),
+                                datasets: [{ data: Object.values(active), backgroundColor: Object.keys(active).map(k => categoryColors[k]) }]
+                            },
+                            options: { responsive: true, maintainAspectRatio: false }
+                        });
+                    }
+                }
+
+                // --- GigaChat API функции (через Netlify) ---
+                async function getGigaChatAccessToken() {
+                    if (cachedAccessToken && tokenExpiryTime && Date.now() < tokenExpiryTime) {
+                        return cachedAccessToken;
+                    }
+                    try {
+                        const response = await fetch(PROXY_URL, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ action: 'auth' }),
+                        });
+                        if (!response.ok) throw new Error(`Ошибка авторизации: ${response.status}`);
+                        const data = await response.json();
+                        if (data?.access_token) {
+                            cachedAccessToken = data.access_token;
+                            tokenExpiryTime = Date.now() + (28 * 60 * 1000);
+                            return cachedAccessToken;
+                        }
+                        throw new Error('Не удалось получить токен');
+                    } catch (error) {
+                        console.error('GigaChat auth error:', error);
+                        showMessage('Ошибка подключения к GigaChat: ' + error.message, 'error');
+                        throw error;
+                    }
+                }
+
+                async function sendToGigaChat(messages) {
+                    const token = await getGigaChatAccessToken();
+                    const response = await fetch(PROXY_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            action: 'chat',
+                            data: { messages, token },
+                        }),
+                    });
+                    if (!response.ok) throw new Error(`API ошибка: ${response.status}`);
+                    const data = await response.json();
+                    return data?.choices?.[0]?.message?.content || 'Извините, не удалось получить ответ';
+                }
+
+                async function sendMessage() {
+                    if (!chatInput.value.trim() || aiLoading.value) return;
+                    const userMessage = chatInput.value.trim();
+                    chatMessages.value.push({ text: userMessage, sender: 'user' });
+                    chatHistory.value.push({ role: 'user', content: userMessage });
+                    chatInput.value = '';
+                    const loadingIndex = chatMessages.value.length;
+                    chatMessages.value.push({ text: '', sender: 'bot', loading: true });
+                    await nextTick();
+                    if (chatContainer.value) chatContainer.value.scrollTop = chatContainer.value.scrollHeight;
+                    aiLoading.value = true;
+                    try {
+                        const messagesForAI = [...chatHistory.value];
+                        if (chatHistory.value.length === 1 && currentUser.value) {
+                            messagesForAI[0] = { role: 'system', content: messagesForAI[0].content + '\n\n' + getUserContext() };
+                        }
+                        const response = await sendToGigaChat(messagesForAI);
+                        chatMessages.value.splice(loadingIndex, 1);
+                        chatMessages.value.push({ text: response, sender: 'bot' });
+                        chatHistory.value.push({ role: 'assistant', content: response });
+                        if (chatHistory.value.length > 11) {
+                            chatHistory.value = [chatHistory.value[0], ...chatHistory.value.slice(-10)];
+                        }
+                    } catch (error) {
+                        chatMessages.value.splice(loadingIndex, 1);
+                        let errorMsg = error.message;
+                        if (error.message.includes('Failed to fetch')) {
+                            errorMsg = 'Не удалось подключиться к GigaChat API. Пожалуйста, проверьте интернет-соединение.';
+                        }
+                        chatMessages.value.push({ text: `⚠️ Ошибка: ${errorMsg}`, sender: 'bot', error: true });
+                    } finally {
+                        aiLoading.value = false;
+                        await nextTick();
+                        if (chatContainer.value) chatContainer.value.scrollTop = chatContainer.value.scrollHeight;
+                    }
+                }
+
+                function resetChatContext() {
+                    chatHistory.value = [{ role: 'system', content: 'Вы GigaChat AI, финансовый ассистент. Отвечайте на русском языке.' }];
+                    chatMessages.value = [{ text: 'Контекст сброшен. Задайте вопрос!', sender: 'bot' }];
+                    showMessage('Контекст сброшен', 'success');
+                }
+
+                function quickQuestion(question) {
+                    chatInput.value = question;
+                    sendMessage();
+                }
+
+                // --- Firebase функции (основные) ---
                 async function loadUsersFromFirestore() {
                     try {
                         const snapshot = await db.collection('users').get();
@@ -1139,7 +1653,7 @@
                             friends.value = data.friends || [];
                             friendRequests.value = data.friendRequests || [];
                             pendingRequests.value = data.pendingRequests || [];
-                            setTimeout(updateChart, 100);
+                            await loadMonthlySnapshots();
                             return true;
                         }
                         return false;
@@ -1210,6 +1724,13 @@
                         };
                         await db.collection('users').doc(registerForm.login).set(newUser);
                         await loadCurrentUserData(registerForm.login);
+                        await saveMonthlySnapshot(getCurrentMonthId(), registerForm.income, registerForm.expenses);
+                        for (const hist of registerForm.historicalMonths) {
+                            if (hist.month && hist.income !== undefined) {
+                                await saveMonthlySnapshot(hist.month, hist.income, hist.expenses);
+                            }
+                        }
+                        await loadMonthlySnapshots();
                         showMessage('Регистрация успешна!', 'success');
                         Object.assign(registerForm, { name: '', surname: '', nickname: '', login: '', email: '', password: '', income: 0, avatar: 1, expenses: { ...initialExpenses }, historicalMonths: [] });
                     } catch (error) {
@@ -1246,6 +1767,7 @@
                         Object.assign(expenses, initialExpenses);
                         goals.value = [];
                         friends.value = [];
+                        chatMessages.value = [{ text: 'Привет! Я GigaChat AI, ваш финансовый ассистент.', sender: 'bot' }];
                         showMessage('Вы вышли', 'success');
                     } catch (error) { showMessage('Ошибка', 'error'); }
                     finally { loading.value = false; }
@@ -1256,8 +1778,8 @@
                     loading.value = true;
                     try {
                         await db.collection('users').doc(currentUser.value.login).update({ expenses: { ...expenses } });
+                        await updateCurrentMonthSnapshot();
                         showMessage('Расходы сохранены!', 'success');
-                        updateChart();
                     } catch (error) { showMessage('Ошибка сохранения', 'error'); }
                     finally { loading.value = false; }
                 }
@@ -1318,6 +1840,7 @@
                     try {
                         currentUser.value.income = newIncomeValue.value;
                         await db.collection('users').doc(currentUser.value.login).update({ income: newIncomeValue.value });
+                        await updateCurrentMonthSnapshot();
                         showMessage('Доход обновлен!', 'success');
                         closeIncomeModal();
                     } catch (error) { showMessage('Ошибка', 'error'); }
@@ -1348,6 +1871,43 @@
                         await db.collection('users').doc(currentUser.value.login).update({ friendRequests: friendRequests.value });
                         searchResults.value = []; friendSearchQuery.value = '';
                         showMessage(`Заявка отправлена ${user.nickname}`, 'success');
+                    } catch (error) { showMessage('Ошибка', 'error'); }
+                    finally { loading.value = false; }
+                }
+
+                async function acceptFriendRequest(request) {
+                    loading.value = true;
+                    try {
+                        friends.value.push({ login: request.login, name: request.name, surname: request.surname, nickname: request.nickname, avatar: request.avatar });
+                        pendingRequests.value = pendingRequests.value.filter(l => l !== request.login);
+                        const friendRef = db.collection('users').doc(request.login);
+                        const friendDoc = await friendRef.get();
+                        if (friendDoc.exists) {
+                            const friendFriends = friendDoc.data().friends || [];
+                            if (!friendFriends.some(f => f.login === currentUser.value.login)) {
+                                await friendRef.update({ friends: [...friendFriends, { login: currentUser.value.login, name: currentUser.value.name, surname: currentUser.value.surname, nickname: currentUser.value.nickname, avatar: currentUser.value.avatar }] });
+                            }
+                            const friendRequestsList = (friendDoc.data().friendRequests || []).filter(l => l !== currentUser.value.login);
+                            await friendRef.update({ friendRequests: friendRequestsList });
+                        }
+                        await db.collection('users').doc(currentUser.value.login).update({ friends: friends.value, pendingRequests: pendingRequests.value });
+                        showMessage('Заявка принята', 'success');
+                    } catch (error) { showMessage('Ошибка', 'error'); }
+                    finally { loading.value = false; }
+                }
+
+                async function rejectFriendRequest(request) {
+                    loading.value = true;
+                    try {
+                        pendingRequests.value = pendingRequests.value.filter(l => l !== request.login);
+                        const friendRef = db.collection('users').doc(request.login);
+                        const friendDoc = await friendRef.get();
+                        if (friendDoc.exists) {
+                            const friendRequestsList = (friendDoc.data().friendRequests || []).filter(l => l !== currentUser.value.login);
+                            await friendRef.update({ friendRequests: friendRequestsList });
+                        }
+                        await db.collection('users').doc(currentUser.value.login).update({ pendingRequests: pendingRequests.value });
+                        showMessage('Заявка отклонена', 'info');
                     } catch (error) { showMessage('Ошибка', 'error'); }
                     finally { loading.value = false; }
                 }
@@ -1396,6 +1956,22 @@
                     registerForm.historicalMonths.splice(idx, 1);
                 }
 
+                function openHistoricalModal() {
+                    historicalMonth.value = '';
+                    historicalIncome.value = currentUser.value.income;
+                    historicalExpenses.value = { ...expenses };
+                    showHistoricalModal.value = true;
+                }
+                function closeHistoricalModal() {
+                    showHistoricalModal.value = false;
+                }
+                async function saveHistoricalData() {
+                    if (!historicalMonth.value) { showMessage('Выберите месяц', 'error'); return; }
+                    if (historicalIncome.value < 0) { showMessage('Доход не может быть отрицательным', 'error'); return; }
+                    await addHistoricalMonth(historicalMonth.value, historicalIncome.value, historicalExpenses.value);
+                    closeHistoricalModal();
+                }
+
                 async function checkAuthState() {
                     loading.value = true;
                     auth.onAuthStateChanged(async (user) => {
@@ -1421,24 +1997,37 @@
                     }
                 });
 
+                watch(monthlySnapshotsSorted, () => {
+                    updateAllCharts();
+                });
+
                 return {
                     loading, loadingMessage, currentTab, message, currentUser,
                     loginForm, registerForm, expenses, goals, newGoal, friends, friendRequests, pendingRequests,
                     pendingFriendRequests, friendSearchQuery, searchResults,
+                    chatMessages, chatInput, chatContainer, aiLoading,
                     rewards, avatars, tabs, categoryNames, categoryIcons,
                     totalExpenses, totalIncome, balance, hasExpenses, kfg,
-                    ratingParticipants, friendsWithDetails, unlockedAvatars,
+                    ratingParticipants, filteredExpenses, friendsWithDetails, unlockedAvatars,
                     showIncomeModal, newIncomeValue, showAddToGoalModal, selectedGoalName, addToGoalAmount,
                     showRemoveGoalModal, selectedGoalNameForRemove,
+                    showHistoricalModal, historicalMonth, historicalIncome, historicalExpenses,
+                    monthlySnapshotsSorted, selectedAnalysisMonth, currentMonthLabel,
+                    selectedExpenseMonth, expensesForSelectedMonth, filteredExpensesForMonth,
+                    detailsModalVisible, detailsMonthLabel, detailsExpenses,
                     handleRegister, handleLogin, loginWithGoogle, logout,
-                    searchFriends, sendFriendRequest, removeFriend,
+                    searchFriends, sendFriendRequest, acceptFriendRequest, rejectFriendRequest, removeFriend,
                     saveExpenses, addGoal, openAddToGoalModal, closeAddToGoalModal, confirmAddToGoal,
                     quickAddToGoal, openRemoveGoalModal, closeRemoveGoalModal, confirmRemoveGoal,
+                    sendMessage, resetChatContext, quickQuestion, formatBotMessage,
                     claimReward, getAvatarUrl, getAvatarName, changeAvatar,
                     isAvatarUnlocked, isAvatarAvailableForRegister, selectRegisterAvatar,
                     getUserRating, getUserRatingLevel, calculateKFG, formatMoney,
                     editIncome, closeIncomeModal, saveIncome,
-                    addHistoricalMonthField, removeHistoricalMonthField
+                    addHistoricalMonthField, removeHistoricalMonthField,
+                    openHistoricalModal, closeHistoricalModal, saveHistoricalData,
+                    loadExpensesForMonth, loadExpensesForSelectedMonth, saveExpensesForSelectedMonth,
+                    showMonthDetails, getMonthLabel
                 };
             }
         });
@@ -1447,4 +2036,3 @@
     </script>
 </body>
 </html>
-```
