@@ -307,7 +307,7 @@
             font-size: 0.75rem;
         }
 
-        /* Новые стили для группы разработчиков */
+        /* Новые стили для разработчиков */
         .developer-group {
             display: flex;
             flex-wrap: wrap;
@@ -383,7 +383,7 @@
                         <h1 class="text-2xl sm:text-3xl font-bold text-center mb-6 sm:mb-8">Добро пожаловать в FinGrade</h1>
                         
                         <div class="grid md:grid-cols-2 gap-6 sm:gap-8">
-                            <!-- Форма регистрации с историческими данными -->
+                            <!-- Форма регистрации -->
                             <div class="bg-gray-50 rounded-xl p-4 sm:p-6">
                                 <h2 class="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 text-purple-600">Регистрация</h2>
                                 
@@ -446,7 +446,7 @@
                                         </div>
                                     </div>
 
-                                    <!-- Исторические данные (предыдущие месяцы) -->
+                                    <!-- Исторические данные -->
                                     <div>
                                         <label class="block text-gray-700 font-medium mb-2 text-sm">Данные за предыдущие месяцы (опционально)</label>
                                         <button type="button" @click="addHistoricalMonthField" class="text-purple-600 text-sm mb-2">
@@ -965,10 +965,9 @@
             </div>
         </div>
 
-        <!-- ФУТЕР (обновлённый: убрана кнопка Виктории, добавлены разработчики и поддержка) -->
+        <!-- ФУТЕР (обновлённый) -->
         <footer class="footer" v-if="currentUser">
             <div class="container mx-auto px-4">
-                <!-- Блок разработчиков: три кнопки -->
                 <div class="mb-3">
                     <p class="text-white text-sm mb-2 font-semibold">Разработчики:</p>
                     <div class="developer-group">
@@ -983,14 +982,12 @@
                         </a>
                     </div>
                 </div>
-                <!-- Кнопка чат бота поддержки -->
                 <div class="mb-4">
                     <a href="https://vk.com/club237476006" target="_blank" rel="noopener noreferrer" class="vk-link support-link">
                         <i class="fab fa-vk"></i> <span>Чат бот поддержки</span>
                         <i class="fas fa-headset"></i>
                     </a>
                 </div>
-                <!-- Копирайт с добавленным направлением подготовки -->
                 <p class="footer-text">© 2026 FinGrade - Умный финансовый помощник (Проект кафедры АСУ, МАДИ) направление подготовки 09.03.01-Информатика и вычислительная техника.</p>
             </div>
         </footer>
@@ -1280,6 +1277,11 @@
 
                 const monthlySnapshotsSorted = computed(() => {
                     return Object.values(monthlySnapshots.value).sort((a, b) => a.monthId.localeCompare(b.monthId));
+                });
+
+                const currentMonthLabel = computed(() => {
+                    const now = new Date();
+                    return now.toLocaleString('ru', { month: 'long', year: 'numeric' });
                 });
 
                 const showMessage = (text, type) => {
@@ -1584,7 +1586,7 @@
                     sendMessage();
                 }
 
-                // Firebase CRUD функции (сокращены для краткости, но все присутствуют)
+                // Firebase CRUD функции
                 async function loadUsersFromFirestore() {
                     try {
                         const snapshot = await db.collection('users').get();
