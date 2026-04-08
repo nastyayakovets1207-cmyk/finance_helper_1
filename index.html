@@ -261,7 +261,6 @@
             color: #2d3748;
         }
 
-        /* Стили для футера */
         .footer {
             background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
             color: #fff;
@@ -307,7 +306,6 @@
             font-size: 0.75rem;
         }
 
-        /* Новые стили для разработчиков */
         .developer-group {
             display: flex;
             flex-wrap: wrap;
@@ -328,7 +326,6 @@
 </head>
 <body class="bg-gray-100">
     <div id="app">
-        <!-- Индикатор загрузки -->
         <div v-if="loading" class="fixed inset-0 bg-white bg-opacity-75 z-50 flex items-center justify-center" style="backdrop-filter: blur(5px);">
             <div class="text-center px-6">
                 <div class="loading-spinner mx-auto mb-4"></div>
@@ -336,7 +333,6 @@
             </div>
         </div>
 
-        <!-- Навигация -->
         <nav class="gradient-bg text-white shadow-lg sticky top-0 z-40" style="padding-top: env(safe-area-inset-top);">
             <div class="container mx-auto px-4 py-3">
                 <div class="flex items-center justify-between">
@@ -367,7 +363,6 @@
             </div>
         </nav>
 
-        <!-- Сообщения -->
         <div v-if="message.show" :class="['fixed top-20 right-4 z-50 p-3 rounded-lg shadow-lg text-white text-sm max-w-[90%]', 
             message.type === 'success' ? 'bg-green-500' : message.type === 'error' ? 'bg-red-500' : 'bg-blue-500']"
              style="top: calc(env(safe-area-inset-top) + 80px);">
@@ -375,7 +370,6 @@
             {{ message.text }}
         </div>
 
-        <!-- Формы авторизации -->
         <div v-if="!currentUser" class="container mx-auto px-4 py-4 sm:py-8">
             <div class="max-w-4xl mx-auto">
                 <div class="bg-white rounded-xl shadow-lg overflow-hidden">
@@ -383,7 +377,6 @@
                         <h1 class="text-2xl sm:text-3xl font-bold text-center mb-6 sm:mb-8">Добро пожаловать в FinGrade</h1>
                         
                         <div class="grid md:grid-cols-2 gap-6 sm:gap-8">
-                            <!-- Форма регистрации -->
                             <div class="bg-gray-50 rounded-xl p-4 sm:p-6">
                                 <h2 class="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 text-purple-600">Регистрация</h2>
                                 
@@ -402,7 +395,6 @@
                                 </div>
                             </div>
                             
-                            <!-- Форма входа -->
                             <div class="bg-gray-50 rounded-xl p-4 sm:p-6">
                                 <h2 class="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 text-purple-600">Вход</h2>
                                 <div class="space-y-3 sm:space-y-4">
@@ -419,7 +411,6 @@
             </div>
         </div>
 
-        <!-- Основной контейнер (для авторизованных) -->
         <div v-else class="container mx-auto px-4 py-4 sm:py-8">
             <div class="bg-white rounded-xl shadow-lg overflow-hidden">
                 <div class="mobile-tab-bar border-b">
@@ -441,13 +432,14 @@
                         <h2 class="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">Управление расходами</h2>
                         <div class="bg-gray-50 rounded-lg p-4 mb-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3"><div class="flex items-center gap-2"><span class="font-medium">Месяц:</span><select v-model="selectedExpenseMonth" @change="loadExpensesForSelectedMonth" class="border rounded-lg px-3 py-2 bg-white"><option v-for="snap in monthlySnapshotsSorted" :value="snap.monthId">{{ snap.monthLabel }}</option></select></div><button @click="openHistoricalModal" class="gradient-bg text-white px-4 py-2 rounded-lg text-sm"><i class="fas fa-plus-circle mr-1"></i> Добавить данные за прошлый месяц</button></div>
                         <div class="mb-4"><h3 class="text-lg font-semibold mb-3">Расходы за {{ getMonthLabel(selectedExpenseMonth) }}</h3><div class="expenses-grid"><div v-for="(value, category) in filteredExpensesForMonth" :key="category" class="bg-gray-50 rounded-lg p-3 sm:p-4"><label class="block text-gray-700 font-medium mb-1 sm:mb-2 text-sm"><i :class="['mr-1', categoryIcons[category]]"></i>{{ categoryNames[category] }}</label><input v-model.number="expensesForSelectedMonth[category]" type="number" min="0" class="w-full px-2 sm:px-3 py-1.5 sm:py-2 border rounded-lg focus:outline-none focus:border-purple-500 text-sm sm:text-base"></div></div><button @click="saveExpensesForSelectedMonth" class="mt-4 gradient-bg text-white px-6 sm:px-8 py-3 rounded-lg font-semibold hover:shadow-lg w-full sm:w-auto"><i class="fas fa-save mr-2"></i> Сохранить расходы за {{ getMonthLabel(selectedExpenseMonth) }}</button></div>
-                        <div class="mt-6"><h3 class="text-lg font-semibold mb-3">Все месяцы</h3><div class="overflow-x-auto"><table class="min-w-full bg-white border rounded-lg"><thead class="bg-gray-100"><tr><th class="px-4 py-2 text-left">Месяц</th><th class="px-4 py-2 text-left">Доход</th><th class="px-4 py-2 text-left">Расходы (всего)</th><th class="px-4 py-2 text-left">КФГ</th><th class="px-4 py-2 text-left">Детали</th></tr></thead><tbody><tr v-for="snap in monthlySnapshotsSorted" :key="snap.monthId" class="border-t"><td class="px-4 py-2">{{ snap.monthLabel }}</td><td class="px-4 py-2">{{ formatMoney(snap.income) }} ₽</td><td class="px-4 py-2">{{ formatMoney(snap.totalExpenses) }} ₽</td><td class="px-4 py-2 font-semibold">{{ snap.kfg }}</td><td class="px-4 py-2"><button @click="showMonthDetails(snap)" class="text-purple-600 text-sm"><i class="fas fa-eye"></i> Показать</button></td></tr></tbody></table></div></div>
-                        <!-- Модалка деталей месяца (исправлено) -->
+                        <div class="mt-6"><h3 class="text-lg font-semibold mb-3">Все месяцы</h3><div class="overflow-x-auto"><table class="min-w-full bg-white border rounded-lg"><thead class="bg-gray-100"><tr><th class="px-4 py-2 text-left">Месяц</th><th class="px-4 py-2 text-left">Доход</th><th class="px-4 py-2 text-left">Расходы (всего)</th><th class="px-4 py-2 text-left">КФГ</th><th class="px-4 py-2 text-left">Детали</th></tr></thead><tbody><tr v-for="snap in monthlySnapshotsSorted" :key="snap.monthId" class="border-t"><td class="px-4 py-2">{{ snap.monthLabel }}</td><td class="px-4 py-2">{{ formatMoney(snap.income) }} ₽</td><td class="px-4 py-2">{{ formatMoney(snap.totalExpenses) }} ₽</td><td class="px-4 py-2 font-semibold">{{ snap.kfg }}</td><td class="px-4 py-2"><button @click="showMonthDetails(snap)" class="text-purple-600 text-sm"><i class="fas fa-eye"></i> Показать</button></td></tr></tbody>}</table></div></div>
+                        
+                        <!-- Модалка деталей месяца (ИСПРАВЛЕНА) -->
                         <div v-if="detailsModalVisible" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
                             <div class="bg-white rounded-xl p-4 sm:p-6 max-w-lg w-full max-h-[80vh] overflow-y-auto">
                                 <div class="flex justify-between items-center mb-3"><h3 class="text-lg font-bold">Детали за {{ detailsMonthLabel }}</h3><button @click="detailsModalVisible = false" class="text-gray-500 hover:text-gray-700"><i class="fas fa-times text-xl"></i></button></div>
                                 <div class="space-y-2">
-                                    <div v-for="(amount, cat) in detailsExpenses" v-if="amount > 0" :key="cat" class="flex justify-between border-b py-1"><span><i :class="categoryIcons[cat]" class="mr-2"></i>{{ categoryNames[cat] }}</span><span>{{ formatMoney(amount) }} ₽</span></div>
+                                    <div v-for="(amount, cat) in detailsExpenses" :key="cat" v-if="amount > 0" class="flex justify-between border-b py-1"><span><i :class="categoryIcons[cat]" class="mr-2"></i>{{ categoryNames[cat] }}</span><span>{{ formatMoney(amount) }} ₽</span></div>
                                     <div v-if="Object.values(detailsExpenses).every(v => v === 0)" class="text-gray-500 text-center py-4">Нет расходов за этот месяц</div>
                                 </div>
                                 <button @click="detailsModalVisible = false" class="mt-4 bg-gray-300 px-4 py-2 rounded-lg w-full">Закрыть</button>
@@ -471,7 +463,7 @@
                         <div class="bg-gray-50 rounded-xl p-4"><h3 class="text-lg font-semibold mb-3">Динамика общих расходов по месяцам</h3><div class="h-64"><canvas id="expenseTrendChart"></canvas></div><p class="text-xs text-gray-500 text-center mt-2">*Линия показывает изменение суммы расходов от месяца к месяцу</p></div>
                     </div>
 
-                    <!-- ИИ-Ассистент (n8n + Ollama) -->
+                    <!-- ИИ-Ассистент -->
                     <div v-show="currentTab === 'chat'">
                         <h2 class="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">ИИ-Ассистент (Ollama через n8n)</h2>
                         <div class="bg-gray-50 rounded-lg p-3 sm:p-4"><div class="h-96 overflow-y-auto flex flex-col space-y-2 mb-3 sm:mb-4 p-2" ref="chatContainer"><div v-for="(msg, index) in chatMessages" :key="index" :class="msg.sender === 'bot' ? 'message-bot' : 'message-user'"><div v-if="msg.sender === 'bot' && msg.loading" class="flex items-center space-x-2"><div class="typing-indicator"><span></span><span></span><span></span></div><span class="text-gray-500 text-xs">Ollama анализирует...</span></div><div v-else-if="msg.sender === 'bot' && msg.error" class="text-red-500 text-sm"><i class="fas fa-exclamation-triangle mr-1"></i>{{ msg.text }}</div><div v-else class="text-sm sm:text-base break-words" v-html="formatBotMessage(msg.text, msg.sender)"></div></div></div><div class="overflow-x-auto mb-3 pb-1"><div class="flex space-x-2"><span @click="quickQuestion('Как сократить расходы?')" class="suggestion-chip text-xs sm:text-sm whitespace-nowrap">📉 Сократить расходы</span><span @click="quickQuestion('Как начать инвестировать?')" class="suggestion-chip text-xs sm:text-sm whitespace-nowrap">📈 Инвестировать</span><span @click="quickQuestion('Как улучшить КФГ?')" class="suggestion-chip text-xs sm:text-sm whitespace-nowrap">⭐ Улучшить КФГ</span><span @click="quickQuestion('Как создать подушку безопасности?')" class="suggestion-chip text-xs sm:text-sm whitespace-nowrap">🛡️ Подушка</span><span @click="resetChatContext" class="suggestion-chip text-xs sm:text-sm whitespace-nowrap bg-red-100 text-red-700">🔄 Сбросить контекст</span></div></div><div class="flex space-x-2"><textarea v-model="chatInput" @keyup.enter="sendMessage" rows="1" class="flex-1 px-3 sm:px-4 py-2 border rounded-lg focus:outline-none focus:border-purple-500 resize-none text-sm sm:text-base" placeholder="Спросите у Ollama о финансах..."></textarea><button @click="sendMessage" :disabled="aiLoading" class="gradient-bg text-white px-4 sm:px-6 rounded-lg font-semibold hover:shadow-lg disabled:opacity-50"><i class="fas fa-paper-plane" :class="{'fa-spinner fa-spin': aiLoading}"></i></button></div></div>
@@ -498,13 +490,12 @@
                         <h2 class="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">Коэффициент финансовой грамотности (КФГ)</h2>
                         <div class="bg-gray-50 rounded-xl p-4 mb-6"><h3 class="text-lg font-semibold mb-3">Динамика КФГ по месяцам</h3><div class="h-64"><canvas id="kfgTrendChart"></canvas></div></div>
                         <div class="bg-gray-50 rounded-xl p-4 mb-6"><h3 class="text-lg font-semibold mb-2">Как рассчитывается КФГ?</h3><p class="text-sm text-gray-700 mb-2">КФГ = 100 − (Расходы / Доход × 100), но с учётом корректировок:</p><ul class="list-disc list-inside text-sm text-gray-600 space-y-1"><li>Если расходы на развлечения > 30% дохода → −20 баллов</li><li>Если расходы на еду (включая кафе) > 50% дохода → −15 баллов</li><li>Если расходы на подписки > 10% дохода → −10 баллов</li><li>Если есть расходы на образование → +5 баллов</li><li>Если остаток после расходов > 20% дохода → +10 баллов</li></ul><p class="text-sm text-gray-700 mt-2">Итоговое значение ограничивается от 0 до 100.</p></div>
-                        <div class="bg-gray-50 rounded-xl p-4"><h3 class="text-lg font-semibold mb-3">КФГ за все месяцы</h3><div class="overflow-x-auto"><table class="min-w-full bg-white border rounded-lg"><thead class="bg-gray-100"><tr><th class="px-4 py-2 text-left">Месяц</th><th class="px-4 py-2 text-left">Доход</th><th class="px-4 py-2 text-left">Расходы</th><th class="px-4 py-2 text-left">КФГ</th></tr></thead><tbody><tr v-for="snap in monthlySnapshotsSorted" :key="snap.monthId" class="border-t"><td class="px-4 py-2">{{ snap.monthLabel }}</td><td class="px-4 py-2">{{ formatMoney(snap.income) }} ₽</td><td class="px-4 py-2">{{ formatMoney(snap.totalExpenses) }} ₽</td><td class="px-4 py-2 font-semibold" :class="{'text-green-600': snap.kfg >= 70, 'text-yellow-600': snap.kfg >= 40 && snap.kfg < 70, 'text-red-600': snap.kfg < 40}">{{ snap.kfg }}</td></tr></tbody></table></div></div>
+                        <div class="bg-gray-50 rounded-xl p-4"><h3 class="text-lg font-semibold mb-3">КФГ за все месяцы</h3><div class="overflow-x-auto"><table class="min-w-full bg-white border rounded-lg"><thead class="bg-gray-100"><tr><th class="px-4 py-2 text-left">Месяц</th><th class="px-4 py-2 text-left">Доход</th><th class="px-4 py-2 text-left">Расходы</th><th class="px-4 py-2 text-left">КФГ</th></tr></thead><tbody><tr v-for="snap in monthlySnapshotsSorted" :key="snap.monthId" class="border-t"><td class="px-4 py-2">{{ snap.monthLabel }}</td><td class="px-4 py-2">{{ formatMoney(snap.income) }} ₽</td><td class="px-4 py-2">{{ formatMoney(snap.totalExpenses) }} ₽</td><td class="px-4 py-2 font-semibold" :class="{'text-green-600': snap.kfg >= 70, 'text-yellow-600': snap.kfg >= 40 && snap.kfg < 70, 'text-red-600': snap.kfg < 40}">{{ snap.kfg }}</td></tr></tbody>}</table></div></div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- ФУТЕР (обновлённый) -->
         <footer class="footer" v-if="currentUser">
             <div class="container mx-auto px-4">
                 <div class="mb-3"><p class="text-white text-sm mb-2 font-semibold">Разработчики:</p><div class="developer-group"><a href="https://vk.ru/id875641672" target="_blank" rel="noopener noreferrer" class="vk-link"><i class="fab fa-vk"></i> <span>id875641672</span></a><a href="https://vk.ru/sekuewuuu" target="_blank" rel="noopener noreferrer" class="vk-link"><i class="fab fa-vk"></i> <span>sekuewuuu</span></a><a href="https://vk.ru/mvikirriaa" target="_blank" rel="noopener noreferrer" class="vk-link"><i class="fab fa-vk"></i> <span>mvikirriaa</span></a></div></div>
@@ -523,7 +514,6 @@
     <script>
         const { createApp, ref, reactive, computed, watch, onMounted, nextTick } = Vue;
 
-        // Firebase конфигурация
         const firebaseConfig = {
             apiKey: "AIzaSyBoIf1-o2chwXIzWp7VBujZdqxqtYSu_4c",
             authDomain: "fingrade-f9eee.firebaseapp.com",
@@ -604,7 +594,8 @@
                 const expensesForSelectedMonth = reactive({ ...initialExpenses });
                 const detailsModalVisible = ref(false);
                 const detailsMonthLabel = ref('');
-                const detailsExpenses = ref({});
+                // ИСПРАВЛЕНИЕ: detailsExpenses теперь reactive вместо ref
+                const detailsExpenses = reactive({});
                 const expenses = reactive({ ...initialExpenses });
                 const goals = ref([]);
                 const newGoal = reactive({ name: '', targetAmount: 0 });
@@ -948,7 +939,9 @@
                     allCategories.forEach(cat => {
                         if (expensesData[cat] === undefined) expensesData[cat] = 0;
                     });
-                    detailsExpenses.value = expensesData;
+                    // Очищаем старые данные и присваиваем новые
+                    Object.keys(detailsExpenses).forEach(key => delete detailsExpenses[key]);
+                    Object.assign(detailsExpenses, expensesData);
                     detailsModalVisible.value = true;
                 }
 
@@ -1053,7 +1046,6 @@
                     sendMessage();
                 }
 
-                // Firebase CRUD функции (все методы сохранены из оригинала)
                 async function loadUsersFromFirestore() {
                     try {
                         const snapshot = await db.collection('users').get();
