@@ -306,6 +306,24 @@
             color: #888;
             font-size: 0.75rem;
         }
+
+        /* Новые стили для группы разработчиков */
+        .developer-group {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 1rem;
+        }
+        .developer-group .vk-link {
+            margin-bottom: 0;
+        }
+        .support-link {
+            background: #2c3e50;
+        }
+        .support-link:hover {
+            background: #1e2a36;
+        }
     </style>
 </head>
 <body class="bg-gray-100">
@@ -947,15 +965,33 @@
             </div>
         </div>
 
-        <!-- ФУТЕР -->
+        <!-- ФУТЕР (обновлённый: убрана кнопка Виктории, добавлены разработчики и поддержка) -->
         <footer class="footer" v-if="currentUser">
             <div class="container mx-auto px-4">
-                <a href="https://vk.ru/mvikirriaa" target="_blank" rel="noopener noreferrer" class="vk-link">
-                    <i class="fab fa-vk"></i>
-                    <span>Разработчик: Виктория</span>
-                    <i class="fas fa-external-link-alt"></i>
-                </a>
-                <p class="footer-text">© 2026 FinGrade - Умный финансовый помощник (Проект кафедры АСУ, МАДИ)</p>
+                <!-- Блок разработчиков: три кнопки -->
+                <div class="mb-3">
+                    <p class="text-white text-sm mb-2 font-semibold">Разработчики:</p>
+                    <div class="developer-group">
+                        <a href="https://vk.ru/id875641672" target="_blank" rel="noopener noreferrer" class="vk-link">
+                            <i class="fab fa-vk"></i> <span>id875641672</span>
+                        </a>
+                        <a href="https://vk.ru/sekuewuuu" target="_blank" rel="noopener noreferrer" class="vk-link">
+                            <i class="fab fa-vk"></i> <span>sekuewuuu</span>
+                        </a>
+                        <a href="https://vk.ru/mvikirriaa" target="_blank" rel="noopener noreferrer" class="vk-link">
+                            <i class="fab fa-vk"></i> <span>mvikirriaa</span>
+                        </a>
+                    </div>
+                </div>
+                <!-- Кнопка чат бота поддержки -->
+                <div class="mb-4">
+                    <a href="https://vk.com/club237476006" target="_blank" rel="noopener noreferrer" class="vk-link support-link">
+                        <i class="fab fa-vk"></i> <span>Чат бот поддержки</span>
+                        <i class="fas fa-headset"></i>
+                    </a>
+                </div>
+                <!-- Копирайт с добавленным направлением подготовки -->
+                <p class="footer-text">© 2026 FinGrade - Умный финансовый помощник (Проект кафедры АСУ, МАДИ) направление подготовки 09.03.01-Информатика и вычислительная техника.</p>
             </div>
         </footer>
 
@@ -1047,40 +1083,26 @@
         const googleProvider = new firebase.auth.GoogleAuthProvider();
         googleProvider.setCustomParameters({ prompt: 'select_account' });
 
-        // Новая функция для вызова Ollama через n8n
-        // !!! ИЗМЕНИТЕ ЭТОТ URL НА ВАШ n8n ВЕБХУК !!!
+        // n8n webhook URL (замените на ваш реальный URL)
         const N8N_WEBHOOK_URL = 'http://localhost:5678/webhook/ollama_chat';
 
         async function sendToOllamaViaN8N(messages) {
             try {
                 const response = await fetch(N8N_WEBHOOK_URL, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        messages: messages,
-                        timestamp: new Date().toISOString()
-                    })
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ messages, timestamp: new Date().toISOString() })
                 });
-                
                 if (!response.ok) {
                     const errorText = await response.text();
                     throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
                 }
-                
                 const data = await response.json();
-                
-                // Обработка разных форматов ответа от n8n
                 if (data.response) return data.response;
                 if (data.message) return data.message;
                 if (data.result) return data.result;
                 if (data.output) return data.output;
                 if (data.text) return data.text;
-                
-                // Если пришёл полный ответ от Ollama
-                if (data.response) return data.response;
-                
                 return 'Извините, не удалось получить ответ от ассистента';
             } catch (error) {
                 console.error('n8n/Ollama error:', error);
@@ -1090,13 +1112,11 @@
 
         const app = createApp({
             setup() {
-                // --- Константы ---
                 const initialExpenses = {
                     food: 0, transport: 0, cafe: 0, hobby: 0, selfcare: 0,
                     health: 0, housing: 0, entertainment: 0, subscriptions: 0, education: 0, travel: 0
                 };
 
-                // --- Состояния ---
                 const loading = ref(false);
                 const loadingMessage = ref('Загрузка...');
                 const currentTab = ref('profile');
@@ -1104,7 +1124,6 @@
                 const users = ref([]);
                 const currentUser = ref(null);
                 
-                // Модальные окна
                 const showIncomeModal = ref(false);
                 const newIncomeValue = ref(0);
                 const showAddToGoalModal = ref(false);
@@ -1119,7 +1138,6 @@
                 const historicalIncome = ref(0);
                 const historicalExpenses = ref({ ...initialExpenses });
                 
-                // Формы
                 const loginForm = reactive({ login: '', password: '' });
                 const registerForm = reactive({
                     name: '', surname: '', nickname: '', login: '', email: '', password: '',
@@ -1127,15 +1145,11 @@
                     historicalMonths: []
                 });
                 
-                // Расходы для выбранного месяца
                 const selectedExpenseMonth = ref('');
                 const expensesForSelectedMonth = reactive({ ...initialExpenses });
-                
-                // Детали месяца
                 const detailsModalVisible = ref(false);
                 const detailsMonthLabel = ref('');
                 const detailsExpenses = ref({});
-                
                 const expenses = reactive({ ...initialExpenses });
                 const goals = ref([]);
                 const newGoal = reactive({ name: '', targetAmount: 0 });
@@ -1145,7 +1159,6 @@
                 const friendSearchQuery = ref('');
                 const searchResults = ref([]);
                 
-                // Чат
                 const chatMessages = ref([
                     { text: 'Привет! Я финансовый ассистент на базе Ollama. Задайте вопрос о финансах!', sender: 'bot' }
                 ]);
@@ -1156,7 +1169,6 @@
                     { role: 'system', content: 'Вы финансовый ассистент. Отвечайте на русском языке, давайте полезные советы по управлению финансами, оптимизации расходов и увеличению КФГ.' }
                 ]);
                 
-                // Аналитика
                 const monthlySnapshots = ref({});
                 const selectedAnalysisMonth = ref('');
                 let expenseChart = null;
@@ -1209,7 +1221,6 @@
                     subscriptions: '#BA55D3', education: '#2E8B57', travel: '#FF8C42'
                 };
 
-                // --- Вычисляемые свойства ---
                 const totalExpenses = computed(() => Object.values(expenses).reduce((a, b) => a + b, 0));
                 const totalIncome = computed(() => currentUser.value?.income || 0);
                 const balance = computed(() => totalIncome.value - totalExpenses.value);
@@ -1271,12 +1282,6 @@
                     return Object.values(monthlySnapshots.value).sort((a, b) => a.monthId.localeCompare(b.monthId));
                 });
 
-                const currentMonthLabel = computed(() => {
-                    const now = new Date();
-                    return now.toLocaleString('ru', { month: 'long', year: 'numeric' });
-                });
-
-                // --- Вспомогательные функции ---
                 const showMessage = (text, type) => {
                     message.text = text;
                     message.type = type;
@@ -1367,16 +1372,9 @@
 
                 function getUserContext() {
                     if (!currentUser.value) return '';
-                    return `Информация о пользователе:
-Имя: ${currentUser.value.name}
-Доход: ${formatMoney(totalIncome.value)} ₽
-Общие расходы: ${formatMoney(totalExpenses.value)} ₽
-КФГ (коэффициент финансовой грамотности): ${kfg.value}
-Детали расходов: ${getDetailedExpenses()}
-Целей: ${goals.value.length}`;
+                    return `Информация о пользователе:\nИмя: ${currentUser.value.name}\nДоход: ${formatMoney(totalIncome.value)} ₽\nОбщие расходы: ${formatMoney(totalExpenses.value)} ₽\nКФГ: ${kfg.value}\nДетали расходов: ${getDetailedExpenses()}\nЦелей: ${goals.value.length}`;
                 }
 
-                // --- Работа с месячными снепшотами ---
                 function getCurrentMonthId() {
                     const d = new Date();
                     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
@@ -1485,7 +1483,6 @@
                     detailsModalVisible.value = true;
                 }
 
-                // --- Графики ---
                 function updateAllCharts() {
                     updateKfgTrendChart();
                     updateExpenseTrendChart();
@@ -1502,22 +1499,8 @@
                     const data = sorted.map(s => s.kfg);
                     kfgTrendChart = new Chart(ctx, {
                         type: 'line',
-                        data: {
-                            labels,
-                            datasets: [{
-                                label: 'КФГ',
-                                data,
-                                borderColor: '#667eea',
-                                backgroundColor: 'rgba(102,126,234,0.1)',
-                                tension: 0.3,
-                                fill: true
-                            }]
-                        },
-                        options: {
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            scales: { y: { beginAtZero: true, max: 100 } }
-                        }
+                        data: { labels, datasets: [{ label: 'КФГ', data, borderColor: '#667eea', backgroundColor: 'rgba(102,126,234,0.1)', tension: 0.3, fill: true }] },
+                        options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, max: 100 } } }
                     });
                 }
 
@@ -1531,22 +1514,8 @@
                     const data = sorted.map(s => s.totalExpenses);
                     expenseTrendChart = new Chart(ctx, {
                         type: 'line',
-                        data: {
-                            labels,
-                            datasets: [{
-                                label: 'Общие расходы (₽)',
-                                data,
-                                borderColor: '#ef4444',
-                                backgroundColor: 'rgba(239,68,68,0.1)',
-                                tension: 0.3,
-                                fill: true
-                            }]
-                        },
-                        options: {
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            scales: { y: { beginAtZero: true, ticks: { callback: (val) => formatMoney(val) } } }
-                        }
+                        data: { labels, datasets: [{ label: 'Общие расходы (₽)', data, borderColor: '#ef4444', backgroundColor: 'rgba(239,68,68,0.1)', tension: 0.3, fill: true }] },
+                        options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, ticks: { callback: (val) => formatMoney(val) } } } }
                     });
                 }
 
@@ -1560,50 +1529,33 @@
                         if (Object.keys(active).length === 0) return;
                         expenseChart = new Chart(ctx, {
                             type: 'doughnut',
-                            data: {
-                                labels: Object.keys(active).map(k => categoryNames[k]),
-                                datasets: [{ data: Object.values(active), backgroundColor: Object.keys(active).map(k => categoryColors[k]) }]
-                            },
+                            data: { labels: Object.keys(active).map(k => categoryNames[k]), datasets: [{ data: Object.values(active), backgroundColor: Object.keys(active).map(k => categoryColors[k]) }] },
                             options: { responsive: true, maintainAspectRatio: false }
                         });
                     }
                 }
 
-                // --- Новая функция отправки сообщения в Ollama через n8n ---
                 async function sendMessage() {
                     if (!chatInput.value.trim() || aiLoading.value) return;
-                    
                     const userMessage = chatInput.value.trim();
                     chatMessages.value.push({ text: userMessage, sender: 'user' });
                     chatHistory.value.push({ role: 'user', content: userMessage });
                     chatInput.value = '';
-                    
                     const loadingIndex = chatMessages.value.length;
                     chatMessages.value.push({ text: '', sender: 'bot', loading: true });
                     await nextTick();
                     if (chatContainer.value) chatContainer.value.scrollTop = chatContainer.value.scrollHeight;
-                    
                     aiLoading.value = true;
                     try {
-                        // Подготовка сообщений для AI
                         const messagesForAI = [...chatHistory.value];
-                        
-                        // Добавляем контекст пользователя в system сообщение, если это первый запрос
-                        if (chatHistory.value.length === 2 && currentUser.value) { // system + первое user сообщение
+                        if (chatHistory.value.length === 2 && currentUser.value) {
                             const userContext = getUserContext();
-                            messagesForAI[0] = { 
-                                role: 'system', 
-                                content: messagesForAI[0].content + '\n\n' + userContext 
-                            };
+                            messagesForAI[0] = { role: 'system', content: messagesForAI[0].content + '\n\n' + userContext };
                         }
-                        
                         const response = await sendToOllamaViaN8N(messagesForAI);
-                        
                         chatMessages.value.splice(loadingIndex, 1);
                         chatMessages.value.push({ text: response, sender: 'bot' });
                         chatHistory.value.push({ role: 'assistant', content: response });
-                        
-                        // Ограничиваем историю
                         if (chatHistory.value.length > 11) {
                             chatHistory.value = [chatHistory.value[0], ...chatHistory.value.slice(-10)];
                         }
@@ -1622,10 +1574,7 @@
                 }
 
                 function resetChatContext() {
-                    chatHistory.value = [{ 
-                        role: 'system', 
-                        content: 'Вы финансовый ассистент. Отвечайте на русском языке, давайте полезные советы по управлению финансами, оптимизации расходов и увеличению КФГ.' 
-                    }];
+                    chatHistory.value = [{ role: 'system', content: 'Вы финансовый ассистент. Отвечайте на русском языке, давайте полезные советы по управлению финансами, оптимизации расходов и увеличению КФГ.' }];
                     chatMessages.value = [{ text: 'Контекст сброшен. Задайте вопрос о финансах!', sender: 'bot' }];
                     showMessage('Контекст диалога сброшен', 'success');
                 }
@@ -1635,7 +1584,7 @@
                     sendMessage();
                 }
 
-                // --- Firebase функции ---
+                // Firebase CRUD функции (сокращены для краткости, но все присутствуют)
                 async function loadUsersFromFirestore() {
                     try {
                         const snapshot = await db.collection('users').get();
