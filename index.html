@@ -2,693 +2,1312 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover">
     <title>FinGrade - Умный финансовый помощник</title>
-    <!-- Vue 3 & Tailwind CSS -->
-    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    
     <style>
-        /* Стили для подсказки аватарок */
-        .avatar-item { position: relative; display: inline-block; }
-        .avatar-tooltip {
-            visibility: hidden;
-            opacity: 0;
-            transition: opacity 0.2s, transform 0.2s;
-            position: absolute;
-            bottom: 110%;
-            left: 50%;
-            transform: translateX(-50%) translateY(5px);
-            background: #1f2937;
-            color: white;
-            padding: 6px 10px;
-            border-radius: 6px;
-            font-size: 12px;
-            white-space: nowrap;
-            z-index: 50;
-            pointer-events: none;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        }
-        .avatar-tooltip::after {
-            content: '';
-            position: absolute;
-            top: 100%;
-            left: 50%;
-            margin-left: -5px;
-            border-width: 5px;
-            border-style: solid;
-            border-color: #1f2937 transparent transparent transparent;
-        }
-        .avatar-item:hover .avatar-tooltip {
-            visibility: visible;
-            opacity: 1;
-            transform: translateX(-50%) translateY(0);
-        }
-        /* Плавное переключение вкладок */
-        .tab-panel { display: none; animation: fadeIn 0.3s; }
-        .tab-panel.active { display: block; }
+        * { -webkit-tap-highlight-color: transparent; -webkit-touch-callout: none; -webkit-font-smoothing: antialiased; }
+        .gradient-bg { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+        .google-btn { background: #4285F4; transition: all 0.3s ease; }
+        .google-btn:hover { background: #3367D6; transform: translateY(-2px); }
+        .message-bot { background-color: #f3f4f6; color: #1f2937; border-radius: 0.75rem; border-top-left-radius: 0; padding: 0.75rem; align-self: flex-start; max-width: min(80%, 300px); }
+        .message-user { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 0.75rem; border-top-right-radius: 0; padding: 0.75rem; align-self: flex-end; max-width: min(80%, 300px); }
+        .avatar-locked { filter: grayscale(100%); opacity: 0.5; }
+        .goal-progress { transition: width 0.3s ease; }
+        .rating-1 { background: linear-gradient(135deg, #cd7f32 0%, #b87333 100%); }
+        .rating-2 { background: linear-gradient(135deg, #c0c0c0 0%, #a8a8a8 100%); }
+        .rating-3 { background: linear-gradient(135deg, #ffd700 0%, #ffb347 100%); }
+        .rating-4 { background: linear-gradient(135deg, #e5e4e2 0%, #d3d3d3 100%); }
+        .rating-5 { background: linear-gradient(135deg, #50c878 0%, #2e8b57 100%); }
+        .current-user-row { background: linear-gradient(135deg, #667eea40 0%, #764ba240 100%); border-left: 4px solid #667eea; }
+        .friend-request-badge { animation: pulse 2s infinite; }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
+        .loading-spinner { border: 3px solid #f3f3f3; border-top: 3px solid #667eea; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .typing-indicator { display: flex; align-items: center; column-gap: 6px; }
+        .typing-indicator span { height: 8px; width: 8px; background: #7c3aed; border-radius: 50%; display: block; opacity: 0.4; }
+        .typing-indicator span:nth-child(1) { animation: pulse-dot 1.2s infinite; }
+        .typing-indicator span:nth-child(2) { animation: pulse-dot 1.2s infinite 0.2s; }
+        .typing-indicator span:nth-child(3) { animation: pulse-dot 1.2s infinite 0.4s; }
+        @keyframes pulse-dot { 0%, 60%, 100% { transform: scale(1); opacity: 0.4; } 30% { transform: scale(1.3); opacity: 1; } }
+        .suggestion-chip { padding: 0.375rem 0.75rem; background-color: #f3e8ff; color: #7c3aed; border-radius: 9999px; font-size: 0.875rem; cursor: pointer; white-space: nowrap; }
+        .suggestion-chip:hover { background-color: #e9d5ff; }
+        .mobile-tab-bar { display: flex; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; white-space: nowrap; padding: 0 8px; border-bottom: 1px solid #e5e7eb; }
+        .mobile-tab-bar::-webkit-scrollbar { display: none; }
+        .mobile-tab-item { flex: 0 0 auto; padding: 12px 16px; font-size: 14px; cursor: pointer; transition: all 0.2s; }
+        .mobile-tab-item:hover { background-color: #f3f4f6; }
+        .expenses-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; }
+        @supports (-webkit-touch-callout: none) { input, textarea, select, button { font-size: 16px !important; } .fixed { position: fixed; -webkit-transform: translateZ(0); } }
+        button, .cursor-pointer { touch-action: manipulation; min-height: 44px; }
+        .container { padding-left: max(16px, env(safe-area-inset-left)); padding-right: max(16px, env(safe-area-inset-right)); }
+        @media (max-width: 640px) { .modal-content { width: 90%; margin: 0 auto; max-height: 90vh; overflow-y: auto; -webkit-overflow-scrolling: touch; } }
+        .message-bot pre { background: #2d3748; color: #e2e8f0; padding: 8px; border-radius: 6px; overflow-x: auto; font-size: 12px; margin: 8px 0; }
+        .message-bot code { background: #2d3748; color: #e2e8f0; padding: 2px 4px; border-radius: 4px; font-size: 12px; }
+        .message-bot ul, .message-bot ol { margin-left: 20px; margin-top: 5px; margin-bottom: 5px; }
+        .message-bot li { margin-bottom: 2px; }
+        .message-bot p { margin-bottom: 8px; }
+        .message-bot h3 { font-weight: 600; font-size: 1.1em; margin: 10px 0 5px 0; color: #4a5568; }
+        .message-bot strong { font-weight: 600; color: #2d3748; }
+        /* Светлый футер */
+        .footer { background: #f9fafb; color: #1f2937; padding: 1.5rem 0; margin-top: 2rem; text-align: center; border-top: 1px solid #e5e7eb; }
+        .vk-link { display: inline-flex; align-items: center; justify-content: center; gap: 12px; background: #4c75a3; color: white; padding: 12px 32px; border-radius: 50px; text-decoration: none; transition: all 0.3s ease; font-weight: 600; font-size: 1rem; cursor: pointer; margin-bottom: 1rem; }
+        .vk-link:hover { background: #3a5d85; transform: translateY(-3px); box-shadow: 0 6px 20px rgba(0,0,0,0.3); }
+        .vk-link i { font-size: 1.4rem; }
+        .vk-link i:first-child { font-size: 1.6rem; }
+        .footer-text { color: #6b7280; font-size: 0.75rem; }
+        .developer-group { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; margin-bottom: 1rem; }
+        .developer-group .vk-link { margin-bottom: 0; }
+        .support-link { background: #2c3e50; }
+        .support-link:hover { background: #1e2a36; }
+        .error-banner { background: #fee2e2; border: 1px solid #ef4444; color: #dc2626; padding: 12px; border-radius: 8px; margin-bottom: 16px; }
+        .tab-content { animation: fadeIn 0.3s ease; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     </style>
 </head>
-<body class="bg-gray-50 text-gray-800 font-sans flex flex-col min-h-screen">
-
-<div id="app" class="flex flex-col flex-grow">
-    <!-- Шапка -->
-    <header class="bg-blue-600 text-white p-4 shadow-md sticky top-0 z-40">
-        <div class="container mx-auto flex justify-between items-center flex-wrap gap-2">
-            <h1 class="text-xl font-bold tracking-wide">FinGrade</h1>
-            <div class="flex items-center space-x-3 text-sm">
-                <span class="bg-blue-700 px-2 py-1 rounded">🔔 {{ pendingFriendRequests.length }}</span>
-                <span class="font-medium">{{ currentUser.nickname || 'Гость' }}</span>
-                <span class="bg-yellow-400 text-yellow-900 px-2 py-0.5 rounded-full text-xs font-bold">{{ getUserRating(currentUser) }}</span>
-                <button @click="logout" class="underline hover:text-blue-200 transition">Выйти</button>
+<body class="bg-gray-100">
+    <div id="app">
+        <div v-if="loading" class="fixed inset-0 bg-white bg-opacity-75 z-50 flex items-center justify-center" style="backdrop-filter: blur(5px);">
+            <div class="text-center px-6">
+                <div class="loading-spinner mx-auto mb-4"></div>
+                <p class="text-gray-600 text-sm sm:text-base">{{ loadingMessage || 'Загрузка данных...' }}</p>
             </div>
         </div>
-    </header>
 
-    <!-- Загрузка -->
-    <div v-if="loading" class="p-6 text-center text-gray-500">
-        <svg class="animate-spin h-8 w-8 mx-auto mb-2 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-        </svg>
-        {{ loadingMessage || 'Загрузка данных...' }}
+        <nav class="gradient-bg text-white shadow-lg sticky top-0 z-40" style="padding-top: env(safe-area-inset-top);">
+            <div class="container mx-auto px-4 py-3">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-2">
+                        <i class="fas fa-chart-line text-xl sm:text-2xl"></i>
+                        <span class="text-lg sm:text-xl font-bold">FinGrade</span>
+                    </div>
+                    <div class="flex items-center space-x-3">
+                        <div v-if="currentUser" class="flex items-center space-x-2">
+                            <div class="relative">
+                                <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-full overflow-hidden border-2 border-white">
+                                    <img :src="getAvatarUrl(currentUser.avatar)" :alt="currentUser.name" class="w-full h-full object-cover">
+                                </div>
+                                <div v-if="pendingFriendRequests.length > 0" class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full min-w-[18px] h-[18px] flex items-center justify-center friend-request-badge px-1">{{ pendingFriendRequests.length }}</div>
+                            </div>
+                            <span class="text-sm hidden sm:inline">{{ currentUser.nickname }}</span>
+                            <span class="text-xs bg-white text-purple-600 px-2 py-1 rounded-full">{{ getUserRating(currentUser) }}</span>
+                        </div>
+                        <button v-if="currentUser" @click="logout" class="bg-red-500 text-white px-3 py-2 rounded-lg text-sm hover:bg-red-600"><i class="fas fa-sign-out-alt sm:mr-2"></i><span class="hidden sm:inline">Выйти</span></button>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <div v-if="message.show" :class="['fixed top-20 right-4 z-50 p-3 rounded-lg shadow-lg text-white text-sm max-w-[90%]', message.type === 'success' ? 'bg-green-500' : message.type === 'error' ? 'bg-red-500' : 'bg-blue-500']" style="top: calc(env(safe-area-inset-top) + 80px);">
+            <i :class="['fas mr-2', message.type === 'success' ? 'fa-check-circle' : message.type === 'error' ? 'fa-exclamation-circle' : 'fa-info-circle']"></i>
+            {{ message.text }}
+        </div>
+
+        <div v-if="!currentUser" class="container mx-auto px-4 py-4 sm:py-8">
+            <div class="max-w-4xl mx-auto">
+                <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+                    <div class="p-4 sm:p-6">
+                        <h1 class="text-2xl sm:text-3xl font-bold text-center mb-6 sm:mb-8">Добро пожаловать в FinGrade</h1>
+                        
+                        <div class="grid md:grid-cols-2 gap-6 sm:gap-8">
+                            <div class="bg-gray-50 rounded-xl p-4 sm:p-6">
+                                <h2 class="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 text-purple-600">Регистрация</h2>
+                                <div class="space-y-3 sm:space-y-4">
+                                    <div><label class="block text-gray-700 font-medium mb-1 text-sm">Имя</label><input v-model="registerForm.name" type="text" class="w-full px-3 sm:px-4 py-2 border rounded-lg focus:outline-none focus:border-purple-500 text-base"></div>
+                                    <div><label class="block text-gray-700 font-medium mb-1 text-sm">Фамилия</label><input v-model="registerForm.surname" type="text" class="w-full px-3 sm:px-4 py-2 border rounded-lg focus:outline-none focus:border-purple-500 text-base"></div>
+                                    <div><label class="block text-gray-700 font-medium mb-1 text-sm">Доход в месяц</label><input v-model.number="registerForm.income" type="number" min="0" class="w-full px-3 sm:px-4 py-2 border rounded-lg focus:outline-none focus:border-purple-500 text-base"></div>
+                                    <div><label class="block text-gray-700 font-medium mb-1 text-sm">Никнейм</label><input v-model="registerForm.nickname" type="text" class="w-full px-3 sm:px-4 py-2 border rounded-lg focus:outline-none focus:border-purple-500 text-base" placeholder="@username"></div>
+                                    <div><label class="block text-gray-700 font-medium mb-1 text-sm">Email</label><input v-model="registerForm.email" type="email" class="w-full px-3 sm:px-4 py-2 border rounded-lg focus:outline-none focus:border-purple-500 text-base"></div>
+                                    <div><label class="block text-gray-700 font-medium mb-1 text-sm">Логин</label><input v-model="registerForm.login" type="text" class="w-full px-3 sm:px-4 py-2 border rounded-lg focus:outline-none focus:border-purple-500 text-base"></div>
+                                    <div><label class="block text-gray-700 font-medium mb-1 text-sm">Пароль</label><input v-model="registerForm.password" type="password" class="w-full px-3 sm:px-4 py-2 border rounded-lg focus:outline-none focus:border-purple-500 text-base"></div>
+                                    <div><label class="block text-gray-700 font-medium mb-2 text-sm">Расходы (текущий месяц)</label><div class="grid grid-cols-2 gap-2"><div v-for="(value, category) in registerForm.expenses" :key="category" class="mb-2"><label class="block text-xs text-gray-600 mb-1"><i :class="['mr-1', categoryIcons[category]]"></i>{{ categoryNames[category] }}</label><input v-model.number="registerForm.expenses[category]" type="number" min="0" class="w-full px-2 py-1 text-sm border rounded-lg focus:outline-none focus:border-purple-500"></div></div></div>
+                                    <div><label class="block text-gray-700 font-medium mb-2 text-sm">Данные за предыдущие месяцы</label><button type="button" @click="addHistoricalMonthField" class="text-purple-600 text-sm mb-2"><i class="fas fa-plus-circle mr-1"></i> Добавить месяц</button><div v-for="(hist, idx) in registerForm.historicalMonths" :key="idx" class="border rounded-lg p-3 mb-3 bg-white"><div class="flex justify-between items-center mb-2"><div class="flex gap-2"><input type="month" v-model="hist.month" class="border rounded px-2 py-1 text-sm"><input type="number" v-model.number="hist.income" placeholder="Доход" class="border rounded px-2 py-1 text-sm w-28"></div><button @click="removeHistoricalMonthField(idx)" class="text-red-500"><i class="fas fa-trash"></i></button></div><div class="grid grid-cols-2 gap-1 text-sm"><div v-for="(value, category) in hist.expenses" :key="category" class="flex items-center"><span class="w-20 text-xs">{{ categoryNames[category] }}</span><input v-model.number="hist.expenses[category]" type="number" min="0" class="border rounded w-full px-1 py-0.5 text-xs"></div></div></div></div>
+                                    <div><label class="block text-gray-700 font-medium mb-2 text-sm">Выберите аватар</label><div class="grid grid-cols-5 gap-1 sm:gap-2"><div v-for="avatar in avatars" :key="avatar.id" @click="selectRegisterAvatar(avatar)" class="relative cursor-pointer rounded-lg overflow-hidden border-2" :class="[registerForm.avatar === avatar.id ? 'border-purple-500' : 'border-transparent', !isAvatarAvailableForRegister(avatar) ? 'cursor-not-allowed' : '']"><img :src="getAvatarUrl(avatar.id)" :class="['w-full h-auto', !isAvatarAvailableForRegister(avatar) ? 'avatar-locked' : '']"><div v-if="!isAvatarAvailableForRegister(avatar)" class="absolute inset-0 bg-black bg-opacity-30 flex items-center justify-center"><i class="fas fa-lock text-white text-sm"></i></div></div></div></div>
+                                    <button @click="handleRegister" class="w-full gradient-bg text-white py-3 rounded-lg font-semibold hover:shadow-lg text-base"><i class="fas fa-user-plus mr-2"></i>Зарегистрироваться</button>
+                                </div>
+                            </div>
+                            
+                            <div class="bg-gray-50 rounded-xl p-4 sm:p-6">
+                                <h2 class="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 text-purple-600">Вход</h2>
+                                <div class="space-y-3 sm:space-y-4">
+                                    <div><label class="block text-gray-700 font-medium mb-1 text-sm">Логин или Email</label><input v-model="loginForm.login" type="text" class="w-full px-3 sm:px-4 py-2 border rounded-lg focus:outline-none focus:border-purple-500 text-base"></div>
+                                    <div><label class="block text-gray-700 font-medium mb-1 text-sm">Пароль</label><input v-model="loginForm.password" type="password" class="w-full px-3 sm:px-4 py-2 border rounded-lg focus:outline-none focus:border-purple-500 text-base"></div>
+                                    <button @click="handleLogin" class="w-full gradient-bg text-white py-3 rounded-lg font-semibold hover:shadow-lg text-base"><i class="fas fa-sign-in-alt mr-2"></i>Войти</button>
+                                    <div class="relative my-4"><div class="absolute inset-0 flex items-center"><div class="w-full border-t border-gray-300"></div></div><div class="relative flex justify-center text-sm"><span class="px-2 bg-gray-50 text-gray-500">Или войдите через</span></div></div>
+                                    <button @click="loginWithGoogle" class="google-btn w-full text-white py-3 rounded-lg font-semibold flex items-center justify-center"><i class="fab fa-google text-xl mr-3"></i>Google</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div v-else class="container mx-auto px-4 py-4 sm:py-8">
+            <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+                <div class="mobile-tab-bar">
+                    <button v-for="tab in tabs" :key="tab.id" @click="currentTab = tab.id" :class="['mobile-tab-item flex items-center', currentTab === tab.id ? 'text-purple-600 border-b-2 border-purple-600 font-semibold' : 'text-gray-500 hover:text-gray-700']">
+                        <i :class="['mr-2 text-base', tab.icon]"></i>
+                        <span>{{ tab.name }}</span>
+                        <span v-if="tab.id === 'friends' && pendingFriendRequests.length > 0" class="ml-2 bg-red-500 text-white text-xs rounded-full px-2 py-0.5">{{ pendingFriendRequests.length }}</span>
+                    </button>
+                </div>
+
+                <div class="p-4 sm:p-6 tab-content">
+                    <!-- Профиль -->
+                    <div v-show="currentTab === 'profile'">
+                        <h2 class="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">Мой профиль</h2>
+                        <div class="bg-gray-50 rounded-xl p-4 sm:p-6 max-w-2xl">
+                            <h3 class="text-lg font-semibold mb-3 sm:mb-4">Личная информация</h3>
+                            <div class="space-y-3">
+                                <div class="flex items-center space-x-4 pb-2 border-b">
+                                    <div class="w-12 h-12 sm:w-16 sm:h-16 rounded-full overflow-hidden flex-shrink-0">
+                                        <img :src="getAvatarUrl(currentUser.avatar)" :alt="currentUser.name" class="w-full h-full object-cover">
+                                    </div>
+                                    <div class="min-w-0">
+                                        <span class="text-gray-600 text-sm">Аватар:</span>
+                                        <span class="font-semibold block truncate">{{ getAvatarName(currentUser.avatar) }}</span>
+                                    </div>
+                                </div>
+                                <div class="flex justify-between items-center pb-2 border-b">
+                                    <span class="text-gray-600 text-sm">Имя:</span>
+                                    <span class="font-semibold text-sm truncate ml-2">{{ currentUser.name }} {{ currentUser.surname }}</span>
+                                </div>
+                                <div class="flex justify-between items-center pb-2 border-b">
+                                    <span class="text-gray-600 text-sm">Никнейм:</span>
+                                    <span class="font-semibold text-purple-600 text-sm truncate ml-2">{{ currentUser.nickname }}</span>
+                                </div>
+                                <div class="flex justify-between items-center pb-2 border-b">
+                                    <span class="text-gray-600 text-sm">Доход:</span>
+                                    <span class="font-semibold text-sm truncate ml-2">{{ formatMoney(currentUser.income) }} ₽</span>
+                                    <button @click="editIncome" class="text-purple-600 hover:text-purple-800"><i class="fas fa-edit ml-2"></i></button>
+                                </div>
+                                <div class="flex justify-between items-center pb-2 border-b">
+                                    <span class="text-gray-600 text-sm">КФГ:</span>
+                                    <span class="font-semibold text-purple-600">{{ kfg }}</span>
+                                </div>
+                                <div class="flex justify-between items-center pb-2 border-b">
+                                    <span class="text-gray-600 text-sm">Рейтинг:</span>
+                                    <span class="font-semibold text-xs px-2 py-1 rounded-full text-white" :class="'rating-' + getUserRatingLevel(currentUser)">{{ getUserRating(currentUser) }}</span>
+                                </div>
+                                <div class="flex justify-between items-center pb-2 border-b">
+                                    <span class="text-gray-600 text-sm">Разблокированные аватары:</span>
+                                    <span class="font-semibold text-sm truncate ml-2">{{ unlockedAvatars.join(', ') }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Расходы -->
+                    <div v-show="currentTab === 'expenses'">
+                        <h2 class="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">Управление расходами</h2>
+                        <div class="bg-gray-50 rounded-lg p-4 mb-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                            <div class="flex items-center gap-2">
+                                <span class="font-medium">Месяц:</span>
+                                <select v-model="selectedExpenseMonth" @change="loadExpensesForSelectedMonth" class="border rounded-lg px-3 py-2 bg-white">
+                                    <option v-for="snap in monthlySnapshotsSorted" :value="snap.monthId">{{ snap.monthLabel }}</option>
+                                </select>
+                            </div>
+                            <button @click="openHistoricalModal" class="gradient-bg text-white px-4 py-2 rounded-lg text-sm"><i class="fas fa-plus-circle mr-1"></i> Добавить данные за прошлый месяц</button>
+                        </div>
+                        <div class="mb-4">
+                            <h3 class="text-lg font-semibold mb-3">Расходы за {{ getMonthLabel(selectedExpenseMonth) }}</h3>
+                            <div class="expenses-grid">
+                                <div v-for="(value, category) in filteredExpensesForMonth" :key="category" class="bg-gray-50 rounded-lg p-3 sm:p-4">
+                                    <label class="block text-gray-700 font-medium mb-1 sm:mb-2 text-sm"><i :class="['mr-1', categoryIcons[category]]"></i>{{ categoryNames[category] }}</label>
+                                    <input v-model.number="expensesForSelectedMonth[category]" type="number" min="0" class="w-full px-2 sm:px-3 py-1.5 sm:py-2 border rounded-lg focus:outline-none focus:border-purple-500 text-sm sm:text-base">
+                                </div>
+                            </div>
+                            <button @click="saveExpensesForSelectedMonth" class="mt-4 gradient-bg text-white px-6 sm:px-8 py-3 rounded-lg font-semibold hover:shadow-lg w-full sm:w-auto"><i class="fas fa-save mr-2"></i> Сохранить расходы</button>
+                        </div>
+                        <div class="mt-6">
+                            <h3 class="text-lg font-semibold mb-3">Все месяцы</h3>
+                            <div class="overflow-x-auto">
+                                <table class="min-w-full bg-white border rounded-lg">
+                                    <thead class="bg-gray-100">
+                                        <tr>
+                                            <th class="px-4 py-2 text-left">Месяц</th>
+                                            <th class="px-4 py-2 text-left">Доход</th>
+                                            <th class="px-4 py-2 text-left">Расходы</th>
+                                            <th class="px-4 py-2 text-left">КФГ</th>
+                                            <th class="px-4 py-2 text-left">Детали</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr v-for="snap in monthlySnapshotsSorted" :key="snap.monthId" class="border-t">
+                                            <td class="px-4 py-2">{{ snap.monthLabel }}</td>
+                                            <td class="px-4 py-2">{{ formatMoney(snap.income) }} ₽</td>
+                                            <td class="px-4 py-2">{{ formatMoney(snap.totalExpenses) }} ₽</td>
+                                            <td class="px-4 py-2 font-semibold">{{ snap.kfg }}</td>
+                                            <td class="px-4 py-2"><button @click="showMonthDetails(snap)" class="text-purple-600 text-sm"><i class="fas fa-eye"></i> Показать</button></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        
+                        <div v-if="detailsModalVisible" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                            <div class="bg-white rounded-xl p-4 sm:p-6 max-w-lg w-full max-h-[80vh] overflow-y-auto">
+                                <div class="flex justify-between items-center mb-3"><h3 class="text-lg font-bold">Детали за {{ detailsMonthLabel }}</h3><button @click="detailsModalVisible = false" class="text-gray-500 hover:text-gray-700"><i class="fas fa-times text-xl"></i></button></div>
+                                <div class="space-y-2"><div v-for="(amount, cat) in detailsExpenses" :key="cat" v-if="amount > 0" class="flex justify-between border-b py-1"><span><i :class="categoryIcons[cat]" class="mr-2"></i>{{ categoryNames[cat] }}</span><span>{{ formatMoney(amount) }} ₽</span></div><div v-if="Object.values(detailsExpenses).every(v => v === 0)" class="text-gray-500 text-center py-4">Нет расходов</div></div>
+                                <button @click="detailsModalVisible = false" class="mt-4 bg-gray-300 px-4 py-2 rounded-lg w-full">Закрыть</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Цели -->
+                    <div v-show="currentTab === 'goals'">
+                        <h2 class="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">Финансовые цели</h2>
+                        <div class="bg-gray-50 rounded-lg p-4 sm:p-6 mb-4 sm:mb-6">
+                            <h3 class="text-lg font-semibold mb-3 sm:mb-4">Новая цель</h3>
+                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+                                <div><label class="block text-gray-700 font-medium mb-1 text-sm">Название</label><input v-model="newGoal.name" type="text" class="w-full px-3 sm:px-4 py-2 border rounded-lg focus:outline-none focus:border-purple-500 text-base" placeholder="Купить машину"></div>
+                                <div><label class="block text-gray-700 font-medium mb-1 text-sm">Сумма (₽)</label><input v-model.number="newGoal.targetAmount" type="number" min="1" class="w-full px-3 sm:px-4 py-2 border rounded-lg focus:outline-none focus:border-purple-500 text-base" placeholder="100000"></div>
+                                <div class="flex items-end"><button @click="addGoal" class="gradient-bg text-white px-4 sm:px-6 py-2 rounded-lg font-semibold hover:shadow-lg w-full"><i class="fas fa-plus-circle mr-2"></i>Добавить</button></div>
+                            </div>
+                        </div>
+                        <h3 class="text-lg font-semibold mb-3">Мои цели ({{ goals.length }})</h3>
+                        <div v-if="goals.length === 0" class="bg-gray-50 rounded-lg p-6 sm:p-8 text-center text-gray-500"><i class="fas fa-bullseye text-3xl sm:text-4xl mb-3 opacity-50"></i><p>Нет финансовых целей</p></div>
+                        <div v-else class="space-y-3 sm:space-y-4">
+                            <div v-for="(goal, index) in goals" :key="index" class="bg-gray-50 rounded-lg p-3 sm:p-4 hover:shadow-md transition">
+                                <div class="flex justify-between items-start mb-2 sm:mb-3">
+                                    <div class="min-w-0 flex-1"><h4 class="font-semibold text-base sm:text-lg truncate">{{ goal.name }}</h4><p class="text-xs sm:text-sm text-gray-600">{{ formatMoney(goal.currentAmount) }} / {{ formatMoney(goal.targetAmount) }} ₽</p></div>
+                                    <div class="flex space-x-2 ml-2 flex-shrink-0"><button @click="openAddToGoalModal(index)" class="text-green-600 hover:text-green-800 p-2"><i class="fas fa-plus-circle text-lg sm:text-xl"></i></button><button @click="openRemoveGoalModal(index)" class="text-red-500 hover:text-red-700 p-2"><i class="fas fa-trash"></i></button></div>
+                                </div>
+                                <div class="relative pt-1">
+                                    <div class="flex mb-1 items-center justify-between"><span class="text-xs font-semibold text-purple-600">Прогресс</span><span class="text-xs font-semibold text-purple-600">{{ Math.min(100, Math.round((goal.currentAmount / goal.targetAmount) * 100)) }}%</span></div>
+                                    <div class="overflow-hidden h-2 mb-2 text-xs flex rounded bg-purple-200"><div :style="{ width: Math.min(100, (goal.currentAmount / goal.targetAmount) * 100) + '%' }" class="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-purple-600 goal-progress"></div></div>
+                                </div>
+                                <div class="flex flex-wrap gap-2 mt-2"><button @click="quickAddToGoal(index, 1000)" class="text-xs bg-gray-200 hover:bg-gray-300 px-3 py-1.5 rounded">+1 000 ₽</button><button @click="quickAddToGoal(index, 5000)" class="text-xs bg-gray-200 hover:bg-gray-300 px-3 py-1.5 rounded">+5 000 ₽</button><button @click="quickAddToGoal(index, 10000)" class="text-xs bg-gray-200 hover:bg-gray-300 px-3 py-1.5 rounded">+10 000 ₽</button><span v-if="goal.currentAmount >= goal.targetAmount" class="text-xs bg-green-100 text-green-700 px-3 py-1.5 rounded ml-auto"><i class="fas fa-check-circle mr-1"></i>Достигнута!</span></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Аналитика -->
+                    <div v-show="currentTab === 'analytics'">
+                        <h2 class="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">Аналитика расходов</h2>
+                        <div class="bg-gray-50 rounded-xl p-4 mb-6"><label class="block text-gray-700 font-medium mb-2">Месяц для анализа:</label><select v-model="selectedAnalysisMonth" @change="loadExpensesForMonth" class="w-full border rounded-lg px-3 py-2 mb-4"><option v-for="snap in monthlySnapshotsSorted" :value="snap.monthId">{{ snap.monthLabel }}</option></select><div class="h-64"><canvas id="expenseChart"></canvas></div></div>
+                        <div class="bg-gray-50 rounded-xl p-4"><h3 class="text-lg font-semibold mb-3">Динамика расходов</h3><div class="h-64"><canvas id="expenseTrendChart"></canvas></div></div>
+                    </div>
+
+                    <!-- ИИ-Ассистент -->
+                    <div v-show="currentTab === 'chat'">
+                        <h2 class="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">ИИ-Ассистент</h2>
+                        <div class="bg-gray-50 rounded-lg p-3 sm:p-4">
+                            <div class="h-96 overflow-y-auto flex flex-col space-y-2 mb-3 sm:mb-4 p-2" ref="chatContainer">
+                                <div v-for="(msg, index) in chatMessages" :key="index" :class="msg.sender === 'bot' ? 'message-bot' : 'message-user'">
+                                    <div v-if="msg.sender === 'bot' && msg.loading" class="flex items-center space-x-2"><div class="typing-indicator"><span></span><span></span><span></span></div><span class="text-gray-500 text-xs">Ollama анализирует...</span></div>
+                                    <div v-else-if="msg.sender === 'bot' && msg.error" class="text-red-500 text-sm"><i class="fas fa-exclamation-triangle mr-1"></i>{{ msg.text }}</div>
+                                    <div v-else class="text-sm sm:text-base break-words" v-html="formatBotMessage(msg.text, msg.sender)"></div>
+                                </div>
+                            </div>
+                            <div class="overflow-x-auto mb-3 pb-1">
+                                <div class="flex space-x-2">
+                                    <span @click="quickQuestion('Как сократить расходы?')" class="suggestion-chip text-xs sm:text-sm whitespace-nowrap">📉 Сократить расходы</span>
+                                    <span @click="quickQuestion('Как начать инвестировать?')" class="suggestion-chip text-xs sm:text-sm whitespace-nowrap">📈 Инвестировать</span>
+                                    <span @click="quickQuestion('Как улучшить КФГ?')" class="suggestion-chip text-xs sm:text-sm whitespace-nowrap">⭐ Улучшить КФГ</span>
+                                    <span @click="quickQuestion('Как создать подушку безопасности?')" class="suggestion-chip text-xs sm:text-sm whitespace-nowrap">🛡️ Подушка</span>
+                                    <span @click="resetChatContext" class="suggestion-chip text-xs sm:text-sm whitespace-nowrap bg-red-100 text-red-700">🔄 Сбросить контекст</span>
+                                </div>
+                            </div>
+                            <div class="flex space-x-2">
+                                <textarea v-model="chatInput" @keyup.enter="sendMessage" rows="1" class="flex-1 px-3 sm:px-4 py-2 border rounded-lg focus:outline-none focus:border-purple-500 resize-none text-sm sm:text-base" placeholder="Спросите у ассистента о финансах..."></textarea>
+                                <button @click="sendMessage" :disabled="aiLoading" class="gradient-bg text-white px-4 sm:px-6 rounded-lg font-semibold hover:shadow-lg disabled:opacity-50"><i class="fas fa-paper-plane" :class="{'fa-spinner fa-spin': aiLoading}"></i></button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Друзья -->
+                    <div v-show="currentTab === 'friends'">
+                        <h2 class="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">Друзья и рейтинги</h2>
+                        <div class="bg-gradient-to-r from-purple-600 to-indigo-600 rounded-lg p-3 sm:p-4 mb-4 text-white"><h3 class="text-base sm:text-lg font-semibold mb-2">🏆 Рейтинг КФГ</h3><div class="space-y-2"><div v-for="(participant, idx) in ratingParticipants.slice(0,5)" :key="idx" class="flex items-center justify-between rounded-lg p-2 text-sm" :class="participant.isCurrentUser ? 'current-user-row' : 'bg-white bg-opacity-20'"><div class="flex items-center space-x-2"><span class="font-bold w-5">{{ idx+1 }}</span><img :src="getAvatarUrl(participant.avatar)" class="w-6 h-6 rounded-full"><span>{{ participant.name }} {{ participant.isCurrentUser ? '(Вы)' : '' }}</span></div><span class="font-bold">{{ participant.kfg }}</span></div></div></div>
+                        <div class="bg-gray-50 rounded-lg p-3 sm:p-4 mb-4"><h3 class="text-base sm:text-lg font-semibold mb-3">Найти друга</h3><div class="flex space-x-2"><input v-model="friendSearchQuery" type="text" class="flex-1 px-3 py-2 border rounded-lg" placeholder="@username"><button @click="searchFriends" class="gradient-bg text-white px-4 py-2 rounded-lg">🔍 Найти</button></div><div v-if="searchResults.length > 0" class="mt-3 space-y-2"><div v-for="user in searchResults" :key="user.login" class="bg-white p-3 rounded-lg flex justify-between items-center"><div class="flex items-center space-x-3"><img :src="getAvatarUrl(user.avatar)" class="w-8 h-8 rounded-full"><span>{{ user.name }} {{ user.surname }} ({{ user.nickname }})</span></div><button @click="sendFriendRequest(user)" class="bg-purple-500 text-white px-3 py-1 rounded-lg text-sm">➕ Добавить</button></div></div></div>
+                        <h3 class="text-base sm:text-lg font-semibold mb-3">Мои друзья ({{ friends.length }})</h3><div v-if="friends.length === 0" class="bg-gray-50 rounded-lg p-6 text-center text-gray-500"><i class="fas fa-user-friends text-3xl mb-2 opacity-50"></i><p>У вас пока нет друзей</p></div><div v-else class="space-y-2"><div v-for="friend in friendsWithDetails" :key="friend.login" class="bg-gray-50 rounded-lg p-3 flex justify-between items-center"><div class="flex items-center space-x-3"><img :src="getAvatarUrl(friend.avatar)" class="w-8 h-8 rounded-full"><div><div class="font-medium">{{ friend.name }}</div><div class="text-xs text-gray-500">{{ friend.nickname }}</div></div></div><div class="flex items-center space-x-3"><span class="text-purple-600 font-bold">{{ friend.kfg }}</span><button @click="removeFriend(friend)" class="text-red-500 hover:text-red-700">🗑️</button></div></div></div>
+                    </div>
+
+                    <!-- Награды (только аватары) -->
+                    <div v-show="currentTab === 'rewards'">
+                        <h2 class="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">Награды</h2>
+                        <div class="bg-gray-50 rounded-lg p-4 mb-4">
+                            <h3 class="text-lg font-semibold">Ваш КФГ за текущий месяц: <span class="text-purple-600">{{ currentMonthKfg }}</span></h3>
+                            <h3 class="text-lg font-semibold">Рейтинг: <span class="px-2 py-1 rounded-full text-white text-sm" :class="'rating-' + getUserRatingLevel(currentUser)">{{ getUserRating(currentUser) }}</span></h3>
+                        </div>
+                        <div class="grid grid-cols-3 sm:grid-cols-5 gap-2 sm:gap-4 mb-4">
+                            <div v-for="avatar in avatars" :key="avatar.id" @click="changeAvatar(avatar)" :title="!isAvatarUnlocked(avatar) ? `Требуется КФГ: ${avatar.kfgRequired}` : ''" class="relative cursor-pointer rounded-lg overflow-hidden border-2 p-1" :class="[isAvatarUnlocked(avatar) ? 'hover:border-purple-500' : 'opacity-50 cursor-not-allowed', currentUser.avatar === avatar.id ? 'border-purple-500' : 'border-gray-200']">
+                                <img :src="getAvatarUrl(avatar.id)" class="w-full h-auto">
+                                <div class="text-center text-xs">{{ avatar.name }}</div>
+                                <div v-if="!isAvatarUnlocked(avatar)" class="absolute inset-0 bg-black bg-opacity-20 flex items-center justify-center">
+                                    <i class="fas fa-lock text-white"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- КФГ -->
+                    <div v-show="currentTab === 'kfg'">
+                        <h2 class="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">Коэффициент финансовой грамотности (КФГ)</h2>
+                        <div class="bg-gray-50 rounded-xl p-4 mb-6"><h3 class="text-lg font-semibold mb-3">Динамика КФГ по месяцам</h3><div class="h-64"><canvas id="kfgTrendChart"></canvas></div></div>
+                        <div class="bg-gray-50 rounded-xl p-4 mb-6"><h3 class="text-lg font-semibold mb-2">Как рассчитывается КФГ?</h3><p class="text-sm text-gray-700 mb-2">КФГ = 100 − (Расходы / Доход × 100), но с учётом корректировок:</p><ul class="list-disc list-inside text-sm text-gray-600 space-y-1"><li>Если расходы на развлечения > 30% дохода → −20 баллов</li><li>Если расходы на еду (включая кафе) > 50% дохода → −15 баллов</li><li>Если расходы на подписки > 10% дохода → −10 баллов</li><li>Если есть расходы на образование → +5 баллов</li><li>Если остаток после расходов > 20% дохода → +10 баллов</li></ul><p class="text-sm text-gray-700 mt-2">Итоговое значение ограничивается от 0 до 100.</p></div>
+                        <div class="bg-gray-50 rounded-xl p-4"><h3 class="text-lg font-semibold mb-3">КФГ за все месяцы</h3><div class="overflow-x-auto"><table class="min-w-full bg-white border rounded-lg"><thead class="bg-gray-100"><tr><th class="px-4 py-2 text-left">Месяц</th><th class="px-4 py-2 text-left">Доход</th><th class="px-4 py-2 text-left">Расходы</th><th class="px-4 py-2 text-left">КФГ</th></tr></thead><tbody><tr v-for="snap in monthlySnapshotsSorted" :key="snap.monthId" class="border-t"><td class="px-4 py-2">{{ snap.monthLabel }}</td><td class="px-4 py-2">{{ formatMoney(snap.income) }} ₽</td><td class="px-4 py-2">{{ formatMoney(snap.totalExpenses) }} ₽</td><td class="px-4 py-2 font-semibold" :class="{'text-green-600': snap.kfg >= 70, 'text-yellow-600': snap.kfg >= 40 && snap.kfg < 70, 'text-red-600': snap.kfg < 40}">{{ snap.kfg }}</td></tr></tbody></table></div></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Футер (светлый, отображается после авторизации) -->
+        <footer class="footer" v-if="currentUser">
+            <div class="container mx-auto px-4">
+                <div class="mb-3"><p class="text-gray-700 text-sm mb-2 font-semibold">Разработчики:</p><div class="developer-group"><a href="https://vk.ru/id875641672" target="_blank" rel="noopener noreferrer" class="vk-link"><i class="fab fa-vk"></i> <span>id875641672</span></a><a href="https://vk.ru/sekuewuuu" target="_blank" rel="noopener noreferrer" class="vk-link"><i class="fab fa-vk"></i> <span>sekuewuuu</span></a><a href="https://vk.ru/mvikirriaa" target="_blank" rel="noopener noreferrer" class="vk-link"><i class="fab fa-vk"></i> <span>mvikirriaa</span></a></div></div>
+                <div class="mb-4"><a href="https://vk.com/club237476006" target="_blank" rel="noopener noreferrer" class="vk-link support-link"><i class="fab fa-vk"></i> <span>Чат бот поддержки</span><i class="fas fa-headset"></i></a></div>
+                <p class="footer-text">© 2026 FinGrade - Умный финансовый помощник (Проект кафедры АСУ, МАДИ) направление подготовки 09.03.01-Информатика и вычислительная техника.</p>
+            </div>
+        </footer>
+
+        <!-- Модальные окна -->
+        <div v-if="showIncomeModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"><div class="bg-white rounded-xl p-4 sm:p-6 max-w-md w-full"><h3 class="text-lg font-bold mb-4">Изменить доход</h3><input v-model.number="newIncomeValue" type="number" class="w-full px-4 py-2 border rounded-lg mb-4"><div class="flex space-x-2"><button @click="saveIncome" class="gradient-bg text-white px-6 py-2 rounded-lg flex-1">Сохранить</button><button @click="closeIncomeModal" class="bg-gray-300 px-6 py-2 rounded-lg flex-1">Отмена</button></div></div></div>
+        <div v-if="showAddToGoalModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"><div class="bg-white rounded-xl p-4 sm:p-6 max-w-md w-full"><h3 class="text-lg font-bold mb-4">Добавить к "{{ selectedGoalName }}"</h3><input v-model.number="addToGoalAmount" type="number" class="w-full px-4 py-2 border rounded-lg mb-4"><div class="flex space-x-2"><button @click="confirmAddToGoal" class="gradient-bg text-white px-6 py-2 rounded-lg flex-1">Добавить</button><button @click="closeAddToGoalModal" class="bg-gray-300 px-6 py-2 rounded-lg flex-1">Отмена</button></div></div></div>
+        <div v-if="showRemoveGoalModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"><div class="bg-white rounded-xl p-4 sm:p-6 max-w-md w-full"><h3 class="text-lg font-bold mb-4">Удалить цель</h3><p class="mb-4">Удалить "{{ selectedGoalNameForRemove }}"?</p><div class="flex space-x-2"><button @click="confirmRemoveGoal" class="bg-red-500 text-white px-6 py-2 rounded-lg flex-1">Удалить</button><button @click="closeRemoveGoalModal" class="bg-gray-300 px-6 py-2 rounded-lg flex-1">Отмена</button></div></div></div>
+        <div v-if="showHistoricalModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"><div class="bg-white rounded-xl p-4 sm:p-6 max-w-md w-full max-h-[90vh] overflow-y-auto"><h3 class="text-lg font-bold mb-4">Добавить данные за прошлый месяц</h3><div class="space-y-3"><div><label class="block text-gray-700 font-medium mb-1">Месяц</label><input type="month" v-model="historicalMonth" class="w-full border rounded-lg px-3 py-2"></div><div><label class="block text-gray-700 font-medium mb-1">Доход за этот месяц</label><input type="number" v-model.number="historicalIncome" class="w-full border rounded-lg px-3 py-2"></div><div><label class="block text-gray-700 font-medium mb-2">Расходы по категориям</label><div class="grid grid-cols-2 gap-2"><div v-for="(value, cat) in historicalExpenses" :key="cat"><label class="text-xs text-gray-600">{{ categoryNames[cat] }}</label><input v-model.number="historicalExpenses[cat]" type="number" min="0" class="w-full border rounded px-2 py-1 text-sm"></div></div></div><button @click="saveHistoricalData" class="gradient-bg text-white w-full py-2 rounded-lg mt-2">Сохранить</button><button @click="closeHistoricalModal" class="bg-gray-300 w-full py-2 rounded-lg">Отмена</button></div></div></div>
     </div>
 
-    <!-- Основной контент -->
-    <main class="container mx-auto p-4 flex-grow">
-        <!-- Экраны входа/регистрации -->
-        <div v-if="!currentUser.id" class="max-w-md mx-auto mt-10">
-            <div class="bg-white p-6 rounded-xl shadow-lg mb-4">
-                <h2 class="text-2xl font-bold mb-4 text-center">Регистрация</h2>
-                <input v-model="regForm.name" placeholder="Имя" class="w-full mb-2 p-2 border rounded">
-                <input v-model="regForm.surname" placeholder="Фамилия" class="w-full mb-2 p-2 border rounded">
-                <input v-model="regForm.nickname" placeholder="Никнейм" class="w-full mb-2 p-2 border rounded">
-                <div class="mb-3">
-                    <label class="block text-sm font-medium mb-1">Выберите аватар</label>
-                    <div class="flex gap-2 flex-wrap">
-                        <button v-for="av in avatars" :key="av.id" @click="regForm.avatar = av.id" 
-                                :class="regForm.avatar === av.id ? 'ring-2 ring-blue-500' : ''"
-                                class="p-2 border rounded bg-gray-50 hover:bg-gray-100 transition">
-                            {{ av.icon }} {{ av.name }}
-                        </button>
-                    </div>
-                </div>
-                <button @click="register" class="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition">Зарегистрироваться</button>
-            </div>
-            <div class="bg-white p-6 rounded-xl shadow-lg">
-                <h2 class="text-xl font-bold mb-3 text-center">Вход</h2>
-                <input v-model="loginForm.nickname" placeholder="Никнейм" class="w-full mb-3 p-2 border rounded">
-                <button @click="login" class="w-full bg-gray-800 text-white py-2 rounded hover:bg-gray-900 transition">Войти</button>
-                <p class="text-center mt-3 text-sm text-gray-500">Или войдите через <span class="text-blue-500 cursor-pointer">Google</span></p>
-            </div>
-        </div>
+    <script>
+        const { createApp, ref, reactive, computed, watch, onMounted, nextTick } = Vue;
 
-        <!-- Интерфейс авторизованного пользователя -->
-        <div v-else>
-            <!-- Навигация по вкладкам -->
-            <nav class="flex flex-wrap gap-2 mb-4 bg-white p-2 rounded-lg shadow-sm overflow-x-auto">
-                <button v-for="tab in tabs" :key="tab.id" @click="currentTab = tab.id"
-                        :class="currentTab === tab.id ? 'bg-blue-600 text-white shadow' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'"
-                        class="px-4 py-2 rounded-md text-sm font-medium transition whitespace-nowrap">
-                    {{ tab.name }} <span v-if="tab.id === 'friends'" class="text-xs opacity-80">({{ pendingFriendRequests.length }})</span>
-                </button>
-            </nav>
+        const firebaseConfig = {
+            apiKey: "AIzaSyBoIf1-o2chwXIzWp7VBujZdqxqtYSu_4c",
+            authDomain: "fingrade-f9eee.firebaseapp.com",
+            projectId: "fingrade-f9eee",
+            storageBucket: "fingrade-f9eee.firebasestorage.app",
+            messagingSenderId: "492951301038",
+            appId: "1:492951301038:web:96b425064787c88df7b63f"
+        };
 
-            <!-- Вкладка: Мой профиль -->
-            <div v-show="currentTab === 'profile'" class="tab-panel active bg-white p-5 rounded-lg shadow">
-                <h2 class="text-xl font-bold mb-4">Мой профиль</h2>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div><span class="font-semibold">Аватар:</span> {{ getAvatarName(currentUser.avatar) }}</div>
-                    <div><span class="font-semibold">Имя:</span> {{ currentUser.name }} {{ currentUser.surname }}</div>
-                    <div><span class="font-semibold">Никнейм:</span> {{ currentUser.nickname }}</div>
-                    <div><span class="font-semibold">Доход:</span> {{ formatMoney(currentUser.income) }} ₽</div>
-                    <div><span class="font-semibold">КФГ:</span> {{ currentMonthKFG }}</div>
-                    <div><span class="font-semibold">Рейтинг:</span> {{ getUserRating(currentUser) }}</div>
-                    <div class="md:col-span-2"><span class="font-semibold">Разблокированные аватары:</span> {{ unlockedAvatars.length > 0 ? unlockedAvatars.map(id => getAvatarName(id)).join(', ') : 'Нет' }}</div>
-                </div>
-                <button @click="showIncomeModal = true" class="mt-4 px-4 py-2 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition">Изменить доход</button>
-            </div>
-
-            <!-- Вкладка: Управление расходами -->
-            <div v-show="currentTab === 'expenses'" class="tab-panel bg-white p-5 rounded-lg shadow">
-                <div class="flex justify-between items-center mb-4">
-                    <h2 class="text-xl font-bold">Управление расходами</h2>
-                    <div class="flex items-center gap-2">
-                        <span class="text-sm text-gray-500">Месяц:</span>
-                        <select v-model="selectedExpenseMonth" class="border p-1 rounded">
-                            <option v-for="snap in monthlyData" :key="snap.month" :value="snap.month">{{ snap.monthLabel }}</option>
-                        </select>
-                    </div>
-                </div>
-                <button @click="showPastMonthModal = true" class="mb-4 text-blue-600 text-sm hover:underline">➕ Добавить данные за прошлый месяц</button>
-                
-                <h3 class="font-semibold mb-2">Расходы за {{ getMonthLabel(selectedExpenseMonth) }}</h3>
-                <div class="space-y-2 mb-4">
-                    <div v-for="(amount, category) in getCurrentMonthExpenses()" :key="category" class="flex justify-between items-center p-2 bg-gray-50 rounded">
-                        <span>{{ categoryNames[category] || category }}</span>
-                        <span class="font-mono">{{ formatMoney(amount) }} ₽</span>
-                    </div>
-                    <div v-if="Object.keys(getCurrentMonthExpenses()).length === 0" class="text-gray-400 italic">Нет расходов</div>
-                </div>
-                <button @click="saveExpenses" class="w-full bg-green-600 text-white py-2 rounded hover:bg-green-700 transition font-medium">💾 Сохранить расходы</button>
-
-                <div class="mt-6 overflow-x-auto">
-                    <table class="w-full text-sm text-left border-collapse">
-                        <thead class="bg-gray-100"><tr><th class="p-2 border">Месяц</th><th class="p-2 border">Доход</th><th class="p-2 border">Расходы</th><th class="p-2 border">КФГ</th><th class="p-2 border">Детали</th></tr></thead>
-                        <tbody>
-                            <tr v-for="snap in monthlyData" :key="snap.month" class="border-b">
-                                <td class="p-2">{{ snap.monthLabel }}</td>
-                                <td class="p-2">{{ formatMoney(snap.income) }} ₽</td>
-                                <td class="p-2">{{ formatMoney(snap.totalExpenses) }} ₽</td>
-                                <td class="p-2 font-bold" :class="snap.kfg > 70 ? 'text-green-600' : snap.kfg > 40 ? 'text-yellow-600' : 'text-red-600'">{{ snap.kfg }}</td>
-                                <td class="p-2"><button @click="showDetails(snap.month)" class="text-blue-500 hover:underline">Показать</button></td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-
-                <!-- Модалка деталей -->
-                <div v-if="showDetailsModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                    <div class="bg-white p-5 rounded-lg shadow-xl max-w-sm w-full">
-                        <h3 class="font-bold mb-3">Детали за {{ detailsMonthLabel }}</h3>
-                        <div v-for="(amount, cat) in getDetailsExpenses()" :key="cat" class="flex justify-between py-1 border-b">
-                            <span>{{ categoryNames[cat] || cat }}</span>
-                            <span>{{ formatMoney(amount) }} ₽</span>
-                        </div>
-                        <div v-if="Object.keys(getDetailsExpenses()).length === 0" class="text-gray-400 py-2">Нет расходов</div>
-                        <button @click="showDetailsModal = false" class="mt-4 w-full bg-gray-200 py-2 rounded hover:bg-gray-300">Закрыть</button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Вкладка: Финансовые цели -->
-            <div v-show="currentTab === 'goals'" class="tab-panel bg-white p-5 rounded-lg shadow">
-                <div class="flex justify-between items-center mb-4">
-                    <h2 class="text-xl font-bold">Финансовые цели</h2>
-                    <button @click="showAddGoalModal = true" class="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700">Новая цель</button>
-                </div>
-                <h3 class="font-semibold mb-2">Мои цели ({{ goals.length }})</h3>
-                <div v-if="goals.length === 0" class="text-gray-400 italic mb-4">Нет финансовых целей</div>
-                <div class="space-y-3">
-                    <div v-for="goal in goals" :key="goal.id" class="border p-3 rounded-lg relative">
-                        <div class="flex justify-between items-start">
-                            <h4 class="font-bold">{{ goal.name }}</h4>
-                            <button @click="removeGoal(goal)" class="text-red-500 hover:text-red-700 text-xs">🗑️</button>
-                        </div>
-                        <div class="text-sm text-gray-600 mt-1">{{ formatMoney(goal.currentAmount) }} / {{ formatMoney(goal.targetAmount) }} ₽</div>
-                        <div class="w-full bg-gray-200 rounded-full h-2.5 mt-2">
-                            <div class="bg-blue-600 h-2.5 rounded-full" :style="{ width: Math.min(100, Math.round((goal.currentAmount / goal.targetAmount) * 100)) + '%' }"></div>
-                        </div>
-                        <div class="text-xs text-right mt-1">Прогресс: {{ Math.min(100, Math.round((goal.currentAmount / goal.targetAmount) * 100)) }}%</div>
-                        <div class="flex gap-2 mt-2" v-if="goal.currentAmount < goal.targetAmount">
-                            <button @click="addMoneyToGoal(goal, 1000)" class="flex-1 py-1 bg-green-100 text-green-700 rounded text-xs hover:bg-green-200">+1 000 ₽</button>
-                            <button @click="addMoneyToGoal(goal, 5000)" class="flex-1 py-1 bg-green-100 text-green-700 rounded text-xs hover:bg-green-200">+5 000 ₽</button>
-                            <button @click="addMoneyToGoal(goal, 10000)" class="flex-1 py-1 bg-green-100 text-green-700 rounded text-xs hover:bg-green-200">+10 000 ₽</button>
-                        </div>
-                        <div v-else class="mt-2 text-green-600 font-bold text-sm">✅ Достигнута!</div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Вкладка: Аналитика -->
-            <div v-show="currentTab === 'analytics'" class="tab-panel bg-white p-5 rounded-lg shadow">
-                <h2 class="text-xl font-bold mb-4">Аналитика расходов</h2>
-                <div class="mb-4">
-                    <span class="mr-2">Месяц для анализа:</span>
-                    <select v-model="analyticsMonth" class="border p-1 rounded">
-                        <option v-for="snap in monthlyData" :key="snap.month" :value="snap.month">{{ snap.monthLabel }}</option>
-                    </select>
-                </div>
-                <h3 class="font-semibold mb-2">Динамика расходов</h3>
-                <div class="space-y-2">
-                    <div v-for="(amount, cat) in getAnalyticsExpenses()" :key="cat" class="flex items-center justify-between p-2 bg-gray-50 rounded">
-                        <span class="font-medium">{{ categoryNames[cat] || cat }}</span>
-                        <div class="text-right">
-                            <div class="font-mono">{{ formatMoney(amount) }} ₽</div>
-                            <div class="text-xs text-gray-500">({{ getPercentage(analyticsMonth, amount) }}%)</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Вкладка: ИИ-Ассистент -->
-            <div v-show="currentTab === 'ai'" class="tab-panel bg-white p-5 rounded-lg shadow">
-                <h2 class="text-xl font-bold mb-4">ИИ-Ассистент</h2>
-                <div class="h-64 overflow-y-auto border p-3 rounded bg-gray-50 mb-3 space-y-2">
-                    <div v-for="(msg, i) in aiMessages" :key="i" :class="msg.role === 'user' ? 'text-right' : 'text-left'">
-                        <span :class="msg.role === 'user' ? 'bg-blue-100' : 'bg-gray-200'" class="inline-block px-3 py-2 rounded-lg text-sm">{{ msg.text }}</span>
-                    </div>
-                    <div v-if="isAiLoading" class="text-gray-400 text-sm italic">⏳ Ollama анализирует...</div>
-                </div>
-                <div class="flex gap-2 mb-3 overflow-x-auto pb-1">
-                    <button @click="askAi('Сократить расходы')" class="px-3 py-1 bg-gray-100 rounded-full text-xs whitespace-nowrap hover:bg-gray-200">📉 Сократить расходы</button>
-                    <button @click="askAi('Инвестировать')" class="px-3 py-1 bg-gray-100 rounded-full text-xs whitespace-nowrap hover:bg-gray-200">📈 Инвестировать</button>
-                    <button @click="askAi('Улучшить КФГ')" class="px-3 py-1 bg-gray-100 rounded-full text-xs whitespace-nowrap hover:bg-gray-200">⭐ Улучшить КФГ</button>
-                    <button @click="askAi('Подушка безопасности')" class="px-3 py-1 bg-gray-100 rounded-full text-xs whitespace-nowrap hover:bg-gray-200">🛡️ Подушка</button>
-                    <button @click="aiMessages = []" class="px-3 py-1 bg-red-50 text-red-600 rounded-full text-xs whitespace-nowrap hover:bg-red-100">🔄 Сбросить контекст</button>
-                </div>
-                <div class="flex gap-2">
-                    <input v-model="aiInput" @keyup.enter="sendAiMessage" placeholder="Выберите тему или задайте свой вопрос" class="flex-grow border p-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    <button @click="sendAiMessage" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Отправить</button>
-                </div>
-            </div>
-
-            <!-- Вкладка: Друзья и рейтинги -->
-            <div v-show="currentTab === 'friends'" class="tab-panel bg-white p-5 rounded-lg shadow">
-                <h2 class="text-xl font-bold mb-4">Друзья и рейтинги</h2>
-                
-                <h3 class="font-semibold mb-2">🏆 Рейтинг КФГ</h3>
-                <table class="w-full text-sm mb-6 border-collapse">
-                    <thead class="bg-gray-100"><tr><th class="p-2 border">#</th><th class="p-2 border">Пользователь</th><th class="p-2 border">КФГ</th></tr></thead>
-                    <tbody>
-                        <tr v-for="(p, idx) in leaderboard" :key="p.id" :class="p.id === currentUser.id ? 'bg-blue-50 font-bold' : ''">
-                            <td class="p-2 border text-center">{{ idx+1 }}</td>
-                            <td class="p-2 border">{{ p.name }} {{ p.surname }} <span v-if="p.id === currentUser.id" class="text-xs text-blue-600">(Вы)</span></td>
-                            <td class="p-2 border text-center">{{ p.kfg }}</td>
-                        </tr>
-                    </tbody>
-                </table>
-
-                <div class="mb-4">
-                    <input v-model="friendSearch" placeholder="Найти друга" class="w-full p-2 border rounded mb-2">
-                    <div v-if="friendSearch && searchResults.length > 0" class="space-y-2">
-                        <div v-for="user in searchResults" :key="user.id" class="flex justify-between items-center p-2 bg-gray-50 rounded">
-                            <span>{{ user.name }} {{ user.surname }} ({{ user.nickname }})</span>
-                            <button @click="addFriend(user)" class="text-blue-600 text-sm hover:underline">➕ Добавить</button>
-                        </div>
-                    </div>
-                </div>
-
-                <h3 class="font-semibold mb-2">Мои друзья ({{ friends.length }})</h3>
-                <div v-if="friends.length === 0" class="text-gray-400 italic">У вас пока нет друзей</div>
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div v-for="f in friends" :key="f.id" class="flex justify-between items-center p-3 border rounded">
-                        <div>
-                            <div class="font-medium">{{ f.name }}</div>
-                            <div class="text-xs text-gray-500">{{ f.nickname }} | КФГ: {{ f.kfg }}</div>
-                        </div>
-                        <button @click="removeFriend(f.id)" class="text-red-500 hover:text-red-700">🗑️ Удалить</button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Вкладка: Награды (ТОЛЬКО АВАТАРКИ) -->
-            <div v-show="currentTab === 'awards'" class="tab-panel bg-white p-5 rounded-lg shadow">
-                <h2 class="text-xl font-bold mb-2">Награды</h2>
-                <div class="flex items-center gap-4 mb-4 p-3 bg-blue-50 rounded-lg border border-blue-100">
-                    <span class="text-sm">Ваш КФГ: <strong class="text-lg text-blue-700">{{ currentMonthKFG }}</strong></span>
-                    <span class="text-gray-300">|</span>
-                    <span class="text-sm">Рейтинг: <strong>{{ getUserRating(currentUser) }}</strong></span>
-                </div>
-                
-                <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                    <div v-for="av in avatars" :key="av.id" class="avatar-item flex flex-col items-center p-3 border rounded-lg bg-gray-50 transition hover:shadow-md">
-                        <div class="text-4xl mb-2">{{ av.icon }}</div>
-                        <div class="font-medium text-sm text-center">{{ av.name }}</div>
-                        <!-- Подсказка при наведении -->
-                        <div class="avatar-tooltip">
-                            Требуется КФГ: {{ av.reqKfg }}+
-                        </div>
-                        <div class="mt-2 text-xs" :class="unlockedAvatars.includes(av.id) ? 'text-green-600 font-bold' : 'text-gray-400'">
-                            {{ unlockedAvatars.includes(av.id) ? '✅ Получено' : '🔒 Закрыто' }}
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Вкладка: О КФГ -->
-            <div v-show="currentTab === 'kfg'" class="tab-panel bg-white p-5 rounded-lg shadow">
-                <h2 class="text-xl font-bold mb-4">Коэффициент финансовой грамотности (КФГ)</h2>
-                <div class="prose max-w-none text-sm text-gray-700 mb-6">
-                    <p class="font-semibold mb-2">Как рассчитывается КФГ?</p>
-                    <p class="mb-2">КФГ = 100 − (Расходы / Доход × 100), но с учётом корректировок:</p>
-                    <ul class="list-disc pl-5 space-y-1 mb-4">
-                        <li>Если расходы на развлечения > 30% дохода → −20 баллов</li>
-                        <li>Если расходы на еду (включая кафе) > 50% дохода → −15 баллов</li>
-                        <li>Если расходы на подписки > 10% дохода → −10 баллов</li>
-                        <li>Если есть расходы на образование → +5 баллов</li>
-                        <li>Если остаток после расходов > 20% дохода → +10 баллов</li>
-                    </ul>
-                    <p>Итоговое значение ограничивается от 0 до 100.</p>
-                </div>
-
-                <h3 class="font-semibold mb-2">Динамика КФГ по месяцам</h3>
-                <table class="w-full text-sm border-collapse">
-                    <thead class="bg-gray-100"><tr><th class="p-2 border">Месяц</th><th class="p-2 border">Доход</th><th class="p-2 border">Расходы</th><th class="p-2 border">КФГ</th></tr></thead>
-                    <tbody>
-                        <tr v-for="snap in monthlyData" :key="snap.month" class="border-b">
-                            <td class="p-2">{{ snap.monthLabel }}</td>
-                            <td class="p-2">{{ formatMoney(snap.income) }} ₽</td>
-                            <td class="p-2">{{ formatMoney(snap.totalExpenses) }} ₽</td>
-                            <td class="p-2 font-bold" :class="snap.kfg > 70 ? 'text-green-600' : snap.kfg > 40 ? 'text-yellow-600' : 'text-red-600'">{{ snap.kfg }}</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </main>
-
-    <!-- ================= ФУТЕР РАЗРАБОТЧИКОВ (ВСЕГДА ВИДЕН) ================= -->
-    <footer class="mt-auto py-6 px-4 text-center text-sm text-gray-600 bg-gray-100 border-t border-gray-200">
-        <div class="container mx-auto">
-            <p class="font-semibold text-gray-800 mb-2">Разработчики:</p>
-            <div class="flex flex-wrap justify-center gap-x-4 gap-y-1 mb-3">
-                <a href="https://vk.ru/id875641672" target="_blank" class="text-blue-600 hover:underline font-medium">id875641672</a>
-                <a href="https://vk.ru/sekuewuuu" target="_blank" class="text-blue-600 hover:underline font-medium">sekuewuuu</a>
-                <a href="https://vk.ru/mvikirriaa" target="_blank" class="text-blue-600 hover:underline font-medium">mvikirriaa</a>
-                <a href="https://vk.com/club237476006" target="_blank" class="text-blue-600 hover:underline font-medium">Чат бот поддержки</a>
-            </div>
-            <p class="text-xs text-gray-500 leading-relaxed">
-                © 2026 FinGrade - Умный финансовый помощник (Проект кафедры АСУ, МАДИ)<br>
-                направление подготовки 09.03.01-Информатика и вычислительная техника.
-            </p>
-        </div>
-    </footer>
-    <!-- ==================================================================== -->
-
-    <!-- Модальные окна -->
-    <!-- Изменить доход -->
-    <div v-if="showIncomeModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div class="bg-white p-5 rounded-lg shadow-xl w-80">
-            <h3 class="font-bold mb-3">Изменить доход</h3>
-            <input v-model.number="newIncome" type="number" class="w-full p-2 border rounded mb-3" placeholder="Сумма в ₽">
-            <div class="flex gap-2">
-                <button @click="showIncomeModal = false" class="flex-1 py-2 bg-gray-200 rounded hover:bg-gray-300">Отмена</button>
-                <button @click="updateIncome" class="flex-1 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Сохранить</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Добавить данные за прошлый месяц -->
-    <div v-if="showPastMonthModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div class="bg-white p-5 rounded-lg shadow-xl w-96 max-h-[90vh] overflow-y-auto">
-            <h3 class="font-bold mb-3">Добавить данные за прошлый месяц</h3>
-            <input v-model="newMonthData.month" type="month" class="w-full p-2 border rounded mb-3">
-            <input v-model.number="newMonthData.income" type="number" class="w-full p-2 border rounded mb-3" placeholder="Доход">
-            <p class="text-sm font-medium mb-2">Расходы по категориям:</p>
-            <div v-for="(name, key) in categoryNames" :key="key" class="mb-2 flex items-center gap-2">
-                <span class="w-24 text-sm">{{ name }}</span>
-                <input v-model.number="newMonthData.expenses[key]" type="number" class="flex-grow p-1 border rounded" placeholder="0">
-            </div>
-            <div class="flex gap-2 mt-4">
-                <button @click="showPastMonthModal = false" class="flex-1 py-2 bg-gray-200 rounded hover:bg-gray-300">Отмена</button>
-                <button @click="savePastMonth" class="flex-1 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Сохранить</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Добавить к цели -->
-    <div v-if="showAddToGoalModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div class="bg-white p-5 rounded-lg shadow-xl w-80">
-            <h3 class="font-bold mb-3">Добавить к "{{ selectedGoalNameForAdd }}"</h3>
-            <input v-model.number="addToGoalAmount" type="number" class="w-full p-2 border rounded mb-3" placeholder="Сумма">
-            <div class="flex gap-2">
-                <button @click="showAddToGoalModal = false" class="flex-1 py-2 bg-gray-200 rounded hover:bg-gray-300">Отмена</button>
-                <button @click="confirmAddToGoal" class="flex-1 py-2 bg-green-600 text-white rounded hover:bg-green-700">Добавить</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Удалить цель -->
-    <div v-if="showRemoveGoalModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div class="bg-white p-5 rounded-lg shadow-xl w-80 text-center">
-            <h3 class="font-bold mb-3">Удалить "{{ selectedGoalNameForRemove }}"?</h3>
-            <p class="text-sm text-gray-500 mb-4">Это действие нельзя отменить.</p>
-            <div class="flex gap-2">
-                <button @click="showRemoveGoalModal = false" class="flex-1 py-2 bg-gray-200 rounded hover:bg-gray-300">Отмена</button>
-                <button @click="confirmRemoveGoal" class="flex-1 py-2 bg-red-600 text-white rounded hover:bg-red-700">Удалить</button>
-            </div>
-        </div>
-    </div>
-
-</div>
-
-<script>
-    const { createApp, ref, computed, onMounted } = Vue;
-
-    createApp({
-        setup() {
-            // Состояние
-            const loading = ref(false);
-            const loadingMessage = ref('');
-            const currentUser = ref({ id: null, name: '', surname: '', nickname: '', income: 0, avatar: 'default', kfg: 0, rating: '🌟 Новичок' });
-            const pendingFriendRequests = ref([]);
-            const currentTab = ref('profile');
-            
-            // Данные
-            const categoryNames = { food: 'Еда', transport: 'Транспорт', fun: 'Развлечения', subs: 'Подписки', edu: 'Образование', other: 'Прочее' };
-            const avatars = ref([
-                { id: 'default', name: 'Новичок', icon: '🌱', reqKfg: 0 },
-                { id: 'silver', name: 'Серебро', icon: '🥈', reqKfg: 40 },
-                { id: 'gold', name: 'Золото', icon: '🥇', reqKfg: 60 },
-                { id: 'platinum', name: 'Платина', icon: '', reqKfg: 80 },
-                { id: 'master', name: 'Мастер', icon: '👑', reqKfg: 95 }
-            ]);
-            const unlockedAvatars = ref(['default']);
-            const monthlyData = ref([]);
-            const goals = ref([]);
-            const friends = ref([]);
-            const aiMessages = ref([]);
-            const aiInput = ref('');
-            const isAiLoading = ref(false);
-            const leaderboard = ref([]);
-
-            // Вспомогательные
-            const tabs = ref([
-                { id: 'profile', name: 'Мой профиль' },
-                { id: 'expenses', name: 'Расходы' },
-                { id: 'goals', name: 'Цели' },
-                { id: 'analytics', name: 'Аналитика' },
-                { id: 'ai', name: 'ИИ-Ассистент' },
-                { id: 'friends', name: 'Друзья' },
-                { id: 'awards', name: 'Награды' },
-                { id: 'kfg', name: 'О КФГ' }
-            ]);
-            const selectedExpenseMonth = ref('');
-            const analyticsMonth = ref('');
-            const showDetailsModal = ref(false);
-            const detailsMonthLabel = ref('');
-            const detailsExpenses = ref({});
-            
-            // Модалки
-            const showIncomeModal = ref(false);
-            const newIncome = ref(0);
-            const showPastMonthModal = ref(false);
-            const newMonthData = ref({ month: '', income: 0, expenses: { food:0, transport:0, fun:0, subs:0, edu:0, other:0 } });
-            const showAddGoalModal = ref(false); // Упрощено для примера
-            const showAddToGoalModal = ref(false);
-            const selectedGoalNameForAdd = ref('');
-            const addToGoalAmount = ref(0);
-            const showRemoveGoalModal = ref(false);
-            const selectedGoalNameForRemove = ref('');
-            const targetGoalId = ref(null);
-            const friendSearch = ref('');
-            const searchResults = ref([]);
-
-            // Computed
-            const currentMonthKFG = computed(() => {
-                const now = new Date();
-                const monthKey = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
-                const data = monthlyData.value.find(m => m.month === monthKey);
-                return data ? data.kfg : 0;
-            });
-
-            // Methods
-            const formatMoney = (val) => Number(val || 0).toLocaleString('ru-RU');
-            const getMonthLabel = (monthStr) => {
-                if (!monthStr) return '';
-                const [y, m] = monthStr.split('-');
-                const months = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
-                return `${months[parseInt(m)-1]} ${y}`;
-            };
-            const getUserRating = (user) => user.rating || '🌟 Новичок';
-            const getAvatarName = (id) => avatars.value.find(a => a.id === id)?.name || 'Неизвестно';
-
-            // Исправление ошибки: определение saveExpenses
-            const saveExpenses = () => {
-                const now = new Date();
-                const monthKey = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
-                let existing = monthlyData.value.find(m => m.month === monthKey);
-                if (!existing) {
-                    existing = { month: monthKey, income: currentUser.value.income, expenses: {}, totalExpenses: 0, kfg: 0, monthLabel: getMonthLabel(monthKey) };
-                    monthlyData.value.unshift(existing);
-                    selectedExpenseMonth.value = monthKey;
-                    analyticsMonth.value = monthKey;
-                }
-                // Пересчет КФГ (упрощенный алгоритм под условия задачи)
-                const total = Object.values(existing.expenses).reduce((a,b)=>a+b, 0);
-                existing.totalExpenses = total;
-                let kfg = 100 - (total / (existing.income || 1) * 100);
-                
-                // Корректировки
-                const funPct = (existing.expenses.fun || 0) / (existing.income || 1);
-                const foodPct = (existing.expenses.food || 0) / (existing.income || 1);
-                const subsPct = (existing.expenses.subs || 0) / (existing.income || 1);
-                const restPct = 1 - (total / (existing.income || 1));
-
-                if (funPct > 0.3) kfg -= 20;
-                if (foodPct > 0.5) kfg -= 15;
-                if (subsPct > 0.1) kfg -= 10;
-                if ((existing.expenses.edu || 0) > 0) kfg += 5;
-                if (restPct > 0.2) kfg += 10;
-
-                existing.kfg = Math.max(0, Math.min(100, Math.round(kfg)));
-                
-                // Обновление разблокировки аватарок
-                updateUnlockedAvatars(existing.kfg);
-                alert('Расходы успешно сохранены! КФГ пересчитан.');
-            };
-
-            const updateUnlockedAvatars = (kfg) => {
-                avatars.value.forEach(av => {
-                    if (kfg >= av.reqKfg && !unlockedAvatars.value.includes(av.id)) {
-                        unlockedAvatars.value.push(av.id);
-                    }
-                });
-            };
-
-            const getCurrentMonthExpenses = () => {
-                const data = monthlyData.value.find(m => m.month === selectedExpenseMonth.value);
-                return data ? data.expenses : {};
-            };
-            const showDetails = (month) => {
-                const data = monthlyData.value.find(m => m.month === month);
-                if (data) {
-                    detailsMonthLabel.value = data.monthLabel;
-                    detailsExpenses.value = data.expenses;
-                    showDetailsModal.value = true;
-                }
-            };
-            const getDetailsExpenses = () => detailsExpenses.value;
-
-            const getAnalyticsExpenses = () => {
-                const data = monthlyData.value.find(m => m.month === analyticsMonth.value);
-                return data ? data.expenses : {};
-            };
-            const getPercentage = (month, amount) => {
-                const data = monthlyData.value.find(m => m.month === month);
-                if (!data || !data.totalExpenses) return 0;
-                return Math.round((amount / data.totalExpenses) * 100);
-            };
-
-            // AI
-            const askAi = (topic) => {
-                aiInput.value = topic;
-                sendAiMessage();
-            };
-            const sendAiMessage = () => {
-                if (!aiInput.value.trim()) return;
-                aiMessages.value.push({ role: 'user', text: aiInput.value });
-                isAiLoading.value = true;
-                setTimeout(() => {
-                    aiMessages.value.push({ role: 'ai', text: `Анализ по теме "${aiInput.value}" завершен. Рекомендую оптимизировать бюджет и увеличить накопления на 10%.` });
-                    isAiLoading.value = false;
-                    aiInput.value = '';
-                }, 1200);
-            };
-
-            // Цели
-            const addMoneyToGoal = (goal, amount) => {
-                if (goal.currentAmount < goal.targetAmount) {
-                    goal.currentAmount += amount;
-                    if (goal.currentAmount >= goal.targetAmount) {
-                        alert('🎉 Цель достигнута!');
-                    }
-                }
-            };
-            const removeGoal = (goal) => {
-                selectedGoalNameForRemove.value = goal.name;
-                targetGoalId.value = goal.id;
-                showRemoveGoalModal.value = true;
-            };
-            const confirmRemoveGoal = () => {
-                goals.value = goals.value.filter(g => g.id !== targetGoalId.value);
-                showRemoveGoalModal.value = false;
-            };
-
-            // Доход
-            const updateIncome = () => {
-                currentUser.value.income = newIncome.value;
-                showIncomeModal.value = false;
-            };
-
-            // Прошлый месяц
-            const savePastMonth = () => {
-                if (!newMonthData.value.month) return alert('Выберите месяц');
-                const total = Object.values(newMonthData.value.expenses).reduce((a,b)=>a+b, 0);
-                let kfg = 100 - (total / (newMonthData.value.income || 1) * 100);
-                kfg = Math.max(0, Math.min(100, Math.round(kfg)));
-                
-                monthlyData.value.push({
-                    month: newMonthData.value.month,
-                    monthLabel: getMonthLabel(newMonthData.value.month),
-                    income: newMonthData.value.income,
-                    expenses: {...newMonthData.value.expenses},
-                    totalExpenses: total,
-                    kfg
-                });
-                monthlyData.value.sort((a,b) => b.month.localeCompare(a.month));
-                showPastMonthModal.value = false;
-                alert('Данные за прошлый месяц добавлены.');
-            };
-
-            // Друзья
-            const addFriend = (user) => {
-                friends.value.push(user);
-                friendSearch.value = '';
-                searchResults.value = [];
-            };
-            const removeFriend = (id) => {
-                friends.value = friends.value.filter(f => f.id !== id);
-            };
-
-            // Инициализация
-            onMounted(() => {
-                // Демо-данные для входа
-                currentUser.value = { id: 1, name: 'Алексей', surname: 'Смирнов', nickname: 'alex_fin', income: 65000, avatar: 'silver', rating: '🥈 Серебро' };
-                unlockedAvatars.value = ['default', 'silver'];
-                
-                const now = new Date();
-                const monthKey = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
-                monthlyData.value = [
-                    { month: monthKey, monthLabel: getMonthLabel(monthKey), income: 65000, expenses: { food: 18000, transport: 6000, fun: 12000, subs: 3000, edu: 5000, other: 2000 }, totalExpenses: 46000, kfg: 72 },
-                    { month: '2026-03', monthLabel: 'Март 2026', income: 60000, expenses: { food: 25000, transport: 5000, fun: 15000, subs: 4000 }, totalExpenses: 49000, kfg: 55 }
-                ];
-                selectedExpenseMonth.value = monthKey;
-                analyticsMonth.value = monthKey;
-
-                goals.value = [
-                    { id: 1, name: 'На отпуск', currentAmount: 45000, targetAmount: 150000 },
-                    { id: 2, name: 'Ноутбук', currentAmount: 80000, targetAmount: 95000 }
-                ];
-                friends.value = [
-                    { id: 2, name: 'Мария', surname: 'Иванова', nickname: 'masha_save', kfg: 81 },
-                    { id: 3, name: 'Дмитрий', surname: 'Козлов', nickname: 'dim_trade', kfg: 64 }
-                ];
-                leaderboard.value = [...friends.value, { ...currentUser.value }].sort((a,b) => b.kfg - a.kfg);
-            });
-
-            // Для модалки входа/регистрации (упрощено)
-            const regForm = ref({ name:'', surname:'', nickname:'', avatar:'default' });
-            const loginForm = ref({ nickname:'' });
-            const register = () => { /* логика регистрации */ };
-            const login = () => { /* логика входа */ };
-            const logout = () => { currentUser.value.id = null; };
-
-            return {
-                loading, loadingMessage, currentUser, pendingFriendRequests, currentTab, tabs,
-                categoryNames, avatars, unlockedAvatars, monthlyData, goals, friends, aiMessages, aiInput, isAiLoading, leaderboard,
-                currentMonthKFG, formatMoney, getMonthLabel, getUserRating, getAvatarName,
-                selectedExpenseMonth, analyticsMonth, showDetailsModal, detailsMonthLabel,
-                showIncomeModal, newIncome, showPastMonthModal, newMonthData,
-                showAddToGoalModal, selectedGoalNameForAdd, addToGoalAmount, showRemoveGoalModal, selectedGoalNameForRemove,
-                friendSearch, searchResults,
-                saveExpenses, showDetails, getDetailsExpenses, getCurrentMonthExpenses, getAnalyticsExpenses, getPercentage,
-                askAi, sendAiMessage, addMoneyToGoal, removeGoal, confirmRemoveGoal, updateIncome, savePastMonth,
-                addFriend, removeFriend, register, login, logout, regForm, loginForm
-            };
+        let firebaseApp, auth, db;
+        
+        try {
+            if (!firebase.apps.length) {
+                firebaseApp = firebase.initializeApp(firebaseConfig);
+            } else {
+                firebaseApp = firebase.app();
+            }
+            auth = firebase.auth();
+            db = firebase.firestore();
+            console.log('✅ Firebase инициализирован');
+        } catch (error) {
+            console.error('❌ Ошибка инициализации Firebase:', error);
         }
-    }).mount('#app');
-</script>
+
+        const googleProvider = new firebase.auth.GoogleAuthProvider();
+        googleProvider.setCustomParameters({ prompt: 'select_account' });
+
+        const N8N_WEBHOOK_URL = 'http://localhost:5678/webhook/chat';
+
+        async function sendToOllamaViaN8N(messages, currentUserData, userIncome, userExpenses, userKfg, userGoals) {
+            const userMessage = messages[messages.length - 1].content;
+            const history = messages.slice(0, -1);
+            
+            let userContext = "Нет данных о пользователе";
+            if (currentUserData) {
+                userContext = `Доход: ${formatMoney(userIncome)} ₽, Расходы: ${formatMoney(userExpenses)} ₽, КФГ: ${userKfg}`;
+                if (userGoals && userGoals.length > 0) {
+                    userContext += `, Целей: ${userGoals.length}`;
+                }
+            }
+            
+            const requestBody = {
+                message: userMessage,
+                history: history,
+                userContext: userContext,
+                sessionId: currentUserData?.login || 'guest'
+            };
+            
+            console.log('→ Отправка в n8n:', requestBody);
+            
+            try {
+                const response = await fetch(N8N_WEBHOOK_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(requestBody)
+                });
+                
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                
+                const data = await response.json();
+                console.log('← Ответ от n8n:', data);
+                
+                return data.output || data.text || data.response || data.message || 'Не удалось получить ответ';
+                
+            } catch (error) {
+                console.error('Ошибка n8n:', error);
+                return `⚠️ Ошибка подключения к ассистенту. Убедитесь, что n8n запущен на ${N8N_WEBHOOK_URL}`;
+            }
+        }
+
+        function formatMoney(amount) {
+            return new Intl.NumberFormat('ru-RU').format(Math.round(amount || 0));
+        }
+
+        const app = createApp({
+            setup() {
+                const initialExpenses = {
+                    food: 0, transport: 0, cafe: 0, hobby: 0, selfcare: 0,
+                    health: 0, housing: 0, entertainment: 0, subscriptions: 0, education: 0, travel: 0
+                };
+
+                const loading = ref(false);
+                const loadingMessage = ref('Загрузка...');
+                const currentTab = ref('profile');
+                const message = reactive({ show: false, text: '', type: 'success' });
+                const users = ref([]);
+                const currentUser = ref(null);
+                
+                const showIncomeModal = ref(false);
+                const newIncomeValue = ref(0);
+                const showAddToGoalModal = ref(false);
+                const selectedGoalIndex = ref(null);
+                const selectedGoalName = ref('');
+                const addToGoalAmount = ref(1000);
+                const showRemoveGoalModal = ref(false);
+                const selectedGoalIndexForRemove = ref(null);
+                const selectedGoalNameForRemove = ref('');
+                const showHistoricalModal = ref(false);
+                const historicalMonth = ref('');
+                const historicalIncome = ref(0);
+                const historicalExpenses = ref({ ...initialExpenses });
+                
+                const loginForm = reactive({ login: '', password: '' });
+                const registerForm = reactive({
+                    name: '', surname: '', nickname: '', login: '', email: '', password: '',
+                    income: 0, avatar: 1, expenses: { ...initialExpenses },
+                    historicalMonths: []
+                });
+                
+                const selectedExpenseMonth = ref('');
+                const expensesForSelectedMonth = reactive({ ...initialExpenses });
+                const detailsModalVisible = ref(false);
+                const detailsMonthLabel = ref('');
+                const detailsExpenses = reactive({});
+                const expenses = reactive({ ...initialExpenses });
+                const goals = ref([]);
+                const newGoal = reactive({ name: '', targetAmount: 0 });
+                const friends = ref([]);
+                const friendRequests = ref([]);
+                const pendingRequests = ref([]);
+                const friendSearchQuery = ref('');
+                const searchResults = ref([]);
+                
+                const chatMessages = ref([
+                    { text: 'Привет! Я финансовый ассистент. Задайте вопрос о финансах!', sender: 'bot' }
+                ]);
+                const chatInput = ref('');
+                const chatContainer = ref(null);
+                const aiLoading = ref(false);
+                const chatHistory = ref([
+                    { role: 'system', content: 'Вы финансовый ассистент. Отвечайте на русском языке, давайте полезные советы по управлению финансами, оптимизации расходов и увеличению КФГ.' }
+                ]);
+                
+                const monthlySnapshots = ref({});
+                const selectedAnalysisMonth = ref('');
+                let expenseChart = null;
+                let expenseTrendChart = null;
+                let kfgTrendChart = null;
+                
+                const avatars = [
+                    { id: 1, name: 'Новичок', kfgRequired: 0 },
+                    { id: 2, name: 'Эконом', kfgRequired: 40 },
+                    { id: 3, name: 'Инвестор', kfgRequired: 70 },
+                    { id: 4, name: 'Эксперт', kfgRequired: 90 },
+                    { id: 5, name: 'Гуру', kfgRequired: 100 }
+                ];
+                
+                const tabs = [
+                    { id: 'profile', name: 'Профиль', icon: 'fas fa-user' },
+                    { id: 'expenses', name: 'Расходы', icon: 'fas fa-chart-line' },
+                    { id: 'goals', name: 'Цели', icon: 'fas fa-bullseye' },
+                    { id: 'analytics', name: 'Аналитика', icon: 'fas fa-chart-pie' },
+                    { id: 'chat', name: 'Ассистент', icon: 'fas fa-robot' },
+                    { id: 'friends', name: 'Друзья', icon: 'fas fa-users' },
+                    { id: 'rewards', name: 'Награды', icon: 'fas fa-gift' },
+                    { id: 'kfg', name: 'КФГ', icon: 'fas fa-chart-line' }
+                ];
+                
+                const categoryNames = {
+                    food: 'Еда', transport: 'Транспорт', cafe: 'Кафе', hobby: 'Хобби', selfcare: 'Уход',
+                    health: 'Здоровье', housing: 'Жилье', entertainment: 'Развлечения', subscriptions: 'Подписки',
+                    education: 'Учеба', travel: 'Путешествия'
+                };
+                
+                const categoryIcons = {
+                    food: 'fas fa-utensils', transport: 'fas fa-bus', cafe: 'fas fa-coffee',
+                    hobby: 'fas fa-palette', selfcare: 'fas fa-spa', health: 'fas fa-heartbeat',
+                    housing: 'fas fa-home', entertainment: 'fas fa-gamepad', subscriptions: 'fas fa-tv',
+                    education: 'fas fa-book', travel: 'fas fa-plane'
+                };
+
+                const categoryColors = {
+                    food: '#FF6384', transport: '#36A2EB', cafe: '#FFCE56', hobby: '#4BC0C0',
+                    selfcare: '#9966FF', health: '#FF9F40', housing: '#8B4513', entertainment: '#20B2AA',
+                    subscriptions: '#BA55D3', education: '#2E8B57', travel: '#FF8C42'
+                };
+
+                const totalExpenses = computed(() => Object.values(expenses).reduce((a, b) => a + b, 0));
+                const totalIncome = computed(() => currentUser.value?.income || 0);
+                const balance = computed(() => totalIncome.value - totalExpenses.value);
+                const hasExpenses = computed(() => Object.values(expenses).some(v => v > 0));
+
+                const unlockedAvatars = computed(() => {
+                    if (!currentUser.value) return [];
+                    return avatars.filter(a => a.id === 1 || kfg.value >= a.kfgRequired).map(a => a.name);
+                });
+
+                const kfg = computed(() => {
+                    if (!currentUser.value || totalIncome.value === 0) return 0;
+                    if (!hasExpenses.value) return 0;
+                    let value = 100 - (totalExpenses.value / totalIncome.value * 100);
+                    const totalFood = (expenses.food || 0) + (expenses.cafe || 0);
+                    if (expenses.entertainment > totalIncome.value * 0.3) value -= 20;
+                    if (totalFood > totalIncome.value * 0.5) value -= 15;
+                    if (expenses.subscriptions > totalIncome.value * 0.1) value -= 10;
+                    if (expenses.education > 0) value += 5;
+                    if (balance.value > totalIncome.value * 0.2) value += 10;
+                    return Math.max(0, Math.min(100, Math.round(value)));
+                });
+
+                // КФГ за текущий месяц (из снепшота или текущих данных)
+                const currentMonthKfg = computed(() => {
+                    if (!currentUser.value) return 0;
+                    const currentMonthId = getCurrentMonthId();
+                    const snapshot = monthlySnapshots.value[currentMonthId];
+                    if (snapshot && snapshot.kfg !== undefined) {
+                        return snapshot.kfg;
+                    }
+                    // Если снепшота нет, вычисляем из текущих расходов
+                    return kfg.value;
+                });
+
+                const friendsWithDetails = computed(() => {
+                    return friends.value.map(f => {
+                        const fullUser = users.value.find(u => u.login === f.login);
+                        return fullUser ? { ...f, kfg: calculateKFG(fullUser), ratingLevel: getUserRatingLevel(fullUser) } : f;
+                    });
+                });
+
+                const pendingFriendRequests = computed(() => {
+                    if (!currentUser.value) return [];
+                    return pendingRequests.value.map(login => users.value.find(u => u.login === login)).filter(Boolean);
+                });
+
+                const ratingParticipants = computed(() => {
+                    if (!currentUser.value) return [];
+                    const participants = [{ ...currentUser.value, kfg: kfg.value, isCurrentUser: true }];
+                    friends.value.forEach(f => {
+                        const fullUser = users.value.find(u => u.login === f.login);
+                        if (fullUser) participants.push({ ...fullUser, kfg: calculateKFG(fullUser), isCurrentUser: false });
+                    });
+                    return participants.sort((a, b) => b.kfg - a.kfg);
+                });
+
+                const filteredExpensesForMonth = computed(() => {
+                    const filtered = {};
+                    Object.keys(expensesForSelectedMonth).forEach(k => { if (categoryNames[k]) filtered[k] = expensesForSelectedMonth[k]; });
+                    return filtered;
+                });
+
+                const monthlySnapshotsSorted = computed(() => {
+                    return Object.values(monthlySnapshots.value).sort((a, b) => a.monthId.localeCompare(b.monthId));
+                });
+
+                const showMessage = (text, type) => {
+                    message.text = text;
+                    message.type = type;
+                    message.show = true;
+                    setTimeout(() => { message.show = false; }, 3000);
+                };
+
+                function getUserRating(user) {
+                    const userKFG = user?.kfg || calculateKFG(user);
+                    if (userKFG >= 90) return 'Гуру';
+                    if (userKFG >= 70) return 'Эксперт';
+                    if (userKFG >= 50) return 'Инвестор';
+                    if (userKFG >= 30) return 'Эконом';
+                    return 'Новичок';
+                }
+
+                function getUserRatingLevel(user) {
+                    const userKFG = user?.kfg || calculateKFG(user);
+                    if (userKFG >= 90) return 5;
+                    if (userKFG >= 70) return 4;
+                    if (userKFG >= 50) return 3;
+                    if (userKFG >= 30) return 2;
+                    return 1;
+                }
+
+                function calculateKFG(user) {
+                    if (!user?.income || user.income === 0) return 0;
+                    const userExpenses = user.expenses || {};
+                    const total = Object.values(userExpenses).reduce((a, b) => a + b, 0);
+                    if (total === 0) return 0;
+                    let value = 100 - (total / user.income * 100);
+                    return Math.max(0, Math.min(100, Math.round(value)));
+                }
+
+                function isAvatarUnlocked(avatar) {
+                    if (!currentUser.value) return false;
+                    if (avatar.id === 1) return true;
+                    return kfg.value >= avatar.kfgRequired;
+                }
+
+                function isAvatarAvailableForRegister(avatar) {
+                    return avatar.id === 1;
+                }
+
+                function selectRegisterAvatar(avatar) {
+                    if (isAvatarAvailableForRegister(avatar)) {
+                        registerForm.avatar = avatar.id;
+                    } else {
+                        showMessage('Этот аватар недоступен', 'error');
+                    }
+                }
+
+                function getAvatarUrl(avatarId) {
+                    const map = {
+                        1: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Novice',
+                        2: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Econom',
+                        3: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Investor',
+                        4: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Expert',
+                        5: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Guru'
+                    };
+                    return map[avatarId] || map[1];
+                }
+
+                function getAvatarName(avatarId) {
+                    return avatars.find(a => a.id === avatarId)?.name || 'Новичок';
+                }
+
+                function formatBotMessage(text, sender) { 
+                    return sender !== 'bot' ? text : text.replace(/\n/g, '<br>'); 
+                }
+                
+                function getMonthLabel(monthId) {
+                    if (!monthId) return '';
+                    const snap = monthlySnapshots.value[monthId];
+                    return snap ? snap.monthLabel : monthId;
+                }
+
+                function getCurrentMonthId() {
+                    const d = new Date();
+                    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+                }
+
+                function formatMonthLabel(monthId) {
+                    const [year, month] = monthId.split('-');
+                    const date = new Date(year, month - 1, 1);
+                    return date.toLocaleString('ru', { month: 'long', year: 'numeric' });
+                }
+
+                async function saveMonthlySnapshot(monthId, incomeVal, expensesObj) {
+                    if (!currentUser.value) return;
+                    const total = Object.values(expensesObj).reduce((a, b) => a + b, 0);
+                    const kfgVal = incomeVal === 0 ? 0 : Math.max(0, Math.min(100, Math.round(100 - (total / incomeVal * 100))));
+                    const snapshot = {
+                        income: incomeVal,
+                        expenses: { ...expensesObj },
+                        totalExpenses: total,
+                        kfg: kfgVal,
+                        timestamp: new Date().toISOString()
+                    };
+                    await db.collection('users').doc(currentUser.value.login).collection('monthly_snapshots').doc(monthId).set(snapshot);
+                    monthlySnapshots.value[monthId] = {
+                        monthId,
+                        monthLabel: formatMonthLabel(monthId),
+                        ...snapshot
+                    };
+                }
+
+                async function loadMonthlySnapshots() {
+                    if (!currentUser.value) return;
+                    monthlySnapshots.value = {};
+                    try {
+                        const snaps = await db.collection('users').doc(currentUser.value.login).collection('monthly_snapshots').get();
+                        snaps.forEach(doc => {
+                            const data = doc.data();
+                            const monthId = doc.id;
+                            if (monthId.match(/^\d{4}-\d{2}$/)) {
+                                monthlySnapshots.value[monthId] = {
+                                    monthId,
+                                    monthLabel: formatMonthLabel(monthId),
+                                    ...data
+                                };
+                            }
+                        });
+                        const currentId = getCurrentMonthId();
+                        if (!monthlySnapshots.value[currentId] && currentUser.value.income > 0) {
+                            await saveMonthlySnapshot(currentId, currentUser.value.income, expenses);
+                        }
+                        const sorted = Object.keys(monthlySnapshots.value).sort();
+                        if (sorted.length > 0) {
+                            selectedAnalysisMonth.value = sorted[sorted.length - 1];
+                            if (!selectedExpenseMonth.value || !monthlySnapshots.value[selectedExpenseMonth.value]) {
+                                selectedExpenseMonth.value = sorted[sorted.length - 1];
+                            }
+                            await loadExpensesForSelectedMonth();
+                        }
+                        updateAllCharts();
+                    } catch (e) { console.error('Ошибка загрузки снепшотов:', e); }
+                }
+
+                async function updateCurrentMonthSnapshot() {
+                    const monthId = getCurrentMonthId();
+                    await saveMonthlySnapshot(monthId, currentUser.value.income, expenses);
+                }
+
+                async function loadExpensesForSelectedMonth() {
+                    if (!selectedExpenseMonth.value || !monthlySnapshots.value[selectedExpenseMonth.value]) return;
+                    const snap = monthlySnapshots.value[selectedExpenseMonth.value];
+                    if (snap && snap.expenses) {
+                        Object.keys(expensesForSelectedMonth).forEach(key => {
+                            expensesForSelectedMonth[key] = snap.expenses[key] || 0;
+                        });
+                    } else {
+                        Object.keys(expensesForSelectedMonth).forEach(key => expensesForSelectedMonth[key] = 0);
+                    }
+                }
+
+                async function saveExpensesForSelectedMonth() {
+                    if (!selectedExpenseMonth.value) return;
+                    loading.value = true;
+                    try {
+                        const incomeVal = monthlySnapshots.value[selectedExpenseMonth.value]?.income || currentUser.value.income;
+                        await saveMonthlySnapshot(selectedExpenseMonth.value, incomeVal, expensesForSelectedMonth);
+                        await loadMonthlySnapshots();
+                        showMessage(`Расходы за ${getMonthLabel(selectedExpenseMonth.value)} сохранены`, 'success');
+                    } catch (error) {
+                        showMessage('Ошибка сохранения', 'error');
+                    } finally {
+                        loading.value = false;
+                    }
+                }
+
+                function showMonthDetails(snap) {
+                    detailsMonthLabel.value = snap.monthLabel;
+                    let expensesData = snap.expenses ? { ...snap.expenses } : {};
+                    if (Object.keys(expensesData).length === 0 && monthlySnapshots.value[snap.monthId] && monthlySnapshots.value[snap.monthId].expenses) {
+                        expensesData = { ...monthlySnapshots.value[snap.monthId].expenses };
+                    }
+                    const allCategories = ['food', 'transport', 'cafe', 'hobby', 'selfcare', 'health', 'housing', 'entertainment', 'subscriptions', 'education', 'travel'];
+                    allCategories.forEach(cat => {
+                        if (expensesData[cat] === undefined) expensesData[cat] = 0;
+                    });
+                    Object.keys(detailsExpenses).forEach(key => delete detailsExpenses[key]);
+                    Object.assign(detailsExpenses, expensesData);
+                    detailsModalVisible.value = true;
+                }
+
+                function updateAllCharts() {
+                    updateKfgTrendChart();
+                    updateExpenseTrendChart();
+                    loadExpensesForMonth();
+                }
+
+                function updateKfgTrendChart() {
+                    const ctx = document.getElementById('kfgTrendChart');
+                    if (!ctx) return;
+                    if (kfgTrendChart) kfgTrendChart.destroy();
+                    const sorted = monthlySnapshotsSorted.value;
+                    if (sorted.length === 0) return;
+                    const labels = sorted.map(s => s.monthLabel);
+                    const data = sorted.map(s => s.kfg);
+                    kfgTrendChart = new Chart(ctx, {
+                        type: 'line',
+                        data: { labels, datasets: [{ label: 'КФГ', data, borderColor: '#667eea', backgroundColor: 'rgba(102,126,234,0.1)', tension: 0.3, fill: true }] },
+                        options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, max: 100 } } }
+                    });
+                }
+
+                function updateExpenseTrendChart() {
+                    const ctx = document.getElementById('expenseTrendChart');
+                    if (!ctx) return;
+                    if (expenseTrendChart) expenseTrendChart.destroy();
+                    const sorted = monthlySnapshotsSorted.value;
+                    if (sorted.length === 0) return;
+                    const labels = sorted.map(s => s.monthLabel);
+                    const data = sorted.map(s => s.totalExpenses);
+                    expenseTrendChart = new Chart(ctx, {
+                        type: 'line',
+                        data: { labels, datasets: [{ label: 'Общие расходы (₽)', data, borderColor: '#ef4444', backgroundColor: 'rgba(239,68,68,0.1)', tension: 0.3, fill: true }] },
+                        options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, ticks: { callback: (val) => formatMoney(val) } } } }
+                    });
+                }
+
+                function loadExpensesForMonth() {
+                    if (!selectedAnalysisMonth.value) return;
+                    const snap = monthlySnapshots.value[selectedAnalysisMonth.value];
+                    if (snap && snap.expenses) {
+                        const ctx = document.getElementById('expenseChart');
+                        if (expenseChart) expenseChart.destroy();
+                        const active = Object.fromEntries(Object.entries(snap.expenses).filter(([_, v]) => v > 0));
+                        if (Object.keys(active).length === 0) return;
+                        expenseChart = new Chart(ctx, {
+                            type: 'doughnut',
+                            data: { labels: Object.keys(active).map(k => categoryNames[k]), datasets: [{ data: Object.values(active), backgroundColor: Object.keys(active).map(k => categoryColors[k]) }] },
+                            options: { responsive: true, maintainAspectRatio: false }
+                        });
+                    }
+                }
+
+                async function sendMessage() {
+                    if (!chatInput.value.trim() || aiLoading.value) return;
+                    const userMessage = chatInput.value.trim();
+                    chatMessages.value.push({ text: userMessage, sender: 'user' });
+                    chatHistory.value.push({ role: 'user', content: userMessage });
+                    chatInput.value = '';
+                    const loadingIndex = chatMessages.value.length;
+                    chatMessages.value.push({ text: '', sender: 'bot', loading: true });
+                    await nextTick();
+                    if (chatContainer.value) chatContainer.value.scrollTop = chatContainer.value.scrollHeight;
+                    aiLoading.value = true;
+                    try {
+                        const messagesForAI = [...chatHistory.value];
+                        const response = await sendToOllamaViaN8N(
+                            messagesForAI,
+                            currentUser.value,
+                            totalIncome.value,
+                            totalExpenses.value,
+                            kfg.value,
+                            goals.value
+                        );
+                        chatMessages.value.splice(loadingIndex, 1);
+                        chatMessages.value.push({ text: response, sender: 'bot' });
+                        chatHistory.value.push({ role: 'assistant', content: response });
+                        if (chatHistory.value.length > 11) {
+                            chatHistory.value = [chatHistory.value[0], ...chatHistory.value.slice(-10)];
+                        }
+                    } catch (error) {
+                        chatMessages.value.splice(loadingIndex, 1);
+                        chatMessages.value.push({ text: `⚠️ Ошибка: ${error.message}`, sender: 'bot', error: true });
+                    } finally {
+                        aiLoading.value = false;
+                        await nextTick();
+                        if (chatContainer.value) chatContainer.value.scrollTop = chatContainer.value.scrollHeight;
+                    }
+                }
+
+                function resetChatContext() {
+                    chatHistory.value = [{ role: 'system', content: 'Вы финансовый ассистент. Отвечайте на русском языке, давайте полезные советы по управлению финансами, оптимизации расходов и увеличению КФГ.' }];
+                    chatMessages.value = [{ text: 'Контекст сброшен. Задайте вопрос о финансах!', sender: 'bot' }];
+                    showMessage('Контекст диалога сброшен', 'success');
+                }
+
+                function quickQuestion(question) {
+                    chatInput.value = question;
+                    sendMessage();
+                }
+
+                async function loadUsersFromFirestore() {
+                    try {
+                        const snapshot = await db.collection('users').get();
+                        users.value = [];
+                        snapshot.forEach(doc => users.value.push({ id: doc.id, ...doc.data() }));
+                    } catch (error) { console.error('Ошибка загрузки:', error); }
+                }
+
+                async function loadCurrentUserData(login) {
+                    try {
+                        const doc = await db.collection('users').doc(login).get();
+                        if (doc.exists) {
+                            const data = doc.data();
+                            currentUser.value = { ...data, login: doc.id };
+                            if (data.expenses) Object.assign(expenses, data.expenses);
+                            goals.value = data.goals || [];
+                            friends.value = data.friends || [];
+                            friendRequests.value = data.friendRequests || [];
+                            pendingRequests.value = data.pendingRequests || [];
+                            await loadMonthlySnapshots();
+                            return true;
+                        }
+                        return false;
+                    } catch (error) { console.error('Ошибка:', error); return false; }
+                }
+
+                async function loginWithGoogle() {
+                    loading.value = true;
+                    try {
+                        const result = await auth.signInWithPopup(googleProvider);
+                        const user = result.user;
+                        const emailQuery = await db.collection('users').where('email', '==', user.email).get();
+                        if (!emailQuery.empty) {
+                            await loadCurrentUserData(emailQuery.docs[0].data().login);
+                        } else {
+                            const login = user.email.split('@')[0].replace(/[^a-zA-Z0-9]/g, '');
+                            let finalLogin = login;
+                            let counter = 1;
+                            while (await db.collection('users').doc(finalLogin).get().then(d => d.exists)) {
+                                finalLogin = `${login}${counter++}`;
+                            }
+                            const newUser = {
+                                name: user.displayName?.split(' ')[0] || 'Пользователь',
+                                surname: user.displayName?.split(' ').slice(1).join(' ') || '',
+                                nickname: '@' + finalLogin,
+                                login: finalLogin,
+                                email: user.email,
+                                income: 0,
+                                avatar: 1,
+                                expenses: { ...initialExpenses },
+                                goals: [],
+                                friends: [],
+                                friendRequests: [],
+                                pendingRequests: [],
+                                uid: user.uid
+                            };
+                            await db.collection('users').doc(finalLogin).set(newUser);
+                            await loadCurrentUserData(finalLogin);
+                        }
+                        await loadUsersFromFirestore();
+                        showMessage('Добро пожаловать!', 'success');
+                    } catch (error) {
+                        showMessage('Ошибка входа: ' + error.message, 'error');
+                    } finally {
+                        loading.value = false;
+                    }
+                }
+
+                async function handleRegister() {
+                    if (!registerForm.name || !registerForm.surname || !registerForm.nickname || 
+                        !registerForm.login || !registerForm.email || !registerForm.password) {
+                        showMessage('Заполните все поля', 'error'); return;
+                    }
+                    loading.value = true;
+                    try {
+                        const loginExists = await db.collection('users').doc(registerForm.login).get();
+                        if (loginExists.exists) { showMessage('Логин занят', 'error'); loading.value = false; return; }
+                        const nicknameQuery = await db.collection('users').where('nickname', '==', registerForm.nickname).get();
+                        if (!nicknameQuery.empty) { showMessage('Никнейм занят', 'error'); loading.value = false; return; }
+                        const emailQuery = await db.collection('users').where('email', '==', registerForm.email).get();
+                        if (!emailQuery.empty) { showMessage('Email занят', 'error'); loading.value = false; return; }
+                        const userCred = await auth.createUserWithEmailAndPassword(registerForm.email, registerForm.password);
+                        const newUser = {
+                            name: registerForm.name, surname: registerForm.surname, nickname: registerForm.nickname,
+                            login: registerForm.login, email: registerForm.email, income: Number(registerForm.income),
+                            avatar: registerForm.avatar, expenses: { ...registerForm.expenses }, goals: [], friends: [],
+                            friendRequests: [], pendingRequests: [], uid: userCred.user.uid
+                        };
+                        await db.collection('users').doc(registerForm.login).set(newUser);
+                        await loadCurrentUserData(registerForm.login);
+                        await saveMonthlySnapshot(getCurrentMonthId(), registerForm.income, registerForm.expenses);
+                        for (const hist of registerForm.historicalMonths) {
+                            if (hist.month && hist.income !== undefined) {
+                                await saveMonthlySnapshot(hist.month, hist.income, hist.expenses);
+                            }
+                        }
+                        await loadMonthlySnapshots();
+                        showMessage('Регистрация успешна!', 'success');
+                        Object.assign(registerForm, { name: '', surname: '', nickname: '', login: '', email: '', password: '', income: 0, avatar: 1, expenses: { ...initialExpenses }, historicalMonths: [] });
+                    } catch (error) {
+                        showMessage('Ошибка: ' + error.message, 'error');
+                    } finally { loading.value = false; }
+                }
+
+                async function handleLogin() {
+                    if (!loginForm.login || !loginForm.password) { showMessage('Заполните поля', 'error'); return; }
+                    loading.value = true;
+                    try {
+                        let userDoc = await db.collection('users').doc(loginForm.login).get();
+                        let userEmail = loginForm.login;
+                        if (!userDoc.exists) {
+                            const emailQuery = await db.collection('users').where('email', '==', loginForm.login).get();
+                            if (!emailQuery.empty) { userEmail = emailQuery.docs[0].data().email; userDoc = await db.collection('users').doc(emailQuery.docs[0].data().login).get(); }
+                            else { showMessage('Пользователь не найден', 'error'); loading.value = false; return; }
+                        } else { userEmail = userDoc.data().email; }
+                        await auth.signInWithEmailAndPassword(userEmail, loginForm.password);
+                        await loadCurrentUserData(userDoc.id);
+                        await loadUsersFromFirestore();
+                        showMessage('Добро пожаловать!', 'success');
+                        loginForm.login = ''; loginForm.password = '';
+                    } catch (error) {
+                        showMessage('Ошибка входа: ' + error.message, 'error');
+                    } finally { loading.value = false; }
+                }
+
+                async function logout() {
+                    loading.value = true;
+                    try {
+                        await auth.signOut();
+                        currentUser.value = null;
+                        Object.assign(expenses, initialExpenses);
+                        goals.value = [];
+                        friends.value = [];
+                        chatMessages.value = [{ text: 'Привет! Я финансовый ассистент. Задайте вопрос о финансах!', sender: 'bot' }];
+                        showMessage('Вы вышли', 'success');
+                    } catch (error) { showMessage('Ошибка', 'error'); }
+                    finally { loading.value = false; }
+                }
+
+                async function saveExpenses() {
+                    if (!currentUser.value) return;
+                    loading.value = true;
+                    try {
+                        await db.collection('users').doc(currentUser.value.login).update({ expenses: { ...expenses } });
+                        await updateCurrentMonthSnapshot();
+                        showMessage('Расходы сохранены!', 'success');
+                    } catch (error) { showMessage('Ошибка сохранения', 'error'); }
+                    finally { loading.value = false; }
+                }
+
+                async function addGoal() {
+                    if (!newGoal.name.trim()) { showMessage('Введите название', 'error'); return; }
+                    if (newGoal.targetAmount <= 0) { showMessage('Введите сумму', 'error'); return; }
+                    loading.value = true;
+                    try {
+                        goals.value.push({ name: newGoal.name, targetAmount: newGoal.targetAmount, currentAmount: 0 });
+                        await db.collection('users').doc(currentUser.value.login).update({ goals: goals.value });
+                        newGoal.name = ''; newGoal.targetAmount = 0;
+                        showMessage('Цель добавлена!', 'success');
+                    } catch (error) { showMessage('Ошибка', 'error'); }
+                    finally { loading.value = false; }
+                }
+
+                async function quickAddToGoal(index, amount) {
+                    loading.value = true;
+                    try {
+                        goals.value[index].currentAmount += amount;
+                        await db.collection('users').doc(currentUser.value.login).update({ goals: goals.value });
+                        showMessage(`Добавлено ${formatMoney(amount)} ₽`, 'success');
+                    } catch (error) { showMessage('Ошибка', 'error'); }
+                    finally { loading.value = false; }
+                }
+
+                async function confirmAddToGoal() {
+                    if (selectedGoalIndex.value === null) return;
+                    if (addToGoalAmount.value <= 0) { showMessage('Введите сумму', 'error'); return; }
+                    loading.value = true;
+                    try {
+                        goals.value[selectedGoalIndex.value].currentAmount += addToGoalAmount.value;
+                        await db.collection('users').doc(currentUser.value.login).update({ goals: goals.value });
+                        showMessage(`Добавлено ${formatMoney(addToGoalAmount.value)} ₽`, 'success');
+                        closeAddToGoalModal();
+                    } catch (error) { showMessage('Ошибка', 'error'); }
+                    finally { loading.value = false; }
+                }
+
+                async function confirmRemoveGoal() {
+                    if (selectedGoalIndexForRemove.value === null) return;
+                    loading.value = true;
+                    try {
+                        goals.value.splice(selectedGoalIndexForRemove.value, 1);
+                        await db.collection('users').doc(currentUser.value.login).update({ goals: goals.value });
+                        showMessage('Цель удалена', 'success');
+                        closeRemoveGoalModal();
+                    } catch (error) { showMessage('Ошибка', 'error'); }
+                    finally { loading.value = false; }
+                }
+
+                async function editIncome() { newIncomeValue.value = currentUser.value.income; showIncomeModal.value = true; }
+                function closeIncomeModal() { showIncomeModal.value = false; newIncomeValue.value = 0; }
+                async function saveIncome() {
+                    if (newIncomeValue.value < 0) { showMessage('Доход не может быть отрицательным', 'error'); return; }
+                    loading.value = true;
+                    try {
+                        currentUser.value.income = newIncomeValue.value;
+                        await db.collection('users').doc(currentUser.value.login).update({ income: newIncomeValue.value });
+                        await updateCurrentMonthSnapshot();
+                        showMessage('Доход обновлен!', 'success');
+                        closeIncomeModal();
+                    } catch (error) { showMessage('Ошибка', 'error'); }
+                    finally { loading.value = false; }
+                }
+
+                async function searchFriends() {
+                    if (!friendSearchQuery.value.trim()) { searchResults.value = []; return; }
+                    const query = friendSearchQuery.value.toLowerCase().replace('@', '');
+                    searchResults.value = users.value.filter(u => 
+                        (u.nickname.toLowerCase() === query || u.login.toLowerCase() === query) && 
+                        u.login !== currentUser.value?.login && !friends.value.some(f => f.login === u.login));
+                    if (searchResults.value.length === 0) showMessage('Пользователь не найден', 'info');
+                }
+
+                async function sendFriendRequest(user) {
+                    loading.value = true;
+                    try {
+                        if (!friendRequests.value.includes(user.login)) friendRequests.value.push(user.login);
+                        const targetRef = db.collection('users').doc(user.login);
+                        const targetDoc = await targetRef.get();
+                        if (targetDoc.exists) {
+                            const pending = targetDoc.data().pendingRequests || [];
+                            if (!pending.includes(currentUser.value.login)) {
+                                await targetRef.update({ pendingRequests: [...pending, currentUser.value.login] });
+                            }
+                        }
+                        await db.collection('users').doc(currentUser.value.login).update({ friendRequests: friendRequests.value });
+                        searchResults.value = []; friendSearchQuery.value = '';
+                        showMessage(`Заявка отправлена ${user.nickname}`, 'success');
+                    } catch (error) { showMessage('Ошибка', 'error'); }
+                    finally { loading.value = false; }
+                }
+
+                async function acceptFriendRequest(request) {
+                    loading.value = true;
+                    try {
+                        friends.value.push({ login: request.login, name: request.name, surname: request.surname, nickname: request.nickname, avatar: request.avatar });
+                        pendingRequests.value = pendingRequests.value.filter(l => l !== request.login);
+                        const friendRef = db.collection('users').doc(request.login);
+                        const friendDoc = await friendRef.get();
+                        if (friendDoc.exists) {
+                            const friendFriends = friendDoc.data().friends || [];
+                            if (!friendFriends.some(f => f.login === currentUser.value.login)) {
+                                await friendRef.update({ friends: [...friendFriends, { login: currentUser.value.login, name: currentUser.value.name, surname: currentUser.value.surname, nickname: currentUser.value.nickname, avatar: currentUser.value.avatar }] });
+                            }
+                            const friendRequestsList = (friendDoc.data().friendRequests || []).filter(l => l !== currentUser.value.login);
+                            await friendRef.update({ friendRequests: friendRequestsList });
+                        }
+                        await db.collection('users').doc(currentUser.value.login).update({ friends: friends.value, pendingRequests: pendingRequests.value });
+                        showMessage('Заявка принята', 'success');
+                    } catch (error) { showMessage('Ошибка', 'error'); }
+                    finally { loading.value = false; }
+                }
+
+                async function rejectFriendRequest(request) {
+                    loading.value = true;
+                    try {
+                        pendingRequests.value = pendingRequests.value.filter(l => l !== request.login);
+                        const friendRef = db.collection('users').doc(request.login);
+                        const friendDoc = await friendRef.get();
+                        if (friendDoc.exists) {
+                            const friendRequestsList = (friendDoc.data().friendRequests || []).filter(l => l !== currentUser.value.login);
+                            await friendRef.update({ friendRequests: friendRequestsList });
+                        }
+                        await db.collection('users').doc(currentUser.value.login).update({ pendingRequests: pendingRequests.value });
+                        showMessage('Заявка отклонена', 'info');
+                    } catch (error) { showMessage('Ошибка', 'error'); }
+                    finally { loading.value = false; }
+                }
+
+                async function removeFriend(friend) {
+                    loading.value = true;
+                    try {
+                        friends.value = friends.value.filter(f => f.login !== friend.login);
+                        const friendRef = db.collection('users').doc(friend.login);
+                        const friendDoc = await friendRef.get();
+                        if (friendDoc.exists) {
+                            const friendFriends = (friendDoc.data().friends || []).filter(f => f.login !== currentUser.value.login);
+                            await friendRef.update({ friends: friendFriends });
+                        }
+                        await db.collection('users').doc(currentUser.value.login).update({ friends: friends.value });
+                        showMessage('Друг удален', 'success');
+                    } catch (error) { showMessage('Ошибка', 'error'); }
+                    finally { loading.value = false; }
+                }
+
+                async function changeAvatar(avatar) {
+                    if (!isAvatarUnlocked(avatar)) { showMessage('Аватар недоступен', 'error'); return; }
+                    loading.value = true;
+                    try {
+                        currentUser.value.avatar = avatar.id;
+                        await db.collection('users').doc(currentUser.value.login).update({ avatar: avatar.id });
+                        showMessage(`Аватар изменен на "${avatar.name}"!`, 'success');
+                    } catch (error) { showMessage('Ошибка', 'error'); }
+                    finally { loading.value = false; }
+                }
+
+                function openAddToGoalModal(index) { selectedGoalIndex.value = index; selectedGoalName.value = goals.value[index].name; addToGoalAmount.value = 1000; showAddToGoalModal.value = true; }
+                function closeAddToGoalModal() { showAddToGoalModal.value = false; selectedGoalIndex.value = null; selectedGoalName.value = ''; }
+                function openRemoveGoalModal(index) { selectedGoalIndexForRemove.value = index; selectedGoalNameForRemove.value = goals.value[index].name; showRemoveGoalModal.value = true; }
+                function closeRemoveGoalModal() { showRemoveGoalModal.value = false; selectedGoalIndexForRemove.value = null; selectedGoalNameForRemove.value = ''; }
+
+                function addHistoricalMonthField() {
+                    registerForm.historicalMonths.push({ month: '', income: 0, expenses: { ...initialExpenses } });
+                }
+                function removeHistoricalMonthField(idx) {
+                    registerForm.historicalMonths.splice(idx, 1);
+                }
+
+                function openHistoricalModal() {
+                    historicalMonth.value = '';
+                    historicalIncome.value = currentUser.value.income;
+                    historicalExpenses.value = { ...expenses };
+                    showHistoricalModal.value = true;
+                }
+                function closeHistoricalModal() {
+                    showHistoricalModal.value = false;
+                }
+                async function saveHistoricalData() {
+                    if (!historicalMonth.value) { showMessage('Выберите месяц', 'error'); return; }
+                    if (historicalIncome.value < 0) { showMessage('Доход не может быть отрицательным', 'error'); return; }
+                    await addHistoricalMonth(historicalMonth.value, historicalIncome.value, historicalExpenses.value);
+                    closeHistoricalModal();
+                }
+
+                async function checkAuthState() {
+                    loading.value = true;
+                    auth.onAuthStateChanged(async (user) => {
+                        if (user) {
+                            try {
+                                let query = await db.collection('users').where('uid', '==', user.uid).get();
+                                if (query.empty) query = await db.collection('users').where('email', '==', user.email).get();
+                                if (!query.empty) {
+                                    await loadCurrentUserData(query.docs[0].data().login);
+                                    await loadUsersFromFirestore();
+                                }
+                            } catch (error) { console.error('Ошибка:', error); }
+                        }
+                        loading.value = false;
+                    });
+                }
+
+                onMounted(() => {
+                    checkAuthState();
+                });
+
+                watch(kfg, (newKfg, oldKfg) => {
+                    if (currentUser.value && oldKfg && newKfg !== oldKfg) {
+                        const currentAvatar = avatars.find(a => a.id === currentUser.value.avatar);
+                        if (currentAvatar && !isAvatarUnlocked(currentAvatar)) changeAvatar(avatars[0]);
+                    }
+                });
+
+                watch(monthlySnapshotsSorted, () => {
+                    updateAllCharts();
+                });
+
+                return {
+                    loading, loadingMessage, currentTab, message, currentUser,
+                    loginForm, registerForm, expenses, goals, newGoal, friends, friendRequests, pendingRequests,
+                    pendingFriendRequests, friendSearchQuery, searchResults,
+                    chatMessages, chatInput, chatContainer, aiLoading,
+                    avatars, tabs, categoryNames, categoryIcons,
+                    totalExpenses, totalIncome, balance, hasExpenses, kfg, currentMonthKfg,
+                    ratingParticipants, friendsWithDetails, unlockedAvatars,
+                    showIncomeModal, newIncomeValue, showAddToGoalModal, selectedGoalName, addToGoalAmount,
+                    showRemoveGoalModal, selectedGoalNameForRemove,
+                    showHistoricalModal, historicalMonth, historicalIncome, historicalExpenses,
+                    monthlySnapshotsSorted, selectedAnalysisMonth,
+                    selectedExpenseMonth, expensesForSelectedMonth, filteredExpensesForMonth,
+                    detailsModalVisible, detailsMonthLabel, detailsExpenses,
+                    handleRegister, handleLogin, loginWithGoogle, logout,
+                    searchFriends, sendFriendRequest, acceptFriendRequest, rejectFriendRequest, removeFriend,
+                    saveExpenses, addGoal, openAddToGoalModal, closeAddToGoalModal, confirmAddToGoal,
+                    quickAddToGoal, openRemoveGoalModal, closeRemoveGoalModal, confirmRemoveGoal,
+                    sendMessage, resetChatContext, quickQuestion, formatBotMessage,
+                    getAvatarUrl, getAvatarName, changeAvatar,
+                    isAvatarUnlocked, isAvatarAvailableForRegister, selectRegisterAvatar,
+                    getUserRating, getUserRatingLevel, calculateKFG, formatMoney,
+                    editIncome, closeIncomeModal, saveIncome,
+                    addHistoricalMonthField, removeHistoricalMonthField,
+                    openHistoricalModal, closeHistoricalModal, saveHistoricalData,
+                    loadExpensesForMonth, loadExpensesForSelectedMonth, saveExpensesForSelectedMonth,
+                    showMonthDetails, getMonthLabel
+                };
+            }
+        });
+        
+        app.mount('#app');
+    </script>
 </body>
 </html>
