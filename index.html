@@ -57,7 +57,6 @@
         .message-bot p { margin-bottom: 8px; }
         .message-bot h3 { font-weight: 600; font-size: 1.1em; margin: 10px 0 5px 0; color: #4a5568; }
         .message-bot strong { font-weight: 600; color: #2d3748; }
-        /* Светлый футер */
         .footer { background: #f9fafb; color: #1f2937; padding: 1.5rem 0; margin-top: 2rem; text-align: center; border-top: 1px solid #e5e7eb; }
         .vk-link { display: inline-flex; align-items: center; justify-content: center; gap: 12px; background: #4c75a3; color: white; padding: 12px 32px; border-radius: 50px; text-decoration: none; transition: all 0.3s ease; font-weight: 600; font-size: 1rem; cursor: pointer; margin-bottom: 1rem; }
         .vk-link:hover { background: #3a5d85; transform: translateY(-3px); box-shadow: 0 6px 20px rgba(0,0,0,0.3); }
@@ -216,7 +215,10 @@
                                     <option v-for="snap in monthlySnapshotsSorted" :value="snap.monthId">{{ snap.monthLabel }}</option>
                                 </select>
                             </div>
-                            <button @click="openHistoricalModal" class="gradient-bg text-white px-4 py-2 rounded-lg text-sm"><i class="fas fa-plus-circle mr-1"></i> Добавить данные за прошлый месяц</button>
+                            <div class="flex gap-2">
+                                <button @click="showPreviousMonthExpenses" class="bg-indigo-500 text-white px-4 py-2 rounded-lg text-sm"><i class="fas fa-arrow-left mr-1"></i> Пред. месяц</button>
+                                <button @click="openHistoricalModal" class="gradient-bg text-white px-4 py-2 rounded-lg text-sm"><i class="fas fa-plus-circle mr-1"></i> Добавить данные за прошлый месяц</button>
+                            </div>
                         </div>
                         <div class="mb-4">
                             <h3 class="text-lg font-semibold mb-3">Расходы за {{ getMonthLabel(selectedExpenseMonth) }}</h3>
@@ -362,7 +364,6 @@
             </div>
         </div>
 
-        <!-- Футер (светлый, отображается после авторизации) -->
         <footer class="footer" v-if="currentUser">
             <div class="container mx-auto px-4">
                 <div class="mb-3"><p class="text-gray-700 text-sm mb-2 font-semibold">Разработчики:</p><div class="developer-group"><a href="https://vk.ru/id875641672" target="_blank" rel="noopener noreferrer" class="vk-link"><i class="fab fa-vk"></i> <span>id875641672</span></a><a href="https://vk.ru/sekuewuuu" target="_blank" rel="noopener noreferrer" class="vk-link"><i class="fab fa-vk"></i> <span>sekuewuuu</span></a><a href="https://vk.ru/mvikirriaa" target="_blank" rel="noopener noreferrer" class="vk-link"><i class="fab fa-vk"></i> <span>mvikirriaa</span></a></div></div>
@@ -371,7 +372,6 @@
             </div>
         </footer>
 
-        <!-- Модальные окна -->
         <div v-if="showIncomeModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"><div class="bg-white rounded-xl p-4 sm:p-6 max-w-md w-full"><h3 class="text-lg font-bold mb-4">Изменить доход</h3><input v-model.number="newIncomeValue" type="number" class="w-full px-4 py-2 border rounded-lg mb-4"><div class="flex space-x-2"><button @click="saveIncome" class="gradient-bg text-white px-6 py-2 rounded-lg flex-1">Сохранить</button><button @click="closeIncomeModal" class="bg-gray-300 px-6 py-2 rounded-lg flex-1">Отмена</button></div></div></div>
         <div v-if="showAddToGoalModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"><div class="bg-white rounded-xl p-4 sm:p-6 max-w-md w-full"><h3 class="text-lg font-bold mb-4">Добавить к "{{ selectedGoalName }}"</h3><input v-model.number="addToGoalAmount" type="number" class="w-full px-4 py-2 border rounded-lg mb-4"><div class="flex space-x-2"><button @click="confirmAddToGoal" class="gradient-bg text-white px-6 py-2 rounded-lg flex-1">Добавить</button><button @click="closeAddToGoalModal" class="bg-gray-300 px-6 py-2 rounded-lg flex-1">Отмена</button></div></div></div>
         <div v-if="showRemoveGoalModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"><div class="bg-white rounded-xl p-4 sm:p-6 max-w-md w-full"><h3 class="text-lg font-bold mb-4">Удалить цель</h3><p class="mb-4">Удалить "{{ selectedGoalNameForRemove }}"?</p><div class="flex space-x-2"><button @click="confirmRemoveGoal" class="bg-red-500 text-white px-6 py-2 rounded-lg flex-1">Удалить</button><button @click="closeRemoveGoalModal" class="bg-gray-300 px-6 py-2 rounded-lg flex-1">Отмена</button></div></div></div>
@@ -581,7 +581,6 @@
                     return Math.max(0, Math.min(100, Math.round(value)));
                 });
 
-                // КФГ за текущий месяц (из снепшота или текущих данных)
                 const currentMonthKfg = computed(() => {
                     if (!currentUser.value) return 0;
                     const currentMonthId = getCurrentMonthId();
@@ -589,7 +588,6 @@
                     if (snapshot && snapshot.kfg !== undefined) {
                         return snapshot.kfg;
                     }
-                    // Если снепшота нет, вычисляем из текущих расходов
                     return kfg.value;
                 });
 
@@ -803,12 +801,45 @@
                         expensesData = { ...monthlySnapshots.value[snap.monthId].expenses };
                     }
                     const allCategories = ['food', 'transport', 'cafe', 'hobby', 'selfcare', 'health', 'housing', 'entertainment', 'subscriptions', 'education', 'travel'];
+                    const cleanExpenses = {};
                     allCategories.forEach(cat => {
-                        if (expensesData[cat] === undefined) expensesData[cat] = 0;
+                        cleanExpenses[cat] = expensesData[cat] !== undefined ? expensesData[cat] : 0;
                     });
                     Object.keys(detailsExpenses).forEach(key => delete detailsExpenses[key]);
-                    Object.assign(detailsExpenses, expensesData);
+                    Object.assign(detailsExpenses, cleanExpenses);
                     detailsModalVisible.value = true;
+                }
+
+                function showPreviousMonthExpenses() {
+                    const sorted = monthlySnapshotsSorted.value;
+                    if (sorted.length === 0) {
+                        showMessage('Нет данных о месяцах', 'info');
+                        return;
+                    }
+                    const currentIndex = sorted.findIndex(snap => snap.monthId === selectedExpenseMonth.value);
+                    if (currentIndex <= 0) {
+                        showMessage('Нет предыдущего месяца', 'info');
+                        return;
+                    }
+                    const prevSnapshot = sorted[currentIndex - 1];
+                    showMonthDetails(prevSnapshot);
+                }
+
+                async function addHistoricalMonth(monthId, income, expensesData) {
+                    if (!monthId) {
+                        showMessage('Укажите месяц', 'error');
+                        return;
+                    }
+                    loading.value = true;
+                    try {
+                        await saveMonthlySnapshot(monthId, income, expensesData);
+                        await loadMonthlySnapshots();
+                        showMessage(`Данные за ${formatMonthLabel(monthId)} добавлены`, 'success');
+                    } catch (error) {
+                        showMessage('Ошибка сохранения исторических данных', 'error');
+                    } finally {
+                        loading.value = false;
+                    }
                 }
 
                 function updateAllCharts() {
@@ -1302,7 +1333,7 @@
                     addHistoricalMonthField, removeHistoricalMonthField,
                     openHistoricalModal, closeHistoricalModal, saveHistoricalData,
                     loadExpensesForMonth, loadExpensesForSelectedMonth, saveExpensesForSelectedMonth,
-                    showMonthDetails, getMonthLabel
+                    showMonthDetails, getMonthLabel, showPreviousMonthExpenses
                 };
             }
         });
