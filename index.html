@@ -215,10 +215,7 @@
                                     <option v-for="snap in monthlySnapshotsSorted" :value="snap.monthId">{{ snap.monthLabel }}</option>
                                 </select>
                             </div>
-                            <div class="flex gap-2">
-                                <button @click="showPreviousMonthExpenses" class="bg-indigo-500 text-white px-4 py-2 rounded-lg text-sm"><i class="fas fa-arrow-left mr-1"></i> Пред. месяц</button>
-                                <button @click="openHistoricalModal" class="gradient-bg text-white px-4 py-2 rounded-lg text-sm"><i class="fas fa-plus-circle mr-1"></i> Добавить данные за прошлый месяц</button>
-                            </div>
+                            <button @click="openHistoricalModal" class="gradient-bg text-white px-4 py-2 rounded-lg text-sm"><i class="fas fa-plus-circle mr-1"></i> Добавить данные за прошлый месяц</button>
                         </div>
                         <div class="mb-4">
                             <h3 class="text-lg font-semibold mb-3">Расходы за {{ getMonthLabel(selectedExpenseMonth) }}</h3>
@@ -240,7 +237,7 @@
                                             <th class="px-4 py-2 text-left">Доход</th>
                                             <th class="px-4 py-2 text-left">Расходы</th>
                                             <th class="px-4 py-2 text-left">КФГ</th>
-                                            <th class="px-4 py-2 text-left">Детали</th>
+                                            <th class="px-4 py-2 text-left">Категории расходов</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -249,18 +246,18 @@
                                             <td class="px-4 py-2">{{ formatMoney(snap.income) }} ₽</td>
                                             <td class="px-4 py-2">{{ formatMoney(snap.totalExpenses) }} ₽</td>
                                             <td class="px-4 py-2 font-semibold">{{ snap.kfg }}</td>
-                                            <td class="px-4 py-2"><button @click="showMonthDetails(snap)" class="text-purple-600 text-sm"><i class="fas fa-eye"></i> Показать</button></td>
+                                            <td class="px-4 py-2 text-sm">
+                                                <div v-if="snap.expenses && Object.values(snap.expenses).some(v => v > 0)">
+                                                    <div v-for="(amount, cat) in snap.expenses" :key="cat" v-if="amount > 0" class="inline-block mr-3 mb-1 whitespace-nowrap">
+                                                        <i :class="[categoryIcons[cat], 'mr-1 text-gray-500']"></i>
+                                                        {{ categoryNames[cat] }}: {{ formatMoney(amount) }} ₽
+                                                    </div>
+                                                </div>
+                                                <span v-else class="text-gray-400">Нет расходов</span>
+                                            </td>
                                         </tr>
                                     </tbody>
                                 </table>
-                            </div>
-                        </div>
-                        
-                        <div v-if="detailsModalVisible" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                            <div class="bg-white rounded-xl p-4 sm:p-6 max-w-lg w-full max-h-[80vh] overflow-y-auto">
-                                <div class="flex justify-between items-center mb-3"><h3 class="text-lg font-bold">Детали за {{ detailsMonthLabel }}</h3><button @click="detailsModalVisible = false" class="text-gray-500 hover:text-gray-700"><i class="fas fa-times text-xl"></i></button></div>
-                                <div class="space-y-2"><div v-for="(amount, cat) in detailsExpenses" :key="cat" v-if="amount > 0" class="flex justify-between border-b py-1"><span><i :class="categoryIcons[cat]" class="mr-2"></i>{{ categoryNames[cat] }}</span><span>{{ formatMoney(amount) }} ₽</span></div><div v-if="Object.values(detailsExpenses).every(v => v === 0)" class="text-gray-500 text-center py-4">Нет расходов</div></div>
-                                <button @click="detailsModalVisible = false" class="mt-4 bg-gray-300 px-4 py-2 rounded-lg w-full">Закрыть</button>
                             </div>
                         </div>
                     </div>
@@ -358,12 +355,13 @@
                         <h2 class="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">Коэффициент финансовой грамотности (КФГ)</h2>
                         <div class="bg-gray-50 rounded-xl p-4 mb-6"><h3 class="text-lg font-semibold mb-3">Динамика КФГ по месяцам</h3><div class="h-64"><canvas id="kfgTrendChart"></canvas></div></div>
                         <div class="bg-gray-50 rounded-xl p-4 mb-6"><h3 class="text-lg font-semibold mb-2">Как рассчитывается КФГ?</h3><p class="text-sm text-gray-700 mb-2">КФГ = 100 − (Расходы / Доход × 100), но с учётом корректировок:</p><ul class="list-disc list-inside text-sm text-gray-600 space-y-1"><li>Если расходы на развлечения > 30% дохода → −20 баллов</li><li>Если расходы на еду (включая кафе) > 50% дохода → −15 баллов</li><li>Если расходы на подписки > 10% дохода → −10 баллов</li><li>Если есть расходы на образование → +5 баллов</li><li>Если остаток после расходов > 20% дохода → +10 баллов</li></ul><p class="text-sm text-gray-700 mt-2">Итоговое значение ограничивается от 0 до 100.</p></div>
-                        <div class="bg-gray-50 rounded-xl p-4"><h3 class="text-lg font-semibold mb-3">КФГ за все месяцы</h3><div class="overflow-x-auto"><table class="min-w-full bg-white border rounded-lg"><thead class="bg-gray-100"><tr><th class="px-4 py-2 text-left">Месяц</th><th class="px-4 py-2 text-left">Доход</th><th class="px-4 py-2 text-left">Расходы</th><th class="px-4 py-2 text-left">КФГ</th></tr></thead><tbody><tr v-for="snap in monthlySnapshotsSorted" :key="snap.monthId" class="border-t"><td class="px-4 py-2">{{ snap.monthLabel }}</td><td class="px-4 py-2">{{ formatMoney(snap.income) }} ₽</td><td class="px-4 py-2">{{ formatMoney(snap.totalExpenses) }} ₽</td><td class="px-4 py-2 font-semibold" :class="{'text-green-600': snap.kfg >= 70, 'text-yellow-600': snap.kfg >= 40 && snap.kfg < 70, 'text-red-600': snap.kfg < 40}">{{ snap.kfg }}</td></tr></tbody></table></div></div>
+                        <div class="bg-gray-50 rounded-xl p-4"><h3 class="text-lg font-semibold mb-3">КФГ за все месяцы</h3><div class="overflow-x-auto"><table class="min-w-full bg-white border rounded-lg"><thead class="bg-gray-100"><tr><th class="px-4 py-2 text-left">Месяц</th><th class="px-4 py-2 text-left">Доход</th><th class="px-4 py-2 text-left">Расходы</th><th class="px-4 py-2 text-left">КФГ</th></tr></thead><tbody><tr v-for="snap in monthlySnapshotsSorted" :key="snap.monthId" class="border-t"><td class="px-4 py-2">{{ snap.monthLabel }}</td><td class="px-4 py-2">{{ formatMoney(snap.income) }} ₽</td><td class="px-4 py-2">{{ formatMoney(snap.totalExpenses) }} ₽</td><td class="px-4 py-2 font-semibold" :class="{'text-green-600': snap.kfg >= 70, 'text-yellow-600': snap.kfg >= 40 && snap.kfg < 70, 'text-red-600': snap.kfg < 40}">{{ snap.kfg }}</td></tr></tbody>}</div></div>
                     </div>
                 </div>
             </div>
         </div>
 
+        <!-- Футер (светлый, отображается после авторизации) -->
         <footer class="footer" v-if="currentUser">
             <div class="container mx-auto px-4">
                 <div class="mb-3"><p class="text-gray-700 text-sm mb-2 font-semibold">Разработчики:</p><div class="developer-group"><a href="https://vk.ru/id875641672" target="_blank" rel="noopener noreferrer" class="vk-link"><i class="fab fa-vk"></i> <span>id875641672</span></a><a href="https://vk.ru/sekuewuuu" target="_blank" rel="noopener noreferrer" class="vk-link"><i class="fab fa-vk"></i> <span>sekuewuuu</span></a><a href="https://vk.ru/mvikirriaa" target="_blank" rel="noopener noreferrer" class="vk-link"><i class="fab fa-vk"></i> <span>mvikirriaa</span></a></div></div>
@@ -372,6 +370,7 @@
             </div>
         </footer>
 
+        <!-- Модальные окна -->
         <div v-if="showIncomeModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"><div class="bg-white rounded-xl p-4 sm:p-6 max-w-md w-full"><h3 class="text-lg font-bold mb-4">Изменить доход</h3><input v-model.number="newIncomeValue" type="number" class="w-full px-4 py-2 border rounded-lg mb-4"><div class="flex space-x-2"><button @click="saveIncome" class="gradient-bg text-white px-6 py-2 rounded-lg flex-1">Сохранить</button><button @click="closeIncomeModal" class="bg-gray-300 px-6 py-2 rounded-lg flex-1">Отмена</button></div></div></div>
         <div v-if="showAddToGoalModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"><div class="bg-white rounded-xl p-4 sm:p-6 max-w-md w-full"><h3 class="text-lg font-bold mb-4">Добавить к "{{ selectedGoalName }}"</h3><input v-model.number="addToGoalAmount" type="number" class="w-full px-4 py-2 border rounded-lg mb-4"><div class="flex space-x-2"><button @click="confirmAddToGoal" class="gradient-bg text-white px-6 py-2 rounded-lg flex-1">Добавить</button><button @click="closeAddToGoalModal" class="bg-gray-300 px-6 py-2 rounded-lg flex-1">Отмена</button></div></div></div>
         <div v-if="showRemoveGoalModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"><div class="bg-white rounded-xl p-4 sm:p-6 max-w-md w-full"><h3 class="text-lg font-bold mb-4">Удалить цель</h3><p class="mb-4">Удалить "{{ selectedGoalNameForRemove }}"?</p><div class="flex space-x-2"><button @click="confirmRemoveGoal" class="bg-red-500 text-white px-6 py-2 rounded-lg flex-1">Удалить</button><button @click="closeRemoveGoalModal" class="bg-gray-300 px-6 py-2 rounded-lg flex-1">Отмена</button></div></div></div>
@@ -492,9 +491,6 @@
                 
                 const selectedExpenseMonth = ref('');
                 const expensesForSelectedMonth = reactive({ ...initialExpenses });
-                const detailsModalVisible = ref(false);
-                const detailsMonthLabel = ref('');
-                const detailsExpenses = reactive({});
                 const expenses = reactive({ ...initialExpenses });
                 const goals = ref([]);
                 const newGoal = reactive({ name: '', targetAmount: 0 });
@@ -789,54 +785,6 @@
                         showMessage(`Расходы за ${getMonthLabel(selectedExpenseMonth.value)} сохранены`, 'success');
                     } catch (error) {
                         showMessage('Ошибка сохранения', 'error');
-                    } finally {
-                        loading.value = false;
-                    }
-                }
-
-                function showMonthDetails(snap) {
-                    detailsMonthLabel.value = snap.monthLabel;
-                    let expensesData = snap.expenses ? { ...snap.expenses } : {};
-                    if (Object.keys(expensesData).length === 0 && monthlySnapshots.value[snap.monthId] && monthlySnapshots.value[snap.monthId].expenses) {
-                        expensesData = { ...monthlySnapshots.value[snap.monthId].expenses };
-                    }
-                    const allCategories = ['food', 'transport', 'cafe', 'hobby', 'selfcare', 'health', 'housing', 'entertainment', 'subscriptions', 'education', 'travel'];
-                    const cleanExpenses = {};
-                    allCategories.forEach(cat => {
-                        cleanExpenses[cat] = expensesData[cat] !== undefined ? expensesData[cat] : 0;
-                    });
-                    Object.keys(detailsExpenses).forEach(key => delete detailsExpenses[key]);
-                    Object.assign(detailsExpenses, cleanExpenses);
-                    detailsModalVisible.value = true;
-                }
-
-                function showPreviousMonthExpenses() {
-                    const sorted = monthlySnapshotsSorted.value;
-                    if (sorted.length === 0) {
-                        showMessage('Нет данных о месяцах', 'info');
-                        return;
-                    }
-                    const currentIndex = sorted.findIndex(snap => snap.monthId === selectedExpenseMonth.value);
-                    if (currentIndex <= 0) {
-                        showMessage('Нет предыдущего месяца', 'info');
-                        return;
-                    }
-                    const prevSnapshot = sorted[currentIndex - 1];
-                    showMonthDetails(prevSnapshot);
-                }
-
-                async function addHistoricalMonth(monthId, income, expensesData) {
-                    if (!monthId) {
-                        showMessage('Укажите месяц', 'error');
-                        return;
-                    }
-                    loading.value = true;
-                    try {
-                        await saveMonthlySnapshot(monthId, income, expensesData);
-                        await loadMonthlySnapshots();
-                        showMessage(`Данные за ${formatMonthLabel(monthId)} добавлены`, 'success');
-                    } catch (error) {
-                        showMessage('Ошибка сохранения исторических данных', 'error');
                     } finally {
                         loading.value = false;
                     }
@@ -1271,8 +1219,10 @@
                 async function saveHistoricalData() {
                     if (!historicalMonth.value) { showMessage('Выберите месяц', 'error'); return; }
                     if (historicalIncome.value < 0) { showMessage('Доход не может быть отрицательным', 'error'); return; }
-                    await addHistoricalMonth(historicalMonth.value, historicalIncome.value, historicalExpenses.value);
+                    await saveMonthlySnapshot(historicalMonth.value, historicalIncome.value, historicalExpenses.value);
+                    await loadMonthlySnapshots();
                     closeHistoricalModal();
+                    showMessage('Данные добавлены', 'success');
                 }
 
                 async function checkAuthState() {
@@ -1320,7 +1270,6 @@
                     showHistoricalModal, historicalMonth, historicalIncome, historicalExpenses,
                     monthlySnapshotsSorted, selectedAnalysisMonth,
                     selectedExpenseMonth, expensesForSelectedMonth, filteredExpensesForMonth,
-                    detailsModalVisible, detailsMonthLabel, detailsExpenses,
                     handleRegister, handleLogin, loginWithGoogle, logout,
                     searchFriends, sendFriendRequest, acceptFriendRequest, rejectFriendRequest, removeFriend,
                     saveExpenses, addGoal, openAddToGoalModal, closeAddToGoalModal, confirmAddToGoal,
@@ -1333,7 +1282,7 @@
                     addHistoricalMonthField, removeHistoricalMonthField,
                     openHistoricalModal, closeHistoricalModal, saveHistoricalData,
                     loadExpensesForMonth, loadExpensesForSelectedMonth, saveExpensesForSelectedMonth,
-                    showMonthDetails, getMonthLabel, showPreviousMonthExpenses
+                    getMonthLabel
                 };
             }
         });
