@@ -237,7 +237,6 @@
                                             <th class="px-4 py-2 text-left">Доход</th>
                                             <th class="px-4 py-2 text-left">Расходы</th>
                                             <th class="px-4 py-2 text-left">КФГ</th>
-                                            <th class="px-4 py-2 text-left">Детали</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -246,8 +245,7 @@
                                             <td class="px-4 py-2">{{ formatMoney(snap.income) }} ₽</td>
                                             <td class="px-4 py-2">{{ formatMoney(snap.totalExpenses) }} ₽</td>
                                             <td class="px-4 py-2 font-semibold">{{ snap.kfg }}</td>
-                                            <td class="px-4 py-2"><button @click="showMonthDetails(snap)" class="text-purple-600 text-sm"><i class="fas fa-eye"></i> Показать</button></td>
-                                        </table>
+                                        </tr>
                                     </tbody>
                                 </table>
                             </div>
@@ -363,12 +361,13 @@
                         <h2 class="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">Коэффициент финансовой грамотности (КФГ)</h2>
                         <div class="bg-gray-50 rounded-xl p-4 mb-6"><h3 class="text-lg font-semibold mb-3">Динамика КФГ по месяцам</h3><div class="h-64"><canvas id="kfgTrendChart"></canvas></div></div>
                         <div class="bg-gray-50 rounded-xl p-4 mb-6"><h3 class="text-lg font-semibold mb-2">Как рассчитывается КФГ?</h3><p class="text-sm text-gray-700 mb-2">КФГ = 100 − (Расходы / Доход × 100), но с учётом корректировок:</p><ul class="list-disc list-inside text-sm text-gray-600 space-y-1"><li>Если расходы на развлечения > 30% дохода → −20 баллов</li><li>Если расходы на еду (включая кафе) > 50% дохода → −15 баллов</li><li>Если расходы на подписки > 10% дохода → −10 баллов</li><li>Если есть расходы на образование → +5 баллов</li><li>Если остаток после расходов > 20% дохода → +10 баллов</li></ul><p class="text-sm text-gray-700 mt-2">Итоговое значение ограничивается от 0 до 100.</p></div>
-                        <div class="bg-gray-50 rounded-xl p-4"><h3 class="text-lg font-semibold mb-3">КФГ за все месяцы</h3><div class="overflow-x-auto"><table class="min-w-full bg-white border rounded-lg"><thead class="bg-gray-100"><tr><th class="px-4 py-2 text-left">Месяц</th><th class="px-4 py-2 text-left">Доход</th><th class="px-4 py-2 text-left">Расходы</th><th class="px-4 py-2 text-left">КФГ</th></tr></thead><tbody><tr v-for="snap in monthlySnapshotsSorted" :key="snap.monthId" class="border-t"><td class="px-4 py-2">{{ snap.monthLabel }}</td><td class="px-4 py-2">{{ formatMoney(snap.income) }} ₽</td><td class="px-4 py-2">{{ formatMoney(snap.totalExpenses) }} ₽</td><td class="px-4 py-2 font-semibold" :class="{'text-green-600': snap.kfg >= 70, 'text-yellow-600': snap.kfg >= 40 && snap.kfg < 70, 'text-red-600': snap.kfg < 40}">{{ snap.kfg }}</td></tr></tbody>}</div></div>
+                        <div class="bg-gray-50 rounded-xl p-4"><h3 class="text-lg font-semibold mb-3">КФГ за все месяцы</h3><div class="overflow-x-auto"><table class="min-w-full bg-white border rounded-lg"><thead class="bg-gray-100"><tr><th class="px-4 py-2 text-left">Месяц</th><th class="px-4 py-2 text-left">Доход</th><th class="px-4 py-2 text-left">Расходы</th><th class="px-4 py-2 text-left">КФГ</th></tr></thead><tbody><tr v-for="snap in monthlySnapshotsSorted" :key="snap.monthId" class="border-t"><td class="px-4 py-2">{{ snap.monthLabel }}</td><td class="px-4 py-2">{{ formatMoney(snap.income) }} ₽</td><td class="px-4 py-2">{{ formatMoney(snap.totalExpenses) }} ₽</td><td class="px-4 py-2 font-semibold" :class="{'text-green-600': snap.kfg >= 70, 'text-yellow-600': snap.kfg >= 40 && snap.kfg < 70, 'text-red-600': snap.kfg < 40}">{{ snap.kfg }}</td></tr></tbody></table></div></div>
                     </div>
                 </div>
             </div>
         </div>
 
+        <!-- Футер (светлый, отображается после авторизации) -->
         <footer class="footer" v-if="currentUser">
             <div class="container mx-auto px-4">
                 <div class="mb-3"><p class="text-gray-700 text-sm mb-2 font-semibold">Разработчики:</p><div class="developer-group"><a href="https://vk.ru/id875641672" target="_blank" rel="noopener noreferrer" class="vk-link"><i class="fab fa-vk"></i> <span>id875641672</span></a><a href="https://vk.ru/sekuewuuu" target="_blank" rel="noopener noreferrer" class="vk-link"><i class="fab fa-vk"></i> <span>sekuewuuu</span></a><a href="https://vk.ru/mvikirriaa" target="_blank" rel="noopener noreferrer" class="vk-link"><i class="fab fa-vk"></i> <span>mvikirriaa</span></a></div></div>
