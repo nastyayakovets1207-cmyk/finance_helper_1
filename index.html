@@ -70,6 +70,8 @@
         .error-banner { background: #fee2e2; border: 1px solid #ef4444; color: #dc2626; padding: 12px; border-radius: 8px; margin-bottom: 16px; }
         .tab-content { animation: fadeIn 0.3s ease; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .detail-table td, .detail-table th { border: 1px solid #e5e7eb; padding: 8px; text-align: left; }
+        .detail-table { width: 100%; border-collapse: collapse; }
     </style>
 </head>
 <body class="bg-gray-100">
@@ -227,6 +229,8 @@
                             </div>
                             <button @click="saveExpensesForSelectedMonth" class="mt-4 gradient-bg text-white px-6 sm:px-8 py-3 rounded-lg font-semibold hover:shadow-lg w-full sm:w-auto"><i class="fas fa-save mr-2"></i> Сохранить расходы</button>
                         </div>
+                        
+                        <!-- Таблица всех месяцев (без категорий) -->
                         <div class="mt-6">
                             <h3 class="text-lg font-semibold mb-3">Все месяцы</h3>
                             <div class="overflow-x-auto">
@@ -237,7 +241,6 @@
                                             <th class="px-4 py-2 text-left">Доход</th>
                                             <th class="px-4 py-2 text-left">Общие расходы</th>
                                             <th class="px-4 py-2 text-left">КФГ</th>
-                                            <th class="px-4 py-2 text-left">Расходы по категориям</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -246,19 +249,37 @@
                                             <td class="px-4 py-2">{{ formatMoney(snap.income) }} ₽</td>
                                             <td class="px-4 py-2">{{ formatMoney(snap.totalExpenses) }} ₽</td>
                                             <td class="px-4 py-2 font-semibold">{{ snap.kfg }}</td>
-                                            <td class="px-4 py-2 text-sm">
-                                                <div v-if="snap.expenses && Object.values(snap.expenses).some(v => v > 0)">
-                                                    <div v-for="(amount, cat) in snap.expenses" :key="cat" v-if="amount > 0" class="inline-block mr-3 mb-1 whitespace-nowrap">
-                                                        <i :class="[categoryIcons[cat], 'mr-1 text-gray-500']"></i>
-                                                        {{ categoryNames[cat] }}: {{ formatMoney(amount) }} ₽
-                                                    </div>
-                                                </div>
-                                                <span v-else class="text-gray-400">Нет расходов</span>
-                                            </td>
                                         </tr>
                                     </tbody>
                                 </table>
                             </div>
+                        </div>
+
+                        <!-- Блок детального просмотра расходов по выбранному месяцу -->
+                        <div class="mt-8 bg-gray-50 rounded-lg p-4">
+                            <h3 class="text-lg font-semibold mb-3">Посмотреть расходы за предыдущий месяц</h3>
+                            <div class="mb-4">
+                                <select v-model="selectedDetailMonth" class="border rounded-lg px-3 py-2 bg-white w-full sm:w-auto">
+                                    <option v-for="snap in monthlySnapshotsSorted" :value="snap.monthId">{{ snap.monthLabel }}</option>
+                                </select>
+                            </div>
+                            <div v-if="selectedDetailMonthData && selectedDetailMonthData.expenses">
+                                <table class="detail-table">
+                                    <thead class="bg-gray-100">
+                                        <tr><th class="px-4 py-2">Категория</th><th class="px-4 py-2">Сумма (₽)</th></tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr v-for="(amount, cat) in selectedDetailMonthData.expenses" :key="cat" v-if="amount > 0">
+                                            <td class="px-4 py-2"><i :class="[categoryIcons[cat], 'mr-2']"></i>{{ categoryNames[cat] }}</td>
+                                            <td class="px-4 py-2">{{ formatMoney(amount) }} ₽</td>
+                                        </tr>
+                                        <tr v-if="Object.values(selectedDetailMonthData.expenses).every(v => v === 0)">
+                                            <td colspan="2" class="px-4 py-2 text-center text-gray-500">Нет расходов</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div v-else class="text-gray-500 text-center py-4">Выберите месяц</div>
                         </div>
                     </div>
 
@@ -516,6 +537,13 @@
                 let expenseTrendChart = null;
                 let kfgTrendChart = null;
                 
+                // Для детального просмотра расходов
+                const selectedDetailMonth = ref('');
+                const selectedDetailMonthData = computed(() => {
+                    if (!selectedDetailMonth.value) return null;
+                    return monthlySnapshots.value[selectedDetailMonth.value] || null;
+                });
+                
                 const avatars = [
                     { id: 1, name: 'Новичок', kfgRequired: 0 },
                     { id: 2, name: 'Эконом', kfgRequired: 40 },
@@ -753,6 +781,10 @@
                                 selectedExpenseMonth.value = sorted[sorted.length - 1];
                             }
                             await loadExpensesForSelectedMonth();
+                            // Устанавливаем первый месяц для детального просмотра
+                            if (!selectedDetailMonth.value || !monthlySnapshots.value[selectedDetailMonth.value]) {
+                                selectedDetailMonth.value = sorted[sorted.length - 1];
+                            }
                         }
                         updateAllCharts();
                     } catch (e) { console.error('Ошибка загрузки снепшотов:', e); }
@@ -1270,6 +1302,7 @@
                     showHistoricalModal, historicalMonth, historicalIncome, historicalExpenses,
                     monthlySnapshotsSorted, selectedAnalysisMonth,
                     selectedExpenseMonth, expensesForSelectedMonth, filteredExpensesForMonth,
+                    selectedDetailMonth, selectedDetailMonthData,
                     handleRegister, handleLogin, loginWithGoogle, logout,
                     searchFriends, sendFriendRequest, acceptFriendRequest, rejectFriendRequest, removeFriend,
                     saveExpenses, addGoal, openAddToGoalModal, closeAddToGoalModal, confirmAddToGoal,
