@@ -413,7 +413,11 @@
                         <h2 class="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">Коэффициент финансовой грамотности (КФГ)</h2>
                         <div class="bg-gray-50 rounded-xl p-4 mb-6"><h3 class="text-lg font-semibold mb-3">Динамика КФГ по месяцам</h3><div class="h-64"><canvas id="kfgTrendChart"></canvas></div></div>
                         <div class="bg-gray-50 rounded-xl p-4 mb-6"><h3 class="text-lg font-semibold mb-2">Как рассчитывается КФГ?</h3><p class="text-sm text-gray-700 mb-2">КФГ = 100 − (Расходы / Доход × 100), но с учётом корректировок:</p><ul class="list-disc list-inside text-sm text-gray-600 space-y-1"><li>Если расходы на развлечения > 30% дохода → −20 баллов</li><li>Если расходы на еду (включая кафе) > 50% дохода → −15 баллов</li><li>Если расходы на подписки > 10% дохода → −10 баллов</li><li>Если есть расходы на образование → +5 баллов</li><li>Если остаток после расходов > 20% дохода → +10 баллов</li></ul><p class="text-sm text-gray-700 mt-2">Итоговое значение ограничивается от 0 до 100.</p></div>
-                        <div class="bg-gray-50 rounded-xl p-4"><h3 class="text-lg font-semibold mb-3">КФГ за все месяцы</h3><div class="overflow-x-auto"><table class="min-w-full bg-white border rounded-lg"><thead class="bg-gray-100"><tr><th class="px-4 py-2 text-left">Месяц</th><th class="px-4 py-2 text-left">Доход</th><th class="px-4 py-2 text-left">Расходы</th><th class="px-4 py-2 text-left">КФГ</th></tr></thead><tbody><tr v-for="snap in monthlySnapshotsSorted" :key="snap.monthId" class="border-t"><td class="px-4 py-2">{{ snap.monthLabel }}</td><td class="px-4 py-2">{{ formatMoney(snap.income) }} ₽</td><td class="px-4 py-2">{{ formatMoney(snap.totalExpenses) }} ₽</td><td class="px-4 py-2 font-semibold" :class="{'text-green-600': snap.kfg >= 70, 'text-yellow-600': snap.kfg >= 40 && snap.kfg < 70, 'text-red-600': snap.kfg < 40}">{{ snap.kfg }}</td></tr></tbody></table></div></div>
+                        <div class="bg-gray-50 rounded-xl p-4"><h3 class="text-lg font-semibold mb-3">КФГ за все месяцы</h3><div class="overflow-x-auto"><table class="min-w-full bg-white border rounded-lg"><thead class="bg-gray-100"><tr><th class="px-4 py-2 text-left">Месяц</th><th class="px-4 py-2 text-left">Доход</th><th class="px-4 py-2 text-left">Расходы</th><th class="px-4 py-2 text-left">КФГ</th></tr></thead><tbody><tr v-for="snap in monthlySnapshotsSorted" :key="snap.monthId" class="border-t"><td class="px-4 py-2">{{ snap.monthLabel }}</td><td class="px-4 py-2">{{ formatMoney(snap.income) }} ₽</td><td class="px-4 py-2">{{ formatMoney(snap.totalExpenses) }} ₽</td><td class="px-4 py-2 font-semibold" :class="{'text-green-600': snap.kfg >= 70, 'text-yellow-600': snap.kfg >= 40 && snap.kfg < 70, 'text-red-600': snap.kfg < 40}">{{ snap.kfg }}</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -993,6 +997,7 @@
                     } catch (error) { console.error('Ошибка загрузки:', error); }
                 }
 
+                // Гарантия наличия полей у пользователя
                 async function ensureFriendFields(userLogin) {
                     const userRef = db.collection('users').doc(userLogin);
                     const doc = await userRef.get();
@@ -1004,7 +1009,10 @@
                         if (data.pendingRequests === undefined) updates.pendingRequests = [];
                         if (Object.keys(updates).length > 0) {
                             await userRef.update(updates);
+                            console.log(`Добавлены недостающие поля для ${userLogin}`);
                         }
+                    } else {
+                        console.error(`Пользователь ${userLogin} не существует`);
                     }
                 }
 
@@ -1029,6 +1037,7 @@
                                 Object.assign(expenses, data.expenses);
                             }
                             goals.value = data.goals || [];
+                            console.log('Данные пользователя обновлены в реальном времени');
                         } else {
                             console.warn('Документ пользователя не найден');
                         }
@@ -1253,7 +1262,7 @@
                     finally { loading.value = false; }
                 }
 
-                // Новая функция поиска — напрямую через Firestore
+                // Поиск друга напрямую в Firestore
                 async function searchFriends() {
                     if (!friendSearchQuery.value.trim()) { 
                         searchResults.value = []; 
@@ -1264,14 +1273,14 @@
                         const query = friendSearchQuery.value.trim().toLowerCase().replace('@', '');
                         console.log('Поиск пользователя:', query);
                         
-                        // Пытаемся найти по логину (точное совпадение)
+                        // Ищем по логину (точное совпадение)
                         let userDoc = await db.collection('users').doc(query).get();
                         let foundUser = null;
                         
                         if (userDoc.exists) {
                             foundUser = { login: userDoc.id, ...userDoc.data() };
                         } else {
-                            // Если не нашли по логину, ищем по никнейму
+                            // Ищем по никнейму с @
                             const nicknameQuery = await db.collection('users').where('nickname', '==', `@${query}`).get();
                             if (!nicknameQuery.empty) {
                                 foundUser = { login: nicknameQuery.docs[0].id, ...nicknameQuery.docs[0].data() };
@@ -1291,7 +1300,6 @@
                             return;
                         }
                         
-                        // Проверяем, не является ли найденный пользователь текущим
                         if (foundUser.login === currentUser.value.login) {
                             showMessage('Нельзя добавить самого себя', 'info');
                             searchResults.value = [];
@@ -1299,7 +1307,6 @@
                             return;
                         }
                         
-                        // Проверяем, не добавлен ли уже в друзья
                         if (friends.value.some(f => f.login === foundUser.login)) {
                             showMessage('Этот пользователь уже ваш друг', 'info');
                             searchResults.value = [];
@@ -1307,7 +1314,6 @@
                             return;
                         }
                         
-                        // Проверяем, не отправлена ли уже заявка
                         if (friendRequests.value.includes(foundUser.login)) {
                             showMessage('Заявка уже отправлена', 'info');
                             searchResults.value = [];
@@ -1315,7 +1321,6 @@
                             return;
                         }
                         
-                        // Проверяем, нет ли уже входящей заявки от этого пользователя
                         if (pendingRequests.value.includes(foundUser.login)) {
                             showMessage('Этот пользователь уже отправил вам заявку. Примите её во вкладке "Входящие заявки"', 'info');
                             searchResults.value = [];
@@ -1343,6 +1348,7 @@
                     }
                     loading.value = true;
                     try {
+                        // Проверяем ещё раз актуальное состояние
                         if (friendRequests.value.includes(user.login)) {
                             showMessage('Заявка уже отправлена', 'info');
                             loading.value = false;
@@ -1353,6 +1359,10 @@
                             loading.value = false;
                             return;
                         }
+                        
+                        // Гарантируем, что у получателя есть поля
+                        await ensureFriendFields(user.login);
+                        
                         // Обновляем исходящие заявки текущего пользователя
                         const newFriendRequests = [...friendRequests.value, user.login];
                         friendRequests.value = newFriendRequests;
@@ -1366,6 +1376,9 @@
                             const pending = targetData.pendingRequests || [];
                             if (!pending.includes(currentUser.value.login)) {
                                 await targetRef.update({ pendingRequests: [...pending, currentUser.value.login] });
+                                console.log(`Заявка добавлена в pendingRequests пользователя ${user.login}`);
+                            } else {
+                                console.log(`Заявка уже была в pendingRequests у ${user.login}`);
                             }
                         } else {
                             showMessage('Пользователь не найден в базе', 'error');
