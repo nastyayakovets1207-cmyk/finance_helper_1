@@ -984,7 +984,6 @@
                     sendMessage();
                 }
 
-                // Принудительная загрузка всех пользователей из Firestore
                 async function loadUsersFromFirestore() {
                     try {
                         const snapshot = await db.collection('users').get();
@@ -994,7 +993,6 @@
                     } catch (error) { console.error('Ошибка загрузки:', error); }
                 }
 
-                // Функция для гарантии наличия полей дружбы у пользователя
                 async function ensureFriendFields(userLogin) {
                     const userRef = db.collection('users').doc(userLogin);
                     const doc = await userRef.get();
@@ -1010,7 +1008,6 @@
                     }
                 }
 
-                // Подписка на реальные изменения текущего пользователя
                 function subscribeToCurrentUser(login) {
                     if (userUnsubscribe) {
                         userUnsubscribe();
@@ -1032,7 +1029,6 @@
                                 Object.assign(expenses, data.expenses);
                             }
                             goals.value = data.goals || [];
-                            // Не показываем сообщение при каждом обновлении, чтобы не раздражать
                         } else {
                             console.warn('Документ пользователя не найден');
                         }
@@ -1257,7 +1253,7 @@
                     finally { loading.value = false; }
                 }
 
-                // Исправленный поиск друзей — принудительно перезагружаем список пользователей
+                // Новая функция поиска — напрямую через Firestore
                 async function searchFriends() {
                     if (!friendSearchQuery.value.trim()) { 
                         searchResults.value = []; 
@@ -1265,24 +1261,69 @@
                     }
                     loading.value = true;
                     try {
-                        // Принудительно загружаем свежий список всех пользователей
-                        await loadUsersFromFirestore();
-                        const query = friendSearchQuery.value.toLowerCase().replace('@', '');
-                        console.log('Поиск по запросу:', query);
-                        console.log('Всего пользователей в кэше:', users.value.length);
-                        const results = users.value.filter(u => {
-                            const nicknameMatch = u.nickname && u.nickname.toLowerCase() === query;
-                            const loginMatch = u.login && u.login.toLowerCase() === query;
-                            const isNotSelf = u.login !== currentUser.value?.login;
-                            const notAlreadyFriend = !friends.value.some(f => f.login === u.login);
-                            const notAlreadyRequested = !friendRequests.value.includes(u.login);
-                            const notAlreadyPending = !pendingRequests.value.includes(u.login);
-                            return (nicknameMatch || loginMatch) && isNotSelf && notAlreadyFriend && notAlreadyRequested && notAlreadyPending;
-                        });
-                        searchResults.value = results;
-                        if (searchResults.value.length === 0) {
-                            showMessage('Пользователь не найден или уже добавлен', 'info');
+                        const query = friendSearchQuery.value.trim().toLowerCase().replace('@', '');
+                        console.log('Поиск пользователя:', query);
+                        
+                        // Пытаемся найти по логину (точное совпадение)
+                        let userDoc = await db.collection('users').doc(query).get();
+                        let foundUser = null;
+                        
+                        if (userDoc.exists) {
+                            foundUser = { login: userDoc.id, ...userDoc.data() };
+                        } else {
+                            // Если не нашли по логину, ищем по никнейму
+                            const nicknameQuery = await db.collection('users').where('nickname', '==', `@${query}`).get();
+                            if (!nicknameQuery.empty) {
+                                foundUser = { login: nicknameQuery.docs[0].id, ...nicknameQuery.docs[0].data() };
+                            } else {
+                                // Ищем по никнейму без @
+                                const nicknameQuery2 = await db.collection('users').where('nickname', '==', query).get();
+                                if (!nicknameQuery2.empty) {
+                                    foundUser = { login: nicknameQuery2.docs[0].id, ...nicknameQuery2.docs[0].data() };
+                                }
+                            }
                         }
+                        
+                        if (!foundUser) {
+                            showMessage('Пользователь не найден', 'info');
+                            searchResults.value = [];
+                            loading.value = false;
+                            return;
+                        }
+                        
+                        // Проверяем, не является ли найденный пользователь текущим
+                        if (foundUser.login === currentUser.value.login) {
+                            showMessage('Нельзя добавить самого себя', 'info');
+                            searchResults.value = [];
+                            loading.value = false;
+                            return;
+                        }
+                        
+                        // Проверяем, не добавлен ли уже в друзья
+                        if (friends.value.some(f => f.login === foundUser.login)) {
+                            showMessage('Этот пользователь уже ваш друг', 'info');
+                            searchResults.value = [];
+                            loading.value = false;
+                            return;
+                        }
+                        
+                        // Проверяем, не отправлена ли уже заявка
+                        if (friendRequests.value.includes(foundUser.login)) {
+                            showMessage('Заявка уже отправлена', 'info');
+                            searchResults.value = [];
+                            loading.value = false;
+                            return;
+                        }
+                        
+                        // Проверяем, нет ли уже входящей заявки от этого пользователя
+                        if (pendingRequests.value.includes(foundUser.login)) {
+                            showMessage('Этот пользователь уже отправил вам заявку. Примите её во вкладке "Входящие заявки"', 'info');
+                            searchResults.value = [];
+                            loading.value = false;
+                            return;
+                        }
+                        
+                        searchResults.value = [foundUser];
                     } catch (error) {
                         console.error('Ошибка поиска:', error);
                         showMessage('Ошибка при поиске', 'error');
@@ -1312,10 +1353,12 @@
                             loading.value = false;
                             return;
                         }
+                        // Обновляем исходящие заявки текущего пользователя
                         const newFriendRequests = [...friendRequests.value, user.login];
                         friendRequests.value = newFriendRequests;
                         await db.collection('users').doc(currentUser.value.login).update({ friendRequests: newFriendRequests });
                         
+                        // Обновляем входящие заявки целевого пользователя
                         const targetRef = db.collection('users').doc(user.login);
                         const targetDoc = await targetRef.get();
                         if (targetDoc.exists) {
