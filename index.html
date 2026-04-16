@@ -334,6 +334,27 @@
                     <div v-show="currentTab === 'friends'">
                         <h2 class="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">Друзья и рейтинги</h2>
                         <div class="bg-gradient-to-r from-purple-600 to-indigo-600 rounded-lg p-3 sm:p-4 mb-4 text-white"><h3 class="text-base sm:text-lg font-semibold mb-2">🏆 Рейтинг КФГ</h3><div class="space-y-2"><div v-for="(participant, idx) in ratingParticipants.slice(0,5)" :key="idx" class="flex items-center justify-between rounded-lg p-2 text-sm" :class="participant.isCurrentUser ? 'current-user-row' : 'bg-white bg-opacity-20'"><div class="flex items-center space-x-2"><span class="font-bold w-5">{{ idx+1 }}</span><img :src="getAvatarUrl(participant.avatar)" class="w-6 h-6 rounded-full"><span>{{ participant.name }} {{ participant.isCurrentUser ? '(Вы)' : '' }}</span></div><span class="font-bold">{{ participant.kfg }}</span></div></div></div>
+                        
+                        <!-- Входящие заявки -->
+                        <div v-if="pendingFriendRequests.length > 0" class="bg-yellow-50 rounded-lg p-3 sm:p-4 mb-4">
+                            <h3 class="text-base sm:text-lg font-semibold mb-3">Входящие заявки ({{ pendingFriendRequests.length }})</h3>
+                            <div class="space-y-2">
+                                <div v-for="req in pendingFriendRequests" :key="req.login" class="bg-white p-3 rounded-lg flex justify-between items-center">
+                                    <div class="flex items-center space-x-3">
+                                        <img :src="getAvatarUrl(req.avatar)" class="w-8 h-8 rounded-full">
+                                        <div>
+                                            <div class="font-medium">{{ req.name }} {{ req.surname }}</div>
+                                            <div class="text-xs text-gray-500">{{ req.nickname }}</div>
+                                        </div>
+                                    </div>
+                                    <div class="flex space-x-2">
+                                        <button @click="acceptFriendRequest(req)" class="bg-green-500 text-white px-3 py-1 rounded-lg text-sm">✅ Принять</button>
+                                        <button @click="rejectFriendRequest(req)" class="bg-red-500 text-white px-3 py-1 rounded-lg text-sm">❌ Отклонить</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                         <div class="bg-gray-50 rounded-lg p-3 sm:p-4 mb-4"><h3 class="text-base sm:text-lg font-semibold mb-3">Найти друга</h3><div class="flex space-x-2"><input v-model="friendSearchQuery" type="text" class="flex-1 px-3 py-2 border rounded-lg" placeholder="@username"><button @click="searchFriends" class="gradient-bg text-white px-4 py-2 rounded-lg">🔍 Найти</button></div><div v-if="searchResults.length > 0" class="mt-3 space-y-2"><div v-for="user in searchResults" :key="user.login" class="bg-white p-3 rounded-lg flex justify-between items-center"><div class="flex items-center space-x-3"><img :src="getAvatarUrl(user.avatar)" class="w-8 h-8 rounded-full"><span>{{ user.name }} {{ user.surname }} ({{ user.nickname }})</span></div><button @click="sendFriendRequest(user)" class="bg-purple-500 text-white px-3 py-1 rounded-lg text-sm">➕ Добавить</button></div></div></div>
                         <h3 class="text-base sm:text-lg font-semibold mb-3">Мои друзья ({{ friends.length }})</h3><div v-if="friends.length === 0" class="bg-gray-50 rounded-lg p-6 text-center text-gray-500"><i class="fas fa-user-friends text-3xl mb-2 opacity-50"></i><p>У вас пока нет друзей</p></div><div v-else class="space-y-2"><div v-for="friend in friendsWithDetails" :key="friend.login" class="bg-gray-50 rounded-lg p-3 flex justify-between items-center"><div class="flex items-center space-x-3"><img :src="getAvatarUrl(friend.avatar)" class="w-8 h-8 rounded-full"><div><div class="font-medium">{{ friend.name }}</div><div class="text-xs text-gray-500">{{ friend.nickname }}</div></div></div><div class="flex items-center space-x-3"><span class="text-purple-600 font-bold">{{ friend.kfg }}</span><button @click="removeFriend(friend)" class="text-red-500 hover:text-red-700">🗑️</button></div></div></div>
                     </div>
@@ -1149,7 +1170,9 @@
                     const query = friendSearchQuery.value.toLowerCase().replace('@', '');
                     searchResults.value = users.value.filter(u => 
                         (u.nickname.toLowerCase() === query || u.login.toLowerCase() === query) && 
-                        u.login !== currentUser.value?.login && !friends.value.some(f => f.login === u.login));
+                        u.login !== currentUser.value?.login && 
+                        !friends.value.some(f => f.login === u.login) &&
+                        !friendRequests.value.includes(u.login));
                     if (searchResults.value.length === 0) showMessage('Пользователь не найден', 'info');
                 }
 
@@ -1168,26 +1191,38 @@
                         await db.collection('users').doc(currentUser.value.login).update({ friendRequests: friendRequests.value });
                         searchResults.value = []; friendSearchQuery.value = '';
                         showMessage(`Заявка отправлена ${user.nickname}`, 'success');
-                    } catch (error) { showMessage('Ошибка', 'error'); }
+                    } catch (error) { showMessage('Ошибка', error); }
                     finally { loading.value = false; }
                 }
 
                 async function acceptFriendRequest(request) {
                     loading.value = true;
                     try {
+                        // Добавляем друга текущему пользователю
                         friends.value.push({ login: request.login, name: request.name, surname: request.surname, nickname: request.nickname, avatar: request.avatar });
+                        // Удаляем заявку из входящих
                         pendingRequests.value = pendingRequests.value.filter(l => l !== request.login);
+                        // Удаляем исходящую заявку из friendRequests текущего пользователя (если была отправлена)
+                        friendRequests.value = friendRequests.value.filter(l => l !== request.login);
+                        
                         const friendRef = db.collection('users').doc(request.login);
                         const friendDoc = await friendRef.get();
                         if (friendDoc.exists) {
+                            // Добавляем текущего пользователя в друзья к адресату
                             const friendFriends = friendDoc.data().friends || [];
                             if (!friendFriends.some(f => f.login === currentUser.value.login)) {
                                 await friendRef.update({ friends: [...friendFriends, { login: currentUser.value.login, name: currentUser.value.name, surname: currentUser.value.surname, nickname: currentUser.value.nickname, avatar: currentUser.value.avatar }] });
                             }
+                            // Удаляем заявку из исходящих у адресата
                             const friendRequestsList = (friendDoc.data().friendRequests || []).filter(l => l !== currentUser.value.login);
                             await friendRef.update({ friendRequests: friendRequestsList });
                         }
-                        await db.collection('users').doc(currentUser.value.login).update({ friends: friends.value, pendingRequests: pendingRequests.value });
+                        // Обновляем данные текущего пользователя
+                        await db.collection('users').doc(currentUser.value.login).update({ 
+                            friends: friends.value, 
+                            pendingRequests: pendingRequests.value,
+                            friendRequests: friendRequests.value
+                        });
                         showMessage('Заявка принята', 'success');
                     } catch (error) { showMessage('Ошибка', 'error'); }
                     finally { loading.value = false; }
