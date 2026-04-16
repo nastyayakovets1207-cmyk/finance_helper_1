@@ -355,8 +355,39 @@
                             </div>
                         </div>
 
-                        <div class="bg-gray-50 rounded-lg p-3 sm:p-4 mb-4"><h3 class="text-base sm:text-lg font-semibold mb-3">Найти друга</h3><div class="flex space-x-2"><input v-model="friendSearchQuery" type="text" class="flex-1 px-3 py-2 border rounded-lg" placeholder="@username"><button @click="searchFriends" class="gradient-bg text-white px-4 py-2 rounded-lg">🔍 Найти</button></div><div v-if="searchResults.length > 0" class="mt-3 space-y-2"><div v-for="user in searchResults" :key="user.login" class="bg-white p-3 rounded-lg flex justify-between items-center"><div class="flex items-center space-x-3"><img :src="getAvatarUrl(user.avatar)" class="w-8 h-8 rounded-full"><span>{{ user.name }} {{ user.surname }} ({{ user.nickname }})</span></div><button @click="sendFriendRequest(user)" class="bg-purple-500 text-white px-3 py-1 rounded-lg text-sm">➕ Добавить</button></div></div></div>
-                        <h3 class="text-base sm:text-lg font-semibold mb-3">Мои друзья ({{ friends.length }})</h3><div v-if="friends.length === 0" class="bg-gray-50 rounded-lg p-6 text-center text-gray-500"><i class="fas fa-user-friends text-3xl mb-2 opacity-50"></i><p>У вас пока нет друзей</p></div><div v-else class="space-y-2"><div v-for="friend in friendsWithDetails" :key="friend.login" class="bg-gray-50 rounded-lg p-3 flex justify-between items-center"><div class="flex items-center space-x-3"><img :src="getAvatarUrl(friend.avatar)" class="w-8 h-8 rounded-full"><div><div class="font-medium">{{ friend.name }}</div><div class="text-xs text-gray-500">{{ friend.nickname }}</div></div></div><div class="flex items-center space-x-3"><span class="text-purple-600 font-bold">{{ friend.kfg }}</span><button @click="removeFriend(friend)" class="text-red-500 hover:text-red-700">🗑️</button></div></div></div>
+                        <div class="bg-gray-50 rounded-lg p-3 sm:p-4 mb-4">
+                            <h3 class="text-base sm:text-lg font-semibold mb-3">Найти друга</h3>
+                            <div class="flex space-x-2">
+                                <input v-model="friendSearchQuery" type="text" class="flex-1 px-3 py-2 border rounded-lg" placeholder="@username или логин">
+                                <button @click="searchFriends" class="gradient-bg text-white px-4 py-2 rounded-lg">🔍 Найти</button>
+                            </div>
+                            <div v-if="searchResults.length > 0" class="mt-3 space-y-2">
+                                <div v-for="user in searchResults" :key="user.login" class="bg-white p-3 rounded-lg flex justify-between items-center">
+                                    <div class="flex items-center space-x-3">
+                                        <img :src="getAvatarUrl(user.avatar)" class="w-8 h-8 rounded-full">
+                                        <span>{{ user.name }} {{ user.surname }} ({{ user.nickname }})</span>
+                                    </div>
+                                    <button @click="sendFriendRequest(user)" class="bg-purple-500 text-white px-3 py-1 rounded-lg text-sm">➕ Добавить</button>
+                                </div>
+                            </div>
+                        </div>
+                        <h3 class="text-base sm:text-lg font-semibold mb-3">Мои друзья ({{ friends.length }})</h3>
+                        <div v-if="friends.length === 0" class="bg-gray-50 rounded-lg p-6 text-center text-gray-500"><i class="fas fa-user-friends text-3xl mb-2 opacity-50"></i><p>У вас пока нет друзей</p></div>
+                        <div v-else class="space-y-2">
+                            <div v-for="friend in friendsWithDetails" :key="friend.login" class="bg-gray-50 rounded-lg p-3 flex justify-between items-center">
+                                <div class="flex items-center space-x-3">
+                                    <img :src="getAvatarUrl(friend.avatar)" class="w-8 h-8 rounded-full">
+                                    <div>
+                                        <div class="font-medium">{{ friend.name }}</div>
+                                        <div class="text-xs text-gray-500">{{ friend.nickname }}</div>
+                                    </div>
+                                </div>
+                                <div class="flex items-center space-x-3">
+                                    <span class="text-purple-600 font-bold">{{ friend.kfg }}</span>
+                                    <button @click="removeFriend(friend)" class="text-red-500 hover:text-red-700">🗑️</button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Награды (только аватары) -->
@@ -960,8 +991,27 @@
                     } catch (error) { console.error('Ошибка загрузки:', error); }
                 }
 
+                // Функция для гарантии наличия полей дружбы у пользователя
+                async function ensureFriendFields(userLogin) {
+                    const userRef = db.collection('users').doc(userLogin);
+                    const doc = await userRef.get();
+                    if (doc.exists) {
+                        const data = doc.data();
+                        const updates = {};
+                        if (data.friends === undefined) updates.friends = [];
+                        if (data.friendRequests === undefined) updates.friendRequests = [];
+                        if (data.pendingRequests === undefined) updates.pendingRequests = [];
+                        if (Object.keys(updates).length > 0) {
+                            await userRef.update(updates);
+                        }
+                    }
+                }
+
                 async function loadCurrentUserData(login) {
                     try {
+                        // Сначала убедимся, что у пользователя есть все нужные поля
+                        await ensureFriendFields(login);
+                        
                         const doc = await db.collection('users').doc(login).get();
                         if (doc.exists) {
                             const data = doc.data();
@@ -975,7 +1025,10 @@
                             return true;
                         }
                         return false;
-                    } catch (error) { console.error('Ошибка:', error); return false; }
+                    } catch (error) { 
+                        console.error('Ошибка загрузки пользователя:', error); 
+                        return false; 
+                    }
                 }
 
                 async function loginWithGoogle() {
@@ -1172,92 +1225,186 @@
                         (u.nickname.toLowerCase() === query || u.login.toLowerCase() === query) && 
                         u.login !== currentUser.value?.login && 
                         !friends.value.some(f => f.login === u.login) &&
-                        !friendRequests.value.includes(u.login));
+                        !friendRequests.value.includes(u.login) &&
+                        !pendingRequests.value.includes(u.login));
                     if (searchResults.value.length === 0) showMessage('Пользователь не найден', 'info');
                 }
 
                 async function sendFriendRequest(user) {
+                    if (!currentUser.value) {
+                        showMessage('Ошибка: пользователь не авторизован', 'error');
+                        return;
+                    }
+                    if (user.login === currentUser.value.login) {
+                        showMessage('Нельзя отправить заявку самому себе', 'error');
+                        return;
+                    }
                     loading.value = true;
                     try {
-                        if (!friendRequests.value.includes(user.login)) friendRequests.value.push(user.login);
+                        // Проверяем, не отправлена ли уже заявка
+                        if (friendRequests.value.includes(user.login)) {
+                            showMessage('Заявка уже отправлена', 'info');
+                            loading.value = false;
+                            return;
+                        }
+                        if (friends.value.some(f => f.login === user.login)) {
+                            showMessage('Этот пользователь уже ваш друг', 'info');
+                            loading.value = false;
+                            return;
+                        }
+                        // Обновляем исходящие заявки текущего пользователя
+                        const newFriendRequests = [...friendRequests.value, user.login];
+                        friendRequests.value = newFriendRequests;
+                        await db.collection('users').doc(currentUser.value.login).update({ friendRequests: newFriendRequests });
+                        
+                        // Обновляем входящие заявки целевого пользователя
                         const targetRef = db.collection('users').doc(user.login);
                         const targetDoc = await targetRef.get();
                         if (targetDoc.exists) {
-                            const pending = targetDoc.data().pendingRequests || [];
+                            const targetData = targetDoc.data();
+                            const pending = targetData.pendingRequests || [];
                             if (!pending.includes(currentUser.value.login)) {
                                 await targetRef.update({ pendingRequests: [...pending, currentUser.value.login] });
                             }
+                        } else {
+                            showMessage('Пользователь не найден в базе', 'error');
+                            loading.value = false;
+                            return;
                         }
-                        await db.collection('users').doc(currentUser.value.login).update({ friendRequests: friendRequests.value });
-                        searchResults.value = []; friendSearchQuery.value = '';
                         showMessage(`Заявка отправлена ${user.nickname}`, 'success');
-                    } catch (error) { showMessage('Ошибка', error); }
-                    finally { loading.value = false; }
+                        // Очищаем поиск
+                        searchResults.value = [];
+                        friendSearchQuery.value = '';
+                    } catch (error) {
+                        console.error('Ошибка отправки заявки:', error);
+                        showMessage('Ошибка при отправке заявки: ' + error.message, 'error');
+                    } finally {
+                        loading.value = false;
+                    }
                 }
 
                 async function acceptFriendRequest(request) {
+                    if (!currentUser.value) return;
                     loading.value = true;
                     try {
+                        // Проверяем, что заявка ещё существует
+                        if (!pendingRequests.value.includes(request.login)) {
+                            showMessage('Заявка уже обработана', 'info');
+                            loading.value = false;
+                            return;
+                        }
                         // Добавляем друга текущему пользователю
-                        friends.value.push({ login: request.login, name: request.name, surname: request.surname, nickname: request.nickname, avatar: request.avatar });
-                        // Удаляем заявку из входящих
-                        pendingRequests.value = pendingRequests.value.filter(l => l !== request.login);
-                        // Удаляем исходящую заявку из friendRequests текущего пользователя (если была отправлена)
-                        friendRequests.value = friendRequests.value.filter(l => l !== request.login);
+                        const newFriend = {
+                            login: request.login,
+                            name: request.name,
+                            surname: request.surname,
+                            nickname: request.nickname,
+                            avatar: request.avatar
+                        };
+                        const updatedFriends = [...friends.value, newFriend];
+                        friends.value = updatedFriends;
                         
+                        // Удаляем заявку из входящих
+                        const updatedPending = pendingRequests.value.filter(l => l !== request.login);
+                        pendingRequests.value = updatedPending;
+                        
+                        // Удаляем эту же заявку из исходящих у текущего пользователя (на случай, если она там была)
+                        const updatedOutgoing = friendRequests.value.filter(l => l !== request.login);
+                        friendRequests.value = updatedOutgoing;
+                        
+                        // Обновляем данные текущего пользователя
+                        await db.collection('users').doc(currentUser.value.login).update({
+                            friends: updatedFriends,
+                            pendingRequests: updatedPending,
+                            friendRequests: updatedOutgoing
+                        });
+                        
+                        // Обновляем данные друга: добавляем текущего пользователя в его друзья и удаляем заявку из его исходящих
                         const friendRef = db.collection('users').doc(request.login);
                         const friendDoc = await friendRef.get();
                         if (friendDoc.exists) {
-                            // Добавляем текущего пользователя в друзья к адресату
-                            const friendFriends = friendDoc.data().friends || [];
+                            const friendData = friendDoc.data();
+                            const friendFriends = friendData.friends || [];
                             if (!friendFriends.some(f => f.login === currentUser.value.login)) {
-                                await friendRef.update({ friends: [...friendFriends, { login: currentUser.value.login, name: currentUser.value.name, surname: currentUser.value.surname, nickname: currentUser.value.nickname, avatar: currentUser.value.avatar }] });
+                                const newFriendForThem = {
+                                    login: currentUser.value.login,
+                                    name: currentUser.value.name,
+                                    surname: currentUser.value.surname,
+                                    nickname: currentUser.value.nickname,
+                                    avatar: currentUser.value.avatar
+                                };
+                                await friendRef.update({
+                                    friends: [...friendFriends, newFriendForThem],
+                                    friendRequests: (friendData.friendRequests || []).filter(l => l !== currentUser.value.login)
+                                });
+                            } else {
+                                // Всё равно удаляем заявку, если она есть
+                                await friendRef.update({
+                                    friendRequests: (friendData.friendRequests || []).filter(l => l !== currentUser.value.login)
+                                });
                             }
-                            // Удаляем заявку из исходящих у адресата
-                            const friendRequestsList = (friendDoc.data().friendRequests || []).filter(l => l !== currentUser.value.login);
-                            await friendRef.update({ friendRequests: friendRequestsList });
                         }
-                        // Обновляем данные текущего пользователя
-                        await db.collection('users').doc(currentUser.value.login).update({ 
-                            friends: friends.value, 
-                            pendingRequests: pendingRequests.value,
-                            friendRequests: friendRequests.value
-                        });
+                        
                         showMessage('Заявка принята', 'success');
-                    } catch (error) { showMessage('Ошибка', 'error'); }
-                    finally { loading.value = false; }
+                    } catch (error) {
+                        console.error('Ошибка принятия заявки:', error);
+                        showMessage('Ошибка при принятии заявки: ' + error.message, 'error');
+                    } finally {
+                        loading.value = false;
+                    }
                 }
 
                 async function rejectFriendRequest(request) {
+                    if (!currentUser.value) return;
                     loading.value = true;
                     try {
-                        pendingRequests.value = pendingRequests.value.filter(l => l !== request.login);
+                        // Удаляем из входящих текущего пользователя
+                        const updatedPending = pendingRequests.value.filter(l => l !== request.login);
+                        pendingRequests.value = updatedPending;
+                        await db.collection('users').doc(currentUser.value.login).update({ pendingRequests: updatedPending });
+                        
+                        // Удаляем из исходящих у отправителя
                         const friendRef = db.collection('users').doc(request.login);
                         const friendDoc = await friendRef.get();
                         if (friendDoc.exists) {
-                            const friendRequestsList = (friendDoc.data().friendRequests || []).filter(l => l !== currentUser.value.login);
-                            await friendRef.update({ friendRequests: friendRequestsList });
+                            const friendData = friendDoc.data();
+                            await friendRef.update({
+                                friendRequests: (friendData.friendRequests || []).filter(l => l !== currentUser.value.login)
+                            });
                         }
-                        await db.collection('users').doc(currentUser.value.login).update({ pendingRequests: pendingRequests.value });
                         showMessage('Заявка отклонена', 'info');
-                    } catch (error) { showMessage('Ошибка', 'error'); }
-                    finally { loading.value = false; }
+                    } catch (error) {
+                        console.error('Ошибка отклонения заявки:', error);
+                        showMessage('Ошибка при отклонении заявки: ' + error.message, 'error');
+                    } finally {
+                        loading.value = false;
+                    }
                 }
 
                 async function removeFriend(friend) {
+                    if (!currentUser.value) return;
                     loading.value = true;
                     try {
-                        friends.value = friends.value.filter(f => f.login !== friend.login);
+                        // Удаляем из друзей текущего пользователя
+                        const updatedFriends = friends.value.filter(f => f.login !== friend.login);
+                        friends.value = updatedFriends;
+                        await db.collection('users').doc(currentUser.value.login).update({ friends: updatedFriends });
+                        
+                        // Удаляем текущего пользователя из друзей друга
                         const friendRef = db.collection('users').doc(friend.login);
                         const friendDoc = await friendRef.get();
                         if (friendDoc.exists) {
-                            const friendFriends = (friendDoc.data().friends || []).filter(f => f.login !== currentUser.value.login);
+                            const friendData = friendDoc.data();
+                            const friendFriends = (friendData.friends || []).filter(f => f.login !== currentUser.value.login);
                             await friendRef.update({ friends: friendFriends });
                         }
-                        await db.collection('users').doc(currentUser.value.login).update({ friends: friends.value });
                         showMessage('Друг удален', 'success');
-                    } catch (error) { showMessage('Ошибка', 'error'); }
-                    finally { loading.value = false; }
+                    } catch (error) {
+                        console.error('Ошибка удаления друга:', error);
+                        showMessage('Ошибка при удалении друга: ' + error.message, 'error');
+                    } finally {
+                        loading.value = false;
+                    }
                 }
 
                 async function changeAvatar(avatar) {
