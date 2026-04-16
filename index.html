@@ -113,6 +113,7 @@
             {{ message.text }}
         </div>
 
+        <!-- Страница входа/регистрации -->
         <div v-if="!currentUser" class="container mx-auto px-4 py-4 sm:py-8">
             <div class="max-w-4xl mx-auto">
                 <div class="bg-white rounded-xl shadow-lg overflow-hidden">
@@ -120,6 +121,7 @@
                         <h1 class="text-2xl sm:text-3xl font-bold text-center mb-6 sm:mb-8">Добро пожаловать в FinGrade</h1>
                         
                         <div class="grid md:grid-cols-2 gap-6 sm:gap-8">
+                            <!-- Регистрация -->
                             <div class="bg-gray-50 rounded-xl p-4 sm:p-6">
                                 <h2 class="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 text-purple-600">Регистрация</h2>
                                 <div class="space-y-3 sm:space-y-4">
@@ -137,6 +139,7 @@
                                 </div>
                             </div>
                             
+                            <!-- Вход -->
                             <div class="bg-gray-50 rounded-xl p-4 sm:p-6">
                                 <h2 class="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 text-purple-600">Вход</h2>
                                 <div class="space-y-3 sm:space-y-4">
@@ -153,6 +156,7 @@
             </div>
         </div>
 
+        <!-- Основное приложение после входа -->
         <div v-else class="container mx-auto px-4 py-4 sm:py-8">
             <div class="bg-white rounded-xl shadow-lg overflow-hidden">
                 <div class="mobile-tab-bar">
@@ -235,12 +239,7 @@
                             <div class="overflow-x-auto">
                                 <table class="min-w-full bg-white border rounded-lg">
                                     <thead class="bg-gray-100">
-                                        <tr>
-                                            <th class="px-4 py-2 text-left">Месяц</th>
-                                            <th class="px-4 py-2 text-left">Доход</th>
-                                            <th class="px-4 py-2 text-left">Расходы</th>
-                                            <th class="px-4 py-2 text-left">КФГ</th>
-                                        </tr>
+                                        <tr><th class="px-4 py-2 text-left">Месяц</th><th class="px-4 py-2 text-left">Доход</th><th class="px-4 py-2 text-left">Расходы</th><th class="px-4 py-2 text-left">КФГ</th></tr>
                                     </thead>
                                     <tbody>
                                         <tr v-for="snap in monthlySnapshotsSorted" :key="snap.monthId" class="border-t cursor-pointer hover:bg-gray-50" @click="showMonthDetails(snap)">
@@ -262,9 +261,7 @@
                                         <span><i :class="categoryIcons[cat]" class="mr-2"></i>{{ categoryNames[cat] }}</span>
                                         <span>{{ formatMoney(amount) }} ₽</span>
                                     </div>
-                                    <div v-if="Object.values(detailsExpenses).every(v => v === 0)" class="text-gray-500 text-center py-4">
-                                        Нет расходов по категориям
-                                    </div>
+                                    <div v-if="Object.values(detailsExpenses).every(v => v === 0)" class="text-gray-500 text-center py-4">Нет расходов по категориям</div>
                                 </div>
                                 <button @click="detailsModalVisible = false" class="mt-4 bg-gray-300 px-4 py-2 rounded-lg w-full">Закрыть</button>
                             </div>
@@ -350,7 +347,7 @@
                         <h3 class="text-base sm:text-lg font-semibold mb-3">Мои друзья ({{ friends.length }})</h3><div v-if="friends.length === 0" class="bg-gray-50 rounded-lg p-6 text-center text-gray-500"><i class="fas fa-user-friends text-3xl mb-2 opacity-50"></i><p>У вас пока нет друзей</p></div><div v-else class="space-y-2"><div v-for="friend in friendsWithDetails" :key="friend.login" class="bg-gray-50 rounded-lg p-3 flex justify-between items-center"><div class="flex items-center space-x-3"><img :src="getAvatarUrl(friend.avatar)" class="w-8 h-8 rounded-full"><div><div class="font-medium">{{ friend.name }}</div><div class="text-xs text-gray-500">{{ friend.nickname }}</div></div></div><div class="flex items-center space-x-3"><span class="text-purple-600 font-bold">{{ friend.kfg }}</span><button @click="removeFriend(friend)" class="text-red-500 hover:text-red-700">🗑️</button></div></div></div>
                     </div>
 
-                    <!-- Награды (только аватары) -->
+                    <!-- Награды -->
                     <div v-show="currentTab === 'rewards'">
                         <h2 class="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">Награды</h2>
                         <div class="bg-gray-50 rounded-lg p-4 mb-4">
@@ -361,9 +358,7 @@
                             <div v-for="avatar in avatars" :key="avatar.id" @click="changeAvatar(avatar)" :title="!isAvatarUnlocked(avatar) ? `Требуется КФГ: ${avatar.kfgRequired}` : ''" class="relative cursor-pointer rounded-lg overflow-hidden border-2 p-1" :class="[isAvatarUnlocked(avatar) ? 'hover:border-purple-500' : 'opacity-50 cursor-not-allowed', currentUser.avatar === avatar.id ? 'border-purple-500' : 'border-gray-200']">
                                 <img :src="getAvatarUrl(avatar.id)" class="w-full h-auto">
                                 <div class="text-center text-xs">{{ avatar.name }}</div>
-                                <div v-if="!isAvatarUnlocked(avatar)" class="absolute inset-0 bg-black bg-opacity-20 flex items-center justify-center">
-                                    <i class="fas fa-lock text-white"></i>
-                                </div>
+                                <div v-if="!isAvatarUnlocked(avatar)" class="absolute inset-0 bg-black bg-opacity-20 flex items-center justify-center"><i class="fas fa-lock text-white"></i></div>
                             </div>
                         </div>
                     </div>
@@ -379,7 +374,7 @@
             </div>
         </div>
 
-        <!-- Футер (светлый, отображается после авторизации) -->
+        <!-- Футер -->
         <footer class="footer" v-if="currentUser">
             <div class="container mx-auto px-4">
                 <div class="mb-3"><p class="text-gray-700 text-sm mb-2 font-semibold">Разработчики:</p><div class="developer-group"><a href="https://vk.ru/id875641672" target="_blank" rel="noopener noreferrer" class="vk-link"><i class="fab fa-vk"></i> <span>id875641672</span></a><a href="https://vk.ru/sekuewuuu" target="_blank" rel="noopener noreferrer" class="vk-link"><i class="fab fa-vk"></i> <span>sekuewuuu</span></a><a href="https://vk.ru/mvikirriaa" target="_blank" rel="noopener noreferrer" class="vk-link"><i class="fab fa-vk"></i> <span>mvikirriaa</span></a></div></div>
@@ -388,6 +383,7 @@
             </div>
         </footer>
 
+        <!-- Модальные окна -->
         <div v-if="showIncomeModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"><div class="bg-white rounded-xl p-4 sm:p-6 max-w-md w-full"><h3 class="text-lg font-bold mb-4">Изменить доход</h3><input v-model.number="newIncomeValue" type="number" class="w-full px-4 py-2 border rounded-lg mb-4"><div class="flex space-x-2"><button @click="saveIncome" class="gradient-bg text-white px-6 py-2 rounded-lg flex-1">Сохранить</button><button @click="closeIncomeModal" class="bg-gray-300 px-6 py-2 rounded-lg flex-1">Отмена</button></div></div></div>
         <div v-if="showAddToGoalModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"><div class="bg-white rounded-xl p-4 sm:p-6 max-w-md w-full"><h3 class="text-lg font-bold mb-4">Добавить к "{{ selectedGoalName }}"</h3><input v-model.number="addToGoalAmount" type="number" class="w-full px-4 py-2 border rounded-lg mb-4"><div class="flex space-x-2"><button @click="confirmAddToGoal" class="gradient-bg text-white px-6 py-2 rounded-lg flex-1">Добавить</button><button @click="closeAddToGoalModal" class="bg-gray-300 px-6 py-2 rounded-lg flex-1">Отмена</button></div></div></div>
         <div v-if="showRemoveGoalModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"><div class="bg-white rounded-xl p-4 sm:p-6 max-w-md w-full"><h3 class="text-lg font-bold mb-4">Удалить цель</h3><p class="mb-4">Удалить "{{ selectedGoalNameForRemove }}"?</p><div class="flex space-x-2"><button @click="confirmRemoveGoal" class="bg-red-500 text-white px-6 py-2 rounded-lg flex-1">Удалить</button><button @click="closeRemoveGoalModal" class="bg-gray-300 px-6 py-2 rounded-lg flex-1">Отмена</button></div></div></div>
@@ -397,6 +393,7 @@
     <script>
         const { createApp, ref, reactive, computed, watch, onMounted, nextTick } = Vue;
 
+        // Firebase конфигурация
         const firebaseConfig = {
             apiKey: "AIzaSyBoIf1-o2chwXIzWp7VBujZdqxqtYSu_4c",
             authDomain: "fingrade-f9eee.firebaseapp.com",
@@ -424,20 +421,23 @@
         const googleProvider = new firebase.auth.GoogleAuthProvider();
         googleProvider.setCustomParameters({ prompt: 'select_account' });
 
-        http://localhost:5678/webhook/finchat
+        // URL вебхука n8n (исправлено!)
+        const N8N_WEBHOOK_URL = 'http://localhost:5678/webhook/finchat';
 
         async function sendToOllamaViaN8N(messages, currentUserData, userIncome, userExpenses, userKfg, userGoals) {
             const userMessage = messages[messages.length - 1].content;
-            const history = messages.slice(0, -1);
+            
+            let userContext = "Нет данных о пользователе";
+            if (currentUserData) {
+                userContext = `Доход: ${formatMoney(userIncome)} ₽, Расходы: ${formatMoney(userExpenses)} ₽, КФГ: ${userKfg}`;
+                if (userGoals && userGoals.length > 0) {
+                    userContext += `, Целей: ${userGoals.length}`;
+                }
+            }
             
             const requestBody = {
                 message: userMessage,
-                history: history,
-                userContext: currentUserData ? `Пользователь: ${currentUserData.name} ${currentUserData.surname}` : 'Гость',
-                userIncome: userIncome || 0,
-                userExpenses: userExpenses || 0,
-                userKfg: userKfg || 0,
-                userGoals: userGoals || [],
+                userContext: userContext,
                 sessionId: currentUserData?.login || 'guest',
                 timestamp: new Date().toISOString()
             };
