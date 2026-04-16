@@ -435,7 +435,7 @@
     </div>
 
     <script>
-        const { createApp, ref, reactive, computed, watch, onMounted, nextTick } = Vue;
+        const { createApp, ref, reactive, computed, watch, onMounted, onUnmounted, nextTick } = Vue;
 
         const firebaseConfig = {
             apiKey: "AIzaSyBoIf1-o2chwXIzWp7VBujZdqxqtYSu_4c",
@@ -524,6 +524,7 @@
                 const message = reactive({ show: false, text: '', type: 'success' });
                 const users = ref([]);
                 const currentUser = ref(null);
+                let userUnsubscribe = null; // для отписки от реального времени
                 
                 const showIncomeModal = ref(false);
                 const newIncomeValue = ref(0);
@@ -1007,6 +1008,40 @@
                     }
                 }
 
+                // Новая функция: подписка на реальные изменения текущего пользователя
+                function subscribeToCurrentUser(login) {
+                    if (userUnsubscribe) {
+                        userUnsubscribe();
+                        userUnsubscribe = null;
+                    }
+                    const userDocRef = db.collection('users').doc(login);
+                    userUnsubscribe = userDocRef.onSnapshot((doc) => {
+                        if (doc.exists) {
+                            const data = doc.data();
+                            // Обновляем локальные данные пользователя
+                            if (currentUser.value) {
+                                currentUser.value = { ...currentUser.value, ...data };
+                            } else {
+                                currentUser.value = { ...data, login: doc.id };
+                            }
+                            // Обновляем списки друзей и заявок
+                            friends.value = data.friends || [];
+                            friendRequests.value = data.friendRequests || [];
+                            pendingRequests.value = data.pendingRequests || [];
+                            // Если изменились расходы, обновляем локально
+                            if (data.expenses) {
+                                Object.assign(expenses, data.expenses);
+                            }
+                            goals.value = data.goals || [];
+                            showMessage('Данные обновлены', 'success');
+                        } else {
+                            console.warn('Документ пользователя не найден');
+                        }
+                    }, (error) => {
+                        console.error('Ошибка подписки:', error);
+                    });
+                }
+
                 async function loadCurrentUserData(login) {
                     try {
                         // Сначала убедимся, что у пользователя есть все нужные поля
@@ -1021,6 +1056,8 @@
                             friends.value = data.friends || [];
                             friendRequests.value = data.friendRequests || [];
                             pendingRequests.value = data.pendingRequests || [];
+                            // Подписываемся на реальные обновления
+                            subscribeToCurrentUser(login);
                             await loadMonthlySnapshots();
                             return true;
                         }
@@ -1133,11 +1170,17 @@
                 async function logout() {
                     loading.value = true;
                     try {
+                        if (userUnsubscribe) {
+                            userUnsubscribe();
+                            userUnsubscribe = null;
+                        }
                         await auth.signOut();
                         currentUser.value = null;
                         Object.assign(expenses, initialExpenses);
                         goals.value = [];
                         friends.value = [];
+                        friendRequests.value = [];
+                        pendingRequests.value = [];
                         chatMessages.value = [{ text: 'Привет! Я финансовый ассистент. Задайте вопрос о финансах!', sender: 'bot' }];
                         showMessage('Вы вышли', 'success');
                     } catch (error) { showMessage('Ошибка', 'error'); }
@@ -1465,6 +1508,12 @@
 
                 onMounted(() => {
                     checkAuthState();
+                });
+
+                onUnmounted(() => {
+                    if (userUnsubscribe) {
+                        userUnsubscribe();
+                    }
                 });
 
                 watch(kfg, (newKfg, oldKfg) => {
