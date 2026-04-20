@@ -739,37 +739,38 @@
                     }
                 }
 
-                // ========== КЛЮЧЕВАЯ ФУНКЦИЯ - РЕАЛЬНОЕ ВРЕМЯ ==========
                 function subscribeToCurrentUser(login) {
-                    if (userUnsubscribe) userUnsubscribe();
-                    const userDocRef = db.collection('users').doc(login);
-                    userUnsubscribe = userDocRef.onSnapshot((doc) => {
-                        if (doc.exists) {
-                            const data = doc.data();
-                            console.log('🔄 Данные пользователя обновлены:', data);
-                            
-                            if (currentUser.value) {
-                                currentUser.value = { ...currentUser.value, ...data };
-                            } else {
-                                currentUser.value = { ...data, login: doc.id };
-                            }
-                            
-                            friends.value = data.friends || [];
-                            friendRequests.value = data.friendRequests || [];
-                            pendingRequests.value = data.pendingRequests || [];
-                            
-                            console.log('📋 Друзья:', friends.value.length);
-                            console.log('📤 Исходящие заявки:', friendRequests.value);
-                            console.log('📥 Входящие заявки (pendingRequests):', pendingRequests.value);
-                            
-                            if (data.expenses) Object.assign(expenses, data.expenses);
-                            goals.value = data.goals || [];
-                        }
-                    }, (error) => {
-                        console.error('Ошибка подписки:', error);
-                    });
-                }
-
+    if (userUnsubscribe) userUnsubscribe();
+    const userDocRef = db.collection('users').doc(login);
+    userUnsubscribe = userDocRef.onSnapshot((doc) => {
+        if (doc.exists) {
+            const data = doc.data();
+            console.log('🔄 ПРИШЛО ОБНОВЛЕНИЕ для', login, data);
+            
+            if (currentUser.value) {
+                currentUser.value = { ...currentUser.value, ...data };
+            } else {
+                currentUser.value = { ...data, login: doc.id };
+            }
+            
+            friends.value = data.friends || [];
+            friendRequests.value = data.friendRequests || [];
+            pendingRequests.value = data.pendingRequests || [];
+            
+            console.log('📥 ВХОДЯЩИЕ ЗАЯВКИ (pendingRequests):', pendingRequests.value);
+            console.log('📤 ИСХОДЯЩИЕ ЗАЯВКИ (friendRequests):', friendRequests.value);
+            console.log('👥 ДРУЗЬЯ:', friends.value);
+            
+            if (data.expenses) Object.assign(expenses, data.expenses);
+            goals.value = data.goals || [];
+            
+            // ПРИНУДИТЕЛЬНО ОБНОВЛЯЕМ ВЬЮ
+            currentTab.value = currentTab.value;
+        }
+    }, (error) => {
+        console.error('Ошибка подписки:', error);
+    });
+}
                 async function loadCurrentUserData(login) {
                     await ensureFriendFields(login);
                     const doc = await db.collection('users').doc(login).get();
