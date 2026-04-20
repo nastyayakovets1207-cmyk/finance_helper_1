@@ -510,7 +510,6 @@
                 const chatInput = ref('');
                 const chatContainer = ref(null);
                 const aiLoading = ref(false);
-                const chatHistory = ref([{ role: 'system', content: 'Вы финансовый ассистент. Отвечайте на русском языке, давайте полезные советы.' }]);
                 
                 const monthlySnapshots = ref({});
                 const selectedAnalysisMonth = ref('');
@@ -693,30 +692,105 @@
                     }
                 }
 
-                async function sendMessage() {
-                    if (!chatInput.value.trim() || aiLoading.value) return;
-                    const userMessage = chatInput.value.trim();
-                    chatMessages.value.push({ text: userMessage, sender: 'user' });
-                    chatHistory.value.push({ role: 'user', content: userMessage });
-                    chatInput.value = '';
-                    const loadingIndex = chatMessages.value.length;
-                    chatMessages.value.push({ text: '', sender: 'bot', loading: true });
-                    await nextTick(); if (chatContainer.value) chatContainer.value.scrollTop = chatContainer.value.scrollHeight;
-                    aiLoading.value = true;
+                // ==================== ИНТЕГРАЦИЯ С n8n ====================
+                // Адрес вашего вебхука в n8n (локальный)
+                const N8N_WEBHOOK_URL = 'http://localhost:5678/webhook/finchat';
+
+                async function sendMessageToN8N(userMessage) {
                     try {
-                        await new Promise(r => setTimeout(r, 800));
-                        const response = `Спасибо за вопрос! Ваш КФГ: ${currentMonthKfg.value}. Рекомендую оптимизировать расходы и следить за бюджетом.`;
-                        chatMessages.value.splice(loadingIndex, 1);
-                        chatMessages.value.push({ text: response, sender: 'bot' });
-                        chatHistory.value.push({ role: 'assistant', content: response });
+                        // Собираем контекст пользователя для более умных ответов
+                        const userContext = {
+                            name: currentUser.value?.name || 'Пользователь',
+                            nickname: currentUser.value?.nickname || '',
+                            kfg: currentMonthKfg.value,
+                            income: currentUser.value?.income || 0,
+                            totalExpenses: totalExpenses.value,
+                            balance: balance.value,
+                            goalsCount: goals.value.length,
+                            friendsCount: friends.value.length
+                        };
+
+                        const response = await fetch(N8N_WEBHOOK_URL, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Accept': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                message: userMessage,
+                                userContext: userContext,
+                                timestamp: new Date().toISOString()
+                            })
+                        });
+
+                        if (!response.ok) {
+                            throw new Error(`HTTP error! status: ${response.status}`);
+                        }
+
+                        const aiResponse = await response.text();
+                        
+                        // Если ответ пустой или содержит ошибку
+                        if (!aiResponse || aiResponse.includes('error')) {
+                            throw new Error('Пустой ответ от сервера');
+                        }
+                        
+                        return aiResponse;
                     } catch (error) {
-                        chatMessages.value.splice(loadingIndex, 1);
-                        chatMessages.value.push({ text: `Ошибка: ${error.message}`, sender: 'bot', error: true });
-                    } finally { aiLoading.value = false; await nextTick(); if (chatContainer.value) chatContainer.value.scrollTop = chatContainer.value.scrollHeight; }
+                        console.error('Ошибка при обращении к n8n:', error);
+                        throw new Error('Не удалось связаться с ИИ-ассистентом. Проверьте, запущен ли n8n и Ollama.');
+                    }
                 }
 
-                function resetChatContext() { chatHistory.value = [{ role: 'system', content: 'Вы финансовый ассистент.' }]; chatMessages.value = [{ text: 'Контекст сброшен. Задайте вопрос о финансах!', sender: 'bot' }]; showMessage('Контекст сброшен', 'success'); }
-                function quickQuestion(q) { chatInput.value = q; sendMessage(); }
+                async function sendMessage() {
+                    if (!chatInput.value.trim() || aiLoading.value) return;
+                    
+                    const userMessage = chatInput.value.trim();
+                    
+                    // Добавляем сообщение пользователя в чат
+                    chatMessages.value.push({ text: userMessage, sender: 'user' });
+                    chatInput.value = '';
+                    
+                    // Добавляем индикатор загрузки
+                    const loadingIndex = chatMessages.value.length;
+                    chatMessages.value.push({ text: '', sender: 'bot', loading: true });
+                    
+                    await nextTick();
+                    if (chatContainer.value) chatContainer.value.scrollTop = chatContainer.value.scrollHeight;
+                    
+                    aiLoading.value = true;
+                    
+                    try {
+                        // Отправляем запрос к n8n
+                        const aiResponse = await sendMessageToN8N(userMessage);
+                        
+                        // Убираем индикатор загрузки и добавляем ответ
+                        chatMessages.value.splice(loadingIndex, 1);
+                        chatMessages.value.push({ text: aiResponse, sender: 'bot' });
+                        
+                    } catch (error) {
+                        // В случае ошибки показываем сообщение об ошибке
+                        chatMessages.value.splice(loadingIndex, 1);
+                        chatMessages.value.push({ 
+                            text: `❌ Ошибка: ${error.message}. Убедитесь, что n8n запущен на http://localhost:5678 и вебхук активен.`, 
+                            sender: 'bot', 
+                            error: true 
+                        });
+                    } finally {
+                        aiLoading.value = false;
+                        await nextTick();
+                        if (chatContainer.value) chatContainer.value.scrollTop = chatContainer.value.scrollHeight;
+                    }
+                }
+
+                function resetChatContext() {
+                    chatMessages.value = [{ text: 'Контекст сброшен. Задайте вопрос о финансах!', sender: 'bot' }];
+                    showMessage('Контекст сброшен', 'success');
+                }
+                
+                function quickQuestion(q) { 
+                    chatInput.value = q; 
+                    sendMessage(); 
+                }
 
                 async function loadUsersFromFirestore() {
                     const snapshot = await db.collection('users').get();
@@ -740,37 +814,37 @@
                 }
 
                 function subscribeToCurrentUser(login) {
-    if (userUnsubscribe) userUnsubscribe();
-    const userDocRef = db.collection('users').doc(login);
-    userUnsubscribe = userDocRef.onSnapshot((doc) => {
-        if (doc.exists) {
-            const data = doc.data();
-            console.log('🔄 ПРИШЛО ОБНОВЛЕНИЕ для', login, data);
-            
-            if (currentUser.value) {
-                currentUser.value = { ...currentUser.value, ...data };
-            } else {
-                currentUser.value = { ...data, login: doc.id };
-            }
-            
-            friends.value = data.friends || [];
-            friendRequests.value = data.friendRequests || [];
-            pendingRequests.value = data.pendingRequests || [];
-            
-            console.log('📥 ВХОДЯЩИЕ ЗАЯВКИ (pendingRequests):', pendingRequests.value);
-            console.log('📤 ИСХОДЯЩИЕ ЗАЯВКИ (friendRequests):', friendRequests.value);
-            console.log('👥 ДРУЗЬЯ:', friends.value);
-            
-            if (data.expenses) Object.assign(expenses, data.expenses);
-            goals.value = data.goals || [];
-            
-            // ПРИНУДИТЕЛЬНО ОБНОВЛЯЕМ ВЬЮ
-            currentTab.value = currentTab.value;
-        }
-    }, (error) => {
-        console.error('Ошибка подписки:', error);
-    });
-}
+                    if (userUnsubscribe) userUnsubscribe();
+                    const userDocRef = db.collection('users').doc(login);
+                    userUnsubscribe = userDocRef.onSnapshot((doc) => {
+                        if (doc.exists) {
+                            const data = doc.data();
+                            console.log('🔄 ПРИШЛО ОБНОВЛЕНИЕ для', login, data);
+                            
+                            if (currentUser.value) {
+                                currentUser.value = { ...currentUser.value, ...data };
+                            } else {
+                                currentUser.value = { ...data, login: doc.id };
+                            }
+                            
+                            friends.value = data.friends || [];
+                            friendRequests.value = data.friendRequests || [];
+                            pendingRequests.value = data.pendingRequests || [];
+                            
+                            console.log('📥 ВХОДЯЩИЕ ЗАЯВКИ (pendingRequests):', pendingRequests.value);
+                            console.log('📤 ИСХОДЯЩИЕ ЗАЯВКИ (friendRequests):', friendRequests.value);
+                            console.log('👥 ДРУЗЬЯ:', friends.value);
+                            
+                            if (data.expenses) Object.assign(expenses, data.expenses);
+                            goals.value = data.goals || [];
+                            
+                            currentTab.value = currentTab.value;
+                        }
+                    }, (error) => {
+                        console.error('Ошибка подписки:', error);
+                    });
+                }
+                
                 async function loadCurrentUserData(login) {
                     await ensureFriendFields(login);
                     const doc = await db.collection('users').doc(login).get();
@@ -952,166 +1026,164 @@
                     loading.value = false;
                 }
 
-            async function sendFriendRequest(user) {
-    if (!currentUser.value || user.login === currentUser.value.login) { 
-        showMessage('Нельзя отправить заявку самому себе', 'error'); 
-        return; 
-    }
-    
-    if (friendRequests.value.includes(user.login)) {
-        showMessage('Заявка уже отправлена', 'info');
-        return;
-    }
-    if (friends.value.some(f => f.login === user.login)) {
-        showMessage('Этот пользователь уже ваш друг', 'info');
-        return;
-    }
-    if (pendingRequests.value.includes(user.login)) {
-        showMessage('Этот пользователь уже отправил вам заявку', 'info');
-        return;
-    }
-    
-    loading.value = true;
-    try {
-        console.log('📤 ОТПРАВКА заявки от', currentUser.value.login, '→', user.login);
-        
-        // 1. ОБНОВЛЯЕМ ИСХОДЯЩИЕ (у отправителя)
-        const newFriendRequests = [...friendRequests.value, user.login];
-        friendRequests.value = newFriendRequests;
-        await db.collection('users').doc(currentUser.value.login).update({ 
-            friendRequests: newFriendRequests 
-        });
-        console.log('✅ Исходящие обновлены:', newFriendRequests);
-        
-        // 2. ОБНОВЛЯЕМ ВХОДЯЩИЕ (у получателя)
-        const targetRef = db.collection('users').doc(user.login);
-        
-        // ПРОВЕРЯЕМ СУЩЕСТВОВАНИЕ ПОЛЯ pendingRequests
-        const targetDoc = await targetRef.get();
-        if (!targetDoc.exists) {
-            showMessage('Пользователь не найден', 'error');
-            loading.value = false;
-            return;
-        }
-        
-        const targetData = targetDoc.data();
-        
-        // ГАРАНТИРУЕМ, ЧТО ПОЛЕ СУЩЕСТВУЕТ
-        if (!targetData.hasOwnProperty('pendingRequests')) {
-            console.log('⚠️ Поле pendingRequests отсутствует, создаём...');
-            await targetRef.update({ pendingRequests: [] });
-        }
-        
-        const currentPending = targetData.pendingRequests || [];
-        
-        if (!currentPending.includes(currentUser.value.login)) {
-            const newPending = [...currentPending, currentUser.value.login];
-            console.log('📥 Добавляем в pendingRequests:', newPending);
-            await targetRef.update({ pendingRequests: newPending });
-            console.log('✅ pendingRequests обновлены у', user.login);
-            
-            // ПРОВЕРКА
-            const checkDoc = await targetRef.get();
-            console.log('🔍 ПРОВЕРКА: теперь pendingRequests у', user.login, '=', checkDoc.data().pendingRequests);
-        } else {
-            console.log('⚠️ Заявка уже была в pendingRequests');
-        }
-        
-        showMessage(`✅ Заявка отправлена ${user.nickname || user.login}`, 'success');
-        searchResults.value = [];
-        friendSearchQuery.value = '';
-        
-    } catch (error) {
-        console.error('❌ ОШИБКА отправки заявки:', error);
-        showMessage('Ошибка: ' + error.message, 'error');
-    } finally {
-        loading.value = false;
-    }
-}              async function acceptFriendRequest(request) {
-    if (!currentUser.value) return;
-    loading.value = true;
-    try {
-        console.log('✅ ПРИНЯТИЕ заявки от', request.login);
-        
-        const newFriend = {
-            login: request.login,
-            name: request.name,
-            surname: request.surname || '',
-            nickname: request.nickname,
-            avatar: request.avatar || 1
-        };
-        
-        const updatedFriends = [...friends.value, newFriend];
-        friends.value = updatedFriends;
-        
-        const updatedPending = pendingRequests.value.filter(l => l !== request.login);
-        pendingRequests.value = updatedPending;
-        
-        const updatedOutgoing = friendRequests.value.filter(l => l !== request.login);
-        friendRequests.value = updatedOutgoing;
-        
-        await db.collection('users').doc(currentUser.value.login).update({
-            friends: updatedFriends,
-            pendingRequests: updatedPending,
-            friendRequests: updatedOutgoing
-        });
-        
-        const friendRef = db.collection('users').doc(request.login);
-        const friendDoc = await friendRef.get();
-        if (friendDoc.exists) {
-            const friendData = friendDoc.data();
-            const friendFriends = friendData.friends || [];
-            if (!friendFriends.some(f => f.login === currentUser.value.login)) {
-                const newFriendForThem = {
-                    login: currentUser.value.login,
-                    name: currentUser.value.name,
-                    surname: currentUser.value.surname || '',
-                    nickname: currentUser.value.nickname,
-                    avatar: currentUser.value.avatar || 1
-                };
-                await friendRef.update({
-                    friends: [...friendFriends, newFriendForThem],
-                    friendRequests: (friendData.friendRequests || []).filter(l => l !== currentUser.value.login)
-                });
-            }
-        }
-        
-        showMessage('✅ Заявка принята! Теперь вы друзья', 'success');
-        
-    } catch (error) {
-        console.error('❌ Ошибка:', error);
-        showMessage('Ошибка: ' + error.message, 'error');
-    } finally {
-        loading.value = false;
-    }
-}async function rejectFriendRequest(request) {
-    if (!currentUser.value) return;
-    loading.value = true;
-    try {
-        const updatedPending = pendingRequests.value.filter(l => l !== request.login);
-        pendingRequests.value = updatedPending;
-        await db.collection('users').doc(currentUser.value.login).update({ 
-            pendingRequests: updatedPending 
-        });
-        
-        const friendRef = db.collection('users').doc(request.login);
-        const friendDoc = await friendRef.get();
-        if (friendDoc.exists) {
-            await friendRef.update({
-                friendRequests: (friendDoc.data().friendRequests || []).filter(l => l !== currentUser.value.login)
-            });
-        }
-        
-        showMessage('❌ Заявка отклонена', 'info');
-    } catch (error) {
-        console.error('❌ Ошибка:', error);
-        showMessage('Ошибка: ' + error.message, 'error');
-    } finally {
-        loading.value = false;
-    }
-}
+                async function sendFriendRequest(user) {
+                    if (!currentUser.value || user.login === currentUser.value.login) { 
+                        showMessage('Нельзя отправить заявку самому себе', 'error'); 
+                        return; 
+                    }
+                    
+                    if (friendRequests.value.includes(user.login)) {
+                        showMessage('Заявка уже отправлена', 'info');
+                        return;
+                    }
+                    if (friends.value.some(f => f.login === user.login)) {
+                        showMessage('Этот пользователь уже ваш друг', 'info');
+                        return;
+                    }
+                    if (pendingRequests.value.includes(user.login)) {
+                        showMessage('Этот пользователь уже отправил вам заявку', 'info');
+                        return;
+                    }
+                    
+                    loading.value = true;
+                    try {
+                        console.log('📤 ОТПРАВКА заявки от', currentUser.value.login, '→', user.login);
+                        
+                        const newFriendRequests = [...friendRequests.value, user.login];
+                        friendRequests.value = newFriendRequests;
+                        await db.collection('users').doc(currentUser.value.login).update({ 
+                            friendRequests: newFriendRequests 
+                        });
+                        console.log('✅ Исходящие обновлены:', newFriendRequests);
+                        
+                        const targetRef = db.collection('users').doc(user.login);
+                        
+                        const targetDoc = await targetRef.get();
+                        if (!targetDoc.exists) {
+                            showMessage('Пользователь не найден', 'error');
+                            loading.value = false;
+                            return;
+                        }
+                        
+                        const targetData = targetDoc.data();
+                        
+                        if (!targetData.hasOwnProperty('pendingRequests')) {
+                            console.log('⚠️ Поле pendingRequests отсутствует, создаём...');
+                            await targetRef.update({ pendingRequests: [] });
+                        }
+                        
+                        const currentPending = targetData.pendingRequests || [];
+                        
+                        if (!currentPending.includes(currentUser.value.login)) {
+                            const newPending = [...currentPending, currentUser.value.login];
+                            console.log('📥 Добавляем в pendingRequests:', newPending);
+                            await targetRef.update({ pendingRequests: newPending });
+                            console.log('✅ pendingRequests обновлены у', user.login);
+                            
+                            const checkDoc = await targetRef.get();
+                            console.log('🔍 ПРОВЕРКА: теперь pendingRequests у', user.login, '=', checkDoc.data().pendingRequests);
+                        } else {
+                            console.log('⚠️ Заявка уже была в pendingRequests');
+                        }
+                        
+                        showMessage(`✅ Заявка отправлена ${user.nickname || user.login}`, 'success');
+                        searchResults.value = [];
+                        friendSearchQuery.value = '';
+                        
+                    } catch (error) {
+                        console.error('❌ ОШИБКА отправки заявки:', error);
+                        showMessage('Ошибка: ' + error.message, 'error');
+                    } finally {
+                        loading.value = false;
+                    }
+                }
+                
+                async function acceptFriendRequest(request) {
+                    if (!currentUser.value) return;
+                    loading.value = true;
+                    try {
+                        console.log('✅ ПРИНЯТИЕ заявки от', request.login);
+                        
+                        const newFriend = {
+                            login: request.login,
+                            name: request.name,
+                            surname: request.surname || '',
+                            nickname: request.nickname,
+                            avatar: request.avatar || 1
+                        };
+                        
+                        const updatedFriends = [...friends.value, newFriend];
+                        friends.value = updatedFriends;
+                        
+                        const updatedPending = pendingRequests.value.filter(l => l !== request.login);
+                        pendingRequests.value = updatedPending;
+                        
+                        const updatedOutgoing = friendRequests.value.filter(l => l !== request.login);
+                        friendRequests.value = updatedOutgoing;
+                        
+                        await db.collection('users').doc(currentUser.value.login).update({
+                            friends: updatedFriends,
+                            pendingRequests: updatedPending,
+                            friendRequests: updatedOutgoing
+                        });
+                        
+                        const friendRef = db.collection('users').doc(request.login);
+                        const friendDoc = await friendRef.get();
+                        if (friendDoc.exists) {
+                            const friendData = friendDoc.data();
+                            const friendFriends = friendData.friends || [];
+                            if (!friendFriends.some(f => f.login === currentUser.value.login)) {
+                                const newFriendForThem = {
+                                    login: currentUser.value.login,
+                                    name: currentUser.value.name,
+                                    surname: currentUser.value.surname || '',
+                                    nickname: currentUser.value.nickname,
+                                    avatar: currentUser.value.avatar || 1
+                                };
+                                await friendRef.update({
+                                    friends: [...friendFriends, newFriendForThem],
+                                    friendRequests: (friendData.friendRequests || []).filter(l => l !== currentUser.value.login)
+                                });
+                            }
+                        }
+                        
+                        showMessage('✅ Заявка принята! Теперь вы друзья', 'success');
+                        
+                    } catch (error) {
+                        console.error('❌ Ошибка:', error);
+                        showMessage('Ошибка: ' + error.message, 'error');
+                    } finally {
+                        loading.value = false;
+                    }
+                }
+                
+                async function rejectFriendRequest(request) {
+                    if (!currentUser.value) return;
+                    loading.value = true;
+                    try {
+                        const updatedPending = pendingRequests.value.filter(l => l !== request.login);
+                        pendingRequests.value = updatedPending;
+                        await db.collection('users').doc(currentUser.value.login).update({ 
+                            pendingRequests: updatedPending 
+                        });
+                        
+                        const friendRef = db.collection('users').doc(request.login);
+                        const friendDoc = await friendRef.get();
+                        if (friendDoc.exists) {
+                            await friendRef.update({
+                                friendRequests: (friendDoc.data().friendRequests || []).filter(l => l !== currentUser.value.login)
+                            });
+                        }
+                        
+                        showMessage('❌ Заявка отклонена', 'info');
+                    } catch (error) {
+                        console.error('❌ Ошибка:', error);
+                        showMessage('Ошибка: ' + error.message, 'error');
+                    } finally {
+                        loading.value = false;
+                    }
+                }
 
-                // ========== УДАЛЕНИЕ ДРУГА ==========
                 async function removeFriend(friend) {
                     if (!currentUser.value) return;
                     loading.value = true;
