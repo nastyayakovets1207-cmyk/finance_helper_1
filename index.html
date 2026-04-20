@@ -983,10 +983,10 @@
         });
         console.log('✅ Исходящие обновлены:', newFriendRequests);
         
-        // 2. ОБНОВЛЯЕМ ВХОДЯЩИЕ (у получателя) - САМОЕ ВАЖНОЕ!
+        // 2. ОБНОВЛЯЕМ ВХОДЯЩИЕ (у получателя)
         const targetRef = db.collection('users').doc(user.login);
         
-        // Сначала читаем текущие данные
+        // ПРОВЕРЯЕМ СУЩЕСТВОВАНИЕ ПОЛЯ pendingRequests
         const targetDoc = await targetRef.get();
         if (!targetDoc.exists) {
             showMessage('Пользователь не найден', 'error');
@@ -995,22 +995,24 @@
         }
         
         const targetData = targetDoc.data();
+        
+        // ГАРАНТИРУЕМ, ЧТО ПОЛЕ СУЩЕСТВУЕТ
+        if (!targetData.hasOwnProperty('pendingRequests')) {
+            console.log('⚠️ Поле pendingRequests отсутствует, создаём...');
+            await targetRef.update({ pendingRequests: [] });
+        }
+        
         const currentPending = targetData.pendingRequests || [];
         
         if (!currentPending.includes(currentUser.value.login)) {
             const newPending = [...currentPending, currentUser.value.login];
             console.log('📥 Добавляем в pendingRequests:', newPending);
-            
-            // Записываем в базу
-            await targetRef.update({ 
-                pendingRequests: newPending 
-            });
+            await targetRef.update({ pendingRequests: newPending });
             console.log('✅ pendingRequests обновлены у', user.login);
             
-            // ПРОВЕРКА: сразу читаем обратно, убеждаемся что записалось
+            // ПРОВЕРКА
             const checkDoc = await targetRef.get();
             console.log('🔍 ПРОВЕРКА: теперь pendingRequests у', user.login, '=', checkDoc.data().pendingRequests);
-            
         } else {
             console.log('⚠️ Заявка уже была в pendingRequests');
         }
@@ -1025,8 +1027,7 @@
     } finally {
         loading.value = false;
     }
-}
-              async function acceptFriendRequest(request) {
+}              async function acceptFriendRequest(request) {
     if (!currentUser.value) return;
     loading.value = true;
     try {
