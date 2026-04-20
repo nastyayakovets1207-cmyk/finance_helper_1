@@ -70,9 +70,6 @@
         .error-banner { background: #fee2e2; border: 1px solid #ef4444; color: #dc2626; padding: 12px; border-radius: 8px; margin-bottom: 16px; }
         .tab-content { animation: fadeIn 0.3s ease; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        .partner-card { transition: all 0.2s ease; }
-        .partner-card:hover { transform: translateY(-4px); box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1); }
-        .discount-badge { background: linear-gradient(135deg, #10b981 0%, #059669 100%); }
     </style>
 </head>
 <body class="bg-gray-100">
@@ -336,7 +333,7 @@
                         
                         <!-- Входящие заявки -->
                         <div v-if="pendingFriendRequests.length > 0" class="bg-yellow-50 rounded-lg p-3 sm:p-4 mb-4">
-                            <h3 class="text-base sm:text-lg font-semibold mb-3">Входящие заявки ({{ pendingFriendRequests.length }})</h3>
+                            <h3 class="text-base sm:text-lg font-semibold mb-3">📨 Входящие заявки ({{ pendingFriendRequests.length }})</h3>
                             <div class="space-y-2">
                                 <div v-for="req in pendingFriendRequests" :key="req.login" class="bg-white p-3 rounded-lg flex justify-between items-center">
                                     <div class="flex items-center space-x-3">
@@ -355,7 +352,7 @@
                         </div>
 
                         <div class="bg-gray-50 rounded-lg p-3 sm:p-4 mb-4">
-                            <h3 class="text-base sm:text-lg font-semibold mb-3">Найти друга</h3>
+                            <h3 class="text-base sm:text-lg font-semibold mb-3">🔍 Найти друга</h3>
                             <div class="flex space-x-2">
                                 <input v-model="friendSearchQuery" type="text" class="flex-1 px-3 py-2 border rounded-lg" placeholder="@username или логин">
                                 <button @click="searchFriends" class="gradient-bg text-white px-4 py-2 rounded-lg">🔍 Найти</button>
@@ -370,7 +367,8 @@
                                 </div>
                             </div>
                         </div>
-                        <h3 class="text-base sm:text-lg font-semibold mb-3">Мои друзья ({{ friends.length }})</h3>
+                        
+                        <h3 class="text-base sm:text-lg font-semibold mb-3">👥 Мои друзья ({{ friends.length }})</h3>
                         <div v-if="friends.length === 0" class="bg-gray-50 rounded-lg p-6 text-center text-gray-500"><i class="fas fa-user-friends text-3xl mb-2 opacity-50"></i><p>У вас пока нет друзей</p></div>
                         <div v-else class="space-y-2">
                             <div v-for="friend in friendsWithDetails" :key="friend.login" class="bg-gray-50 rounded-lg p-3 flex justify-between items-center">
@@ -450,8 +448,8 @@
             else firebaseApp = firebase.app();
             auth = firebase.auth();
             db = firebase.firestore();
-            console.log('Firebase инициализирован');
-        } catch (error) { console.error('Ошибка Firebase:', error); }
+            console.log('✅ Firebase инициализирован');
+        } catch (error) { console.error('❌ Ошибка Firebase:', error); }
 
         const googleProvider = new firebase.auth.GoogleAuthProvider();
         googleProvider.setCustomParameters({ prompt: 'select_account' });
@@ -741,20 +739,34 @@
                     }
                 }
 
+                // ========== КЛЮЧЕВАЯ ФУНКЦИЯ - РЕАЛЬНОЕ ВРЕМЯ ==========
                 function subscribeToCurrentUser(login) {
                     if (userUnsubscribe) userUnsubscribe();
                     const userDocRef = db.collection('users').doc(login);
                     userUnsubscribe = userDocRef.onSnapshot((doc) => {
                         if (doc.exists) {
                             const data = doc.data();
-                            if (currentUser.value) currentUser.value = { ...currentUser.value, ...data };
-                            else currentUser.value = { ...data, login: doc.id };
+                            console.log('🔄 Данные пользователя обновлены:', data);
+                            
+                            if (currentUser.value) {
+                                currentUser.value = { ...currentUser.value, ...data };
+                            } else {
+                                currentUser.value = { ...data, login: doc.id };
+                            }
+                            
                             friends.value = data.friends || [];
                             friendRequests.value = data.friendRequests || [];
                             pendingRequests.value = data.pendingRequests || [];
+                            
+                            console.log('📋 Друзья:', friends.value.length);
+                            console.log('📤 Исходящие заявки:', friendRequests.value);
+                            console.log('📥 Входящие заявки (pendingRequests):', pendingRequests.value);
+                            
                             if (data.expenses) Object.assign(expenses, data.expenses);
                             goals.value = data.goals || [];
                         }
+                    }, (error) => {
+                        console.error('Ошибка подписки:', error);
                     });
                 }
 
@@ -910,8 +922,7 @@
                     loading.value = false;
                 }
 
-                // ========== ИСПРАВЛЕННЫЕ ФУНКЦИИ ДРУЗЕЙ ==========
-                
+                // ========== ОТПРАВКА ЗАЯВКИ ==========
                 async function searchFriends() {
                     if (!friendSearchQuery.value.trim()) { searchResults.value = []; return; }
                     loading.value = true;
@@ -955,7 +966,7 @@
                         return;
                     }
                     if (pendingRequests.value.includes(user.login)) {
-                        showMessage('Этот пользователь уже отправил вам заявку. Примите её во вкладке "Входящие заявки"', 'info');
+                        showMessage('Этот пользователь уже отправил вам заявку', 'info');
                         return;
                     }
                     
@@ -997,13 +1008,13 @@
                     }
                 }
 
+                // ========== ПРИНЯТИЕ ЗАЯВКИ ==========
                 async function acceptFriendRequest(request) {
                     if (!currentUser.value) return;
                     loading.value = true;
                     try {
                         console.log('✅ Принятие заявки от', request.login);
                         
-                        // 1. Создаем объект друга
                         const newFriend = {
                             login: request.login,
                             name: request.name,
@@ -1012,26 +1023,21 @@
                             avatar: request.avatar || 1
                         };
                         
-                        // 2. Обновляем список друзей текущего пользователя
                         const updatedFriends = [...friends.value, newFriend];
                         friends.value = updatedFriends;
                         
-                        // 3. Удаляем из входящих заявок
                         const updatedPending = pendingRequests.value.filter(l => l !== request.login);
                         pendingRequests.value = updatedPending;
                         
-                        // 4. Удаляем из исходящих заявок (если была)
                         const updatedOutgoing = friendRequests.value.filter(l => l !== request.login);
                         friendRequests.value = updatedOutgoing;
                         
-                        // 5. Сохраняем изменения текущего пользователя
                         await db.collection('users').doc(currentUser.value.login).update({
                             friends: updatedFriends,
                             pendingRequests: updatedPending,
                             friendRequests: updatedOutgoing
                         });
                         
-                        // 6. Добавляем текущего пользователя в друзья к тому, кто отправил заявку
                         const friendRef = db.collection('users').doc(request.login);
                         const friendDoc = await friendRef.get();
                         if (friendDoc.exists) {
@@ -1047,12 +1053,6 @@
                                 };
                                 await friendRef.update({
                                     friends: [...friendFriends, newFriendForThem],
-                                    pendingRequests: (friendData.pendingRequests || []).filter(l => l !== currentUser.value.login),
-                                    friendRequests: (friendData.friendRequests || []).filter(l => l !== currentUser.value.login)
-                                });
-                            } else {
-                                await friendRef.update({
-                                    pendingRequests: (friendData.pendingRequests || []).filter(l => l !== currentUser.value.login),
                                     friendRequests: (friendData.friendRequests || []).filter(l => l !== currentUser.value.login)
                                 });
                             }
@@ -1068,6 +1068,7 @@
                     }
                 }
 
+                // ========== ОТКЛОНЕНИЕ ЗАЯВКИ ==========
                 async function rejectFriendRequest(request) {
                     if (!currentUser.value) return;
                     loading.value = true;
@@ -1094,6 +1095,7 @@
                     }
                 }
 
+                // ========== УДАЛЕНИЕ ДРУГА ==========
                 async function removeFriend(friend) {
                     if (!currentUser.value) return;
                     loading.value = true;
