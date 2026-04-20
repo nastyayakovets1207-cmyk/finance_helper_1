@@ -1026,7 +1026,7 @@
         loading.value = false;
     }
 }
-               async function acceptFriendRequest(request) {
+              async function acceptFriendRequest(request) {
     if (!currentUser.value) return;
     loading.value = true;
     try {
@@ -1083,8 +1083,7 @@
     } finally {
         loading.value = false;
     }
-}                // ========== ОТКЛОНЕНИЕ ЗАЯВКИ ==========
-async function rejectFriendRequest(request) {
+}async function rejectFriendRequest(request) {
     if (!currentUser.value) return;
     loading.value = true;
     try {
