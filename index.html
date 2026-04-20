@@ -70,6 +70,10 @@
         .error-banner { background: #fee2e2; border: 1px solid #ef4444; color: #dc2626; padding: 12px; border-radius: 8px; margin-bottom: 16px; }
         .tab-content { animation: fadeIn 0.3s ease; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .connection-status { font-size: 12px; padding: 4px 8px; border-radius: 20px; margin-left: 10px; }
+        .status-online { background: #10b981; color: white; }
+        .status-offline { background: #ef4444; color: white; }
+        .status-checking { background: #f59e0b; color: white; }
     </style>
 </head>
 <body class="bg-gray-100">
@@ -303,6 +307,18 @@
                     <div v-show="currentTab === 'chat'">
                         <h2 class="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">ИИ-Ассистент</h2>
                         <div class="bg-gray-50 rounded-lg p-3 sm:p-4">
+                            <div class="flex items-center justify-between mb-3">
+                                <div class="flex items-center">
+                                    <i class="fas fa-robot text-purple-600 mr-2"></i>
+                                    <span class="text-sm font-medium">Статус: </span>
+                                    <span :class="['connection-status', n8nStatus === 'online' ? 'status-online' : n8nStatus === 'offline' ? 'status-offline' : 'status-checking']">
+                                        {{ n8nStatus === 'online' ? '● Онлайн' : n8nStatus === 'offline' ? '● Офлайн' : '● Проверка...' }}
+                                    </span>
+                                </div>
+                                <button @click="checkN8nConnection" class="text-xs text-purple-600 hover:text-purple-800">
+                                    <i class="fas fa-sync-alt mr-1"></i> Проверить
+                                </button>
+                            </div>
                             <div class="h-96 overflow-y-auto flex flex-col space-y-2 mb-3 sm:mb-4 p-2" ref="chatContainer">
                                 <div v-for="(msg, index) in chatMessages" :key="index" :class="msg.sender === 'bot' ? 'message-bot' : 'message-user'">
                                     <div v-if="msg.sender === 'bot' && msg.loading" class="flex items-center space-x-2"><div class="typing-indicator"><span></span><span></span><span></span></div><span class="text-gray-500 text-xs">Ассистент анализирует...</span></div>
@@ -510,6 +526,7 @@
                 const chatInput = ref('');
                 const chatContainer = ref(null);
                 const aiLoading = ref(false);
+                const n8nStatus = ref('checking');
                 
                 const monthlySnapshots = ref({});
                 const selectedAnalysisMonth = ref('');
@@ -693,51 +710,87 @@
                 }
 
                 // ==================== ИНТЕГРАЦИЯ С n8n ====================
-                // Адрес вашего вебхука в n8n (локальный)
                 const N8N_WEBHOOK_URL = 'http://localhost:5678/webhook/finchat';
 
-                async function sendMessageToN8N(userMessage) {
+                async function checkN8nConnection() {
+                    n8nStatus.value = 'checking';
                     try {
-                        // Собираем контекст пользователя для более умных ответов
-                        const userContext = {
-                            name: currentUser.value?.name || 'Пользователь',
-                            nickname: currentUser.value?.nickname || '',
-                            kfg: currentMonthKfg.value,
-                            income: currentUser.value?.income || 0,
-                            totalExpenses: totalExpenses.value,
-                            balance: balance.value,
-                            goalsCount: goals.value.length,
-                            friendsCount: friends.value.length
-                        };
+                        const controller = new AbortController();
+                        const timeoutId = setTimeout(() => controller.abort(), 5000);
+                        
+                        const response = await fetch(N8N_WEBHOOK_URL, {
+                            method: 'OPTIONS',
+                            signal: controller.signal
+                        });
+                        
+                        clearTimeout(timeoutId);
+                        n8nStatus.value = 'online';
+                        showMessage('✅ Соединение с ИИ-ассистентом установлено', 'success');
+                        return true;
+                    } catch (error) {
+                        n8nStatus.value = 'offline';
+                        console.warn('n8n недоступен:', error);
+                        return false;
+                    }
+                }
 
+                async function sendMessageToN8N(userMessage) {
+                    const userContext = {
+                        name: currentUser.value?.name || 'Пользователь',
+                        nickname: currentUser.value?.nickname || '',
+                        kfg: currentMonthKfg.value,
+                        income: currentUser.value?.income || 0,
+                        totalExpenses: totalExpenses.value,
+                        balance: balance.value,
+                        goalsCount: goals.value.length,
+                        friendsCount: friends.value.length
+                    };
+
+                    console.log('📤 Отправка запроса к n8n:', N8N_WEBHOOK_URL);
+                    console.log('📦 Данные:', { message: userMessage, userContext });
+
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), 30000);
+
+                    try {
                         const response = await fetch(N8N_WEBHOOK_URL, {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json',
-                                'Accept': 'application/json'
                             },
                             body: JSON.stringify({
                                 message: userMessage,
                                 userContext: userContext,
                                 timestamp: new Date().toISOString()
-                            })
+                            }),
+                            signal: controller.signal
                         });
 
+                        clearTimeout(timeoutId);
+
                         if (!response.ok) {
-                            throw new Error(`HTTP error! status: ${response.status}`);
+                            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
                         }
 
                         const aiResponse = await response.text();
+                        console.log('📥 Ответ от n8n:', aiResponse);
                         
-                        // Если ответ пустой или содержит ошибку
-                        if (!aiResponse || aiResponse.includes('error')) {
-                            throw new Error('Пустой ответ от сервера');
+                        if (!aiResponse || aiResponse.trim() === '') {
+                            return "Извините, я получил пустой ответ. Попробуйте переформулировать вопрос.";
                         }
                         
                         return aiResponse;
                     } catch (error) {
-                        console.error('Ошибка при обращении к n8n:', error);
-                        throw new Error('Не удалось связаться с ИИ-ассистентом. Проверьте, запущен ли n8n и Ollama.');
+                        clearTimeout(timeoutId);
+                        console.error('❌ Ошибка n8n:', error);
+                        
+                        if (error.name === 'AbortError') {
+                            throw new Error('Превышено время ожидания ответа (30 секунд)');
+                        }
+                        if (error.message.includes('Failed to fetch')) {
+                            throw new Error('Не удаётся подключиться к серверу. Убедитесь, что n8n запущен на http://localhost:5678');
+                        }
+                        throw error;
                     }
                 }
 
@@ -746,11 +799,9 @@
                     
                     const userMessage = chatInput.value.trim();
                     
-                    // Добавляем сообщение пользователя в чат
                     chatMessages.value.push({ text: userMessage, sender: 'user' });
                     chatInput.value = '';
                     
-                    // Добавляем индикатор загрузки
                     const loadingIndex = chatMessages.value.length;
                     chatMessages.value.push({ text: '', sender: 'bot', loading: true });
                     
@@ -760,21 +811,20 @@
                     aiLoading.value = true;
                     
                     try {
-                        // Отправляем запрос к n8n
                         const aiResponse = await sendMessageToN8N(userMessage);
                         
-                        // Убираем индикатор загрузки и добавляем ответ
                         chatMessages.value.splice(loadingIndex, 1);
                         chatMessages.value.push({ text: aiResponse, sender: 'bot' });
+                        n8nStatus.value = 'online';
                         
                     } catch (error) {
-                        // В случае ошибки показываем сообщение об ошибке
                         chatMessages.value.splice(loadingIndex, 1);
                         chatMessages.value.push({ 
-                            text: `❌ Ошибка: ${error.message}. Убедитесь, что n8n запущен на http://localhost:5678 и вебхук активен.`, 
+                            text: `❌ ${error.message}`, 
                             sender: 'bot', 
                             error: true 
                         });
+                        n8nStatus.value = 'offline';
                     } finally {
                         aiLoading.value = false;
                         await nextTick();
@@ -997,7 +1047,6 @@
                     loading.value = false;
                 }
 
-                // ========== ОТПРАВКА ЗАЯВКИ ==========
                 async function searchFriends() {
                     if (!friendSearchQuery.value.trim()) { searchResults.value = []; return; }
                     loading.value = true;
@@ -1251,7 +1300,10 @@
                     });
                 }
 
-                onMounted(() => { checkAuthState(); });
+                onMounted(() => { 
+                    checkAuthState();
+                    setTimeout(() => checkN8nConnection(), 2000);
+                });
                 onUnmounted(() => { if (userUnsubscribe) userUnsubscribe(); });
                 watch(kfg, (newKfg) => { if (currentUser.value) { const currentAvatar = avatars.find(a => a.id === currentUser.value.avatar); if (currentAvatar && !isAvatarUnlocked(currentAvatar)) changeAvatar(avatars[0]); } });
                 watch(monthlySnapshotsSorted, () => updateAllCharts());
@@ -1260,7 +1312,7 @@
                     loading, loadingMessage, currentTab, message, currentUser,
                     loginForm, registerForm, expenses, goals, newGoal, friends, friendRequests, pendingRequests,
                     pendingFriendRequests, friendSearchQuery, searchResults,
-                    chatMessages, chatInput, chatContainer, aiLoading,
+                    chatMessages, chatInput, chatContainer, aiLoading, n8nStatus,
                     avatars, tabs, categoryNames, categoryIcons,
                     totalExpenses, totalIncome, balance, hasExpenses, kfg, currentMonthKfg,
                     ratingParticipants, friendsWithDetails, unlockedAvatars,
@@ -1274,7 +1326,7 @@
                     searchFriends, sendFriendRequest, acceptFriendRequest, rejectFriendRequest, removeFriend,
                     saveExpenses, addGoal, openAddToGoalModal, closeAddToGoalModal, confirmAddToGoal,
                     quickAddToGoal, openRemoveGoalModal, closeRemoveGoalModal, confirmRemoveGoal,
-                    sendMessage, resetChatContext, quickQuestion, formatBotMessage,
+                    sendMessage, resetChatContext, quickQuestion, formatBotMessage, checkN8nConnection,
                     getAvatarUrl, getAvatarName, changeAvatar,
                     isAvatarUnlocked, isAvatarAvailableForRegister, selectRegisterAvatar,
                     getUserRating, getUserRatingLevel, calculateKFG, formatMoney,
