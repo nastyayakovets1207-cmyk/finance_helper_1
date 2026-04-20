@@ -1026,12 +1026,11 @@
         loading.value = false;
     }
 }
-                async function acceptFriendRequest(request) {
+               async function acceptFriendRequest(request) {
     if (!currentUser.value) return;
     loading.value = true;
     try {
         console.log('✅ ПРИНЯТИЕ заявки от', request.login);
-        console.log('Текущие pendingRequests до принятия:', pendingRequests.value);
         
         const newFriend = {
             login: request.login,
@@ -1079,37 +1078,38 @@
         showMessage('✅ Заявка принята! Теперь вы друзья', 'success');
         
     } catch (error) {
-        console.error('❌ Ошибка принятия заявки:', error);
+        console.error('❌ Ошибка:', error);
         showMessage('Ошибка: ' + error.message, 'error');
     } finally {
         loading.value = false;
     }
 }                // ========== ОТКЛОНЕНИЕ ЗАЯВКИ ==========
-                async function rejectFriendRequest(request) {
-                    if (!currentUser.value) return;
-                    loading.value = true;
-                    try {
-                        const updatedPending = pendingRequests.value.filter(l => l !== request.login);
-                        pendingRequests.value = updatedPending;
-                        await db.collection('users').doc(currentUser.value.login).update({ 
-                            pendingRequests: updatedPending 
-                        });
-                        
-                        const friendRef = db.collection('users').doc(request.login);
-                        const friendDoc = await friendRef.get();
-                        if (friendDoc.exists) {
-                            await friendRef.update({
-                                friendRequests: (friendDoc.data().friendRequests || []).filter(l => l !== currentUser.value.login)
-                            });
-                        }
-                        
-                        showMessage('❌ Заявка отклонена', 'info');
-                    } catch (error) {
-                        showMessage('Ошибка: ' + error.message, 'error');
-                    } finally {
-                        loading.value = false;
-                    }
-                }
+async function rejectFriendRequest(request) {
+    if (!currentUser.value) return;
+    loading.value = true;
+    try {
+        const updatedPending = pendingRequests.value.filter(l => l !== request.login);
+        pendingRequests.value = updatedPending;
+        await db.collection('users').doc(currentUser.value.login).update({ 
+            pendingRequests: updatedPending 
+        });
+        
+        const friendRef = db.collection('users').doc(request.login);
+        const friendDoc = await friendRef.get();
+        if (friendDoc.exists) {
+            await friendRef.update({
+                friendRequests: (friendDoc.data().friendRequests || []).filter(l => l !== currentUser.value.login)
+            });
+        }
+        
+        showMessage('❌ Заявка отклонена', 'info');
+    } catch (error) {
+        console.error('❌ Ошибка:', error);
+        showMessage('Ошибка: ' + error.message, 'error');
+    } finally {
+        loading.value = false;
+    }
+}
 
                 // ========== УДАЛЕНИЕ ДРУГА ==========
                 async function removeFriend(friend) {
