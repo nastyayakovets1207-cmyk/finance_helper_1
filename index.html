@@ -114,7 +114,7 @@
             {{ message.text }}
         </div>
 
-        <!-- Форма входа / регистрации -->
+        <!-- Форма входа / регистрации (оставлена без изменений) -->
         <div v-if="!currentUser" class="container mx-auto px-4 py-4 sm:py-8">
             <div class="max-w-4xl mx-auto">
                 <div class="bg-white rounded-xl shadow-lg overflow-hidden">
@@ -167,7 +167,7 @@
                 </div>
 
                 <div class="p-4 sm:p-6 tab-content">
-                    <!-- Профиль -->
+                    <!-- Профиль (оставлен без изменений) -->
                     <div v-show="currentTab === 'profile'">
                         <h2 class="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">Мой профиль</h2>
                         <div class="bg-gray-50 rounded-xl p-4 sm:p-6 max-w-2xl">
@@ -211,7 +211,7 @@
                         </div>
                     </div>
 
-                    <!-- Расходы -->
+                    <!-- Расходы (оставлен без изменений) -->
                     <div v-show="currentTab === 'expenses'">
                         <h2 class="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">Управление расходами</h2>
                         <div class="bg-gray-50 rounded-lg p-4 mb-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
@@ -268,7 +268,7 @@
                         </div>
                     </div>
 
-                    <!-- Цели -->
+                    <!-- Цели (оставлен без изменений) -->
                     <div v-show="currentTab === 'goals'">
                         <h2 class="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">Финансовые цели</h2>
                         <div class="bg-gray-50 rounded-lg p-4 sm:p-6 mb-4 sm:mb-6">
@@ -296,14 +296,14 @@
                         </div>
                     </div>
 
-                    <!-- Аналитика -->
+                    <!-- Аналитика (оставлен без изменений) -->
                     <div v-show="currentTab === 'analytics'">
                         <h2 class="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">Аналитика расходов</h2>
                         <div class="bg-gray-50 rounded-xl p-4 mb-6"><label class="block text-gray-700 font-medium mb-2">Месяц для анализа:</label><select v-model="selectedAnalysisMonth" @change="loadExpensesForMonth" class="w-full border rounded-lg px-3 py-2 mb-4"><option v-for="snap in monthlySnapshotsSorted" :value="snap.monthId">{{ snap.monthLabel }}</option></select><div class="h-64"><canvas id="expenseChart"></canvas></div></div>
                         <div class="bg-gray-50 rounded-xl p-4"><h3 class="text-lg font-semibold mb-3">Динамика расходов</h3><div class="h-64"><canvas id="expenseTrendChart"></canvas></div></div>
                     </div>
 
-                    <!-- ИИ-Ассистент - ГЛАВНОЕ ИСПРАВЛЕНИЕ ЗДЕСЬ -->
+                    <!-- ИИ-Ассистент (ИСПРАВЛЕНА ОБРАБОТКА ОТВЕТА) -->
                     <div v-show="currentTab === 'chat'">
                         <h2 class="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">ИИ-Ассистент</h2>
                         <div class="bg-gray-50 rounded-lg p-3 sm:p-4">
@@ -342,7 +342,7 @@
                         </div>
                     </div>
 
-                    <!-- Друзья и рейтинги -->
+                    <!-- Друзья и рейтинги (оставлен без изменений) -->
                     <div v-show="currentTab === 'friends'">
                         <h2 class="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">Друзья и рейтинги</h2>
                         <div class="bg-gradient-to-r from-purple-600 to-indigo-600 rounded-lg p-3 sm:p-4 mb-4 text-white"><h3 class="text-base sm:text-lg font-semibold mb-2">🏆 Рейтинг КФГ</h3><div class="space-y-2"><div v-for="(participant, idx) in ratingParticipants.slice(0,5)" :key="idx" class="flex items-center justify-between rounded-lg p-2 text-sm" :class="participant.isCurrentUser ? 'current-user-row' : 'bg-white bg-opacity-20'"><div class="flex items-center space-x-2"><span class="font-bold w-5">{{ idx+1 }}</span><img :src="getAvatarUrl(participant.avatar)" class="w-6 h-6 rounded-full"><span>{{ participant.name }} {{ participant.isCurrentUser ? '(Вы)' : '' }}</span></div><span class="font-bold">{{ participant.kfg }}</span></div></div></div>
@@ -402,7 +402,7 @@
                         </div>
                     </div>
 
-                    <!-- Награды -->
+                    <!-- Награды (оставлен без изменений) -->
                     <div v-show="currentTab === 'rewards'">
                         <h2 class="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">Награды</h2>
                         <div class="bg-gray-50 rounded-lg p-4 mb-4">
@@ -418,7 +418,7 @@
                         </div>
                     </div>
 
-                    <!-- КФГ -->
+                    <!-- КФГ (оставлен без изменений) -->
                     <div v-show="currentTab === 'kfg'">
                         <h2 class="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">Коэффициент финансовой грамотности (КФГ)</h2>
                         <div class="bg-gray-50 rounded-xl p-4 mb-6"><h3 class="text-lg font-semibold mb-3">Динамика КФГ по месяцам</h3><div class="h-64"><canvas id="kfgTrendChart"></canvas></div></div>
@@ -631,6 +631,7 @@
                 function getAvatarName(avatarId) { return avatars.find(a => a.id === avatarId)?.name || 'Новичок'; }
                 function formatBotMessage(text, sender) { 
                     if (sender === 'bot') {
+                        // Если ответ пришел в виде JSON строки, пытаемся распарсить
                         try {
                             if (typeof text === 'string' && text.trim().startsWith('{')) {
                                 const parsed = JSON.parse(text);
@@ -725,7 +726,6 @@
                 }
 
                 // ==================== ИНТЕГРАЦИЯ С n8n ====================
-                // ВАЖНО: Убедитесь, что URL заканчивается на /webhook/finchat
                 const N8N_WEBHOOK_URL = ' https://r7e59a-2a03-d000-42a2-52d0-d52d-d832-d7c3-f652.ru.tuna.am';
 
                 async function checkN8nConnection() {
@@ -746,7 +746,6 @@
                     } catch (error) {
                         n8nStatus.value = 'offline';
                         console.warn('n8n недоступен:', error);
-                        showMessage('⚠️ Не удалось подключиться к ИИ-ассистенту. Проверьте, запущен ли n8n и активен ли туннель Tuna.', 'error');
                         return false;
                     }
                 }
@@ -796,12 +795,14 @@
                             return "Извините, я получил пустой ответ. Попробуйте переформулировать вопрос.";
                         }
                         
+                        // Пытаемся распарсить JSON ответ
                         try {
                             const parsed = JSON.parse(aiResponse);
                             if (parsed.output) return parsed.output;
                             if (parsed.response) return parsed.response;
                             return aiResponse;
                         } catch(e) {
+                            // Если не JSON, возвращаем как есть
                             return aiResponse;
                         }
                     } catch (error) {
@@ -812,7 +813,7 @@
                             throw new Error('Превышено время ожидания ответа (30 секунд)');
                         }
                         if (error.message.includes('Failed to fetch')) {
-                            throw new Error('Не удаётся подключиться к серверу. Убедитесь, что n8n запущен и туннель Tuna активен.');
+                            throw new Error('Не удаётся подключиться к серверу. Убедитесь, что n8n запущен на http://localhost:5678');
                         }
                         throw error;
                     }
@@ -866,6 +867,9 @@
                     sendMessage(); 
                 }
 
+                // Остальные функции (Firebase, друзья, цели и т.д.) остаются без изменений
+                // Для краткости они не включены, но вы можете оставить их из вашего исходного кода
+                
                 async function loadUsersFromFirestore() {
                     const snapshot = await db.collection('users').get();
                     users.value = [];
