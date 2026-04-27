@@ -72,6 +72,12 @@
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         .kfg-current { background: #10b981; color: white; padding: 2px 8px; border-radius: 20px; font-size: 12px; margin-left: 8px; }
         .kfg-saved { background: #f59e0b; color: white; padding: 2px 8px; border-radius: 20px; font-size: 12px; margin-left: 8px; }
+        .expense-category { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #e5e7eb; }
+        .expense-category:last-child { border-bottom: none; }
+        .expense-category-name { font-weight: 500; color: #374151; }
+        .expense-category-amount { font-weight: 600; color: #4b5563; }
+        .expense-total { background: #f3f4f6; padding: 12px; border-radius: 12px; margin-top: 16px; }
+        .detail-category-icon { width: 32px; text-align: center; }
     </style>
 </head>
 <body class="bg-gray-100">
@@ -112,7 +118,7 @@
             {{ message.text }}
         </div>
 
-        <!-- Форма входа / регистрации (оставлена без изменений для краткости, но в полной версии будет) -->
+        <!-- Форма входа / регистрации -->
         <div v-if="!currentUser" class="container mx-auto px-4 py-4 sm:py-8">
             <div class="max-w-4xl mx-auto">
                 <div class="bg-white rounded-xl shadow-lg overflow-hidden">
@@ -210,7 +216,7 @@
                         </div>
                     </div>
 
-                    <!-- Расходы - ИСПРАВЛЕНО: показываем актуальный КФГ -->
+                    <!-- Расходы -->
                     <div v-show="currentTab === 'expenses'">
                         <h2 class="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">Управление расходами</h2>
                         <div class="bg-gray-50 rounded-lg p-4 mb-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
@@ -223,7 +229,6 @@
                             <button @click="openHistoricalModal" class="gradient-bg text-white px-4 py-2 rounded-lg text-sm"><i class="fas fa-plus-circle mr-1"></i> Добавить данные за прошлый месяц</button>
                         </div>
                         
-                        <!-- Отображение текущего КФГ для выбранного месяца -->
                         <div class="mb-4 p-3 bg-purple-50 rounded-lg" v-if="selectedExpenseMonth === currentMonthId">
                             <div class="flex items-center justify-between">
                                 <span class="font-medium">📊 Ваш актуальный КФГ за текущий месяц:</span>
@@ -267,22 +272,69 @@
                             </div>
                         </div>
                         
+                        <!-- Модальное окно деталей расходов - ИСПРАВЛЕНО -->
                         <div v-if="detailsModalVisible" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                            <div class="bg-white rounded-xl p-4 sm:p-6 max-w-lg w-full max-h-[80vh] overflow-y-auto">
-                                <div class="flex justify-between items-center mb-3"><h3 class="text-lg font-bold">Детали за {{ detailsMonthLabel }}</h3><button @click="detailsModalVisible = false" class="text-gray-500 hover:text-gray-700"><i class="fas fa-times text-xl"></i></button></div>
-                                <div class="space-y-2">
-                                    <div v-for="(amount, cat) in detailsExpenses" :key="cat" v-if="amount > 0" class="flex justify-between border-b py-1">
-                                        <span><i :class="categoryIcons[cat]" class="mr-2"></i>{{ categoryNames[cat] }}</span>
-                                        <span>{{ formatMoney(amount) }} ₽</span>
-                                    </div>
-                                    <div v-if="Object.values(detailsExpenses).every(v => v === 0)" class="text-gray-500 text-center py-4">Нет расходов по категориям</div>
+                            <div class="bg-white rounded-xl p-4 sm:p-6 max-w-lg w-full max-h-[85vh] overflow-y-auto">
+                                <div class="flex justify-between items-center mb-4 pb-2 border-b">
+                                    <h3 class="text-lg font-bold">📋 Детали расходов</h3>
+                                    <button @click="detailsModalVisible = false" class="text-gray-500 hover:text-gray-700 text-xl w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100">
+                                        <i class="fas fa-times"></i>
+                                    </button>
                                 </div>
-                                <button @click="detailsModalVisible = false" class="mt-4 bg-gray-300 px-4 py-2 rounded-lg w-full">Закрыть</button>
+                                
+                                <div class="mb-3 pb-2 border-b">
+                                    <p class="text-gray-600">
+                                        <span class="font-semibold">Месяц:</span> {{ detailsMonthLabel }}
+                                    </p>
+                                    <p class="text-gray-600 mt-1">
+                                        <span class="font-semibold">Общая сумма расходов:</span> 
+                                        <span class="text-purple-600 font-bold">{{ formatMoney(Object.values(detailsExpenses).reduce((a, b) => a + b, 0)) }} ₽</span>
+                                    </p>
+                                </div>
+                                
+                                <div class="space-y-1 max-h-[400px] overflow-y-auto pr-2">
+                                    <div v-for="(amount, cat) in detailsExpenses" :key="cat" class="expense-category">
+                                        <div class="flex items-center gap-3">
+                                            <div class="detail-category-icon">
+                                                <i :class="[categoryIcons[cat], 'text-purple-500 text-lg']"></i>
+                                            </div>
+                                            <div class="flex-1">
+                                                <span class="expense-category-name">{{ categoryNames[cat] }}</span>
+                                            </div>
+                                            <div class="text-right">
+                                                <span class="expense-category-amount">{{ formatMoney(amount) }} ₽</span>
+                                            </div>
+                                        </div>
+                                        <div class="w-full bg-gray-200 rounded-full h-1.5 mt-1" v-if="Object.values(detailsExpenses).reduce((a, b) => a + b, 0) > 0">
+                                            <div class="bg-purple-500 h-1.5 rounded-full" :style="{ width: (amount / Object.values(detailsExpenses).reduce((a, b) => a + b, 0) * 100) + '%' }"></div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div v-if="Object.values(detailsExpenses).every(v => v === 0 || v === undefined)" class="text-center py-8 text-gray-500">
+                                        <i class="fas fa-chart-line text-4xl mb-2 opacity-50"></i>
+                                        <p>Нет данных о расходах за этот месяц</p>
+                                    </div>
+                                </div>
+                                
+                                <div class="expense-total mt-4">
+                                    <div class="flex justify-between items-center">
+                                        <span class="font-semibold">💸 Итого:</span>
+                                        <span class="text-xl font-bold text-purple-600">{{ formatMoney(Object.values(detailsExpenses).reduce((a, b) => a + b, 0)) }} ₽</span>
+                                    </div>
+                                    <div class="flex justify-between items-center mt-2 pt-2 border-t border-gray-200">
+                                        <span class="font-semibold">📊 КФГ:</span>
+                                        <span class="text-lg font-bold text-green-600">{{ detailsKfg }}</span>
+                                    </div>
+                                </div>
+                                
+                                <button @click="detailsModalVisible = false" class="mt-4 bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded-lg w-full transition-colors">
+                                    Закрыть
+                                </button>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Цели (оставлен без изменений) -->
+                    <!-- Цели -->
                     <div v-show="currentTab === 'goals'">
                         <h2 class="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">Финансовые цели</h2>
                         <div class="bg-gray-50 rounded-lg p-4 sm:p-6 mb-4 sm:mb-6">
@@ -432,7 +484,7 @@
                         </div>
                     </div>
 
-                    <!-- КФГ - ИСПРАВЛЕНО: показываем актуальный КФГ -->
+                    <!-- КФГ -->
                     <div v-show="currentTab === 'kfg'">
                         <h2 class="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">Коэффициент финансовой грамотности (КФГ)</h2>
                         <div class="bg-gray-50 rounded-xl p-4 mb-6">
@@ -545,6 +597,7 @@
                 const detailsModalVisible = ref(false);
                 const detailsMonthLabel = ref('');
                 const detailsExpenses = reactive({});
+                const detailsKfg = ref(0);
                 const expenses = reactive({ ...initialExpenses });
                 const goals = ref([]);
                 const newGoal = reactive({ name: '', targetAmount: 0 });
@@ -612,7 +665,7 @@
                 const balance = computed(() => totalIncome.value - totalExpenses.value);
                 const hasExpenses = computed(() => Object.values(expenses).some(v => v > 0));
 
-                // ОСНОВНАЯ ФУНКЦИЯ РАСЧЕТА КФГ - ИСПРАВЛЕНА
+                // ОСНОВНАЯ ФУНКЦИЯ РАСЧЕТА КФГ
                 const kfg = computed(() => {
                     if (!currentUser.value || totalIncome.value === 0) return 0;
                     if (!hasExpenses.value) return 0;
@@ -749,11 +802,13 @@
                     loading.value = false;
                 }
 
+                // ИСПРАВЛЕННАЯ ФУНКЦИЯ ПОКАЗА ДЕТАЛЕЙ
                 function showMonthDetails(snap) {
                     detailsMonthLabel.value = snap.monthLabel;
                     const expensesData = snap.expenses || {};
                     Object.keys(detailsExpenses).forEach(key => delete detailsExpenses[key]);
                     Object.assign(detailsExpenses, expensesData);
+                    detailsKfg.value = snap.kfg;
                     detailsModalVisible.value = true;
                 }
 
@@ -1282,7 +1337,7 @@
                     showHistoricalModal, historicalMonth, historicalIncome, historicalExpenses,
                     monthlySnapshotsSorted, selectedAnalysisMonth,
                     selectedExpenseMonth, expensesForSelectedMonth, filteredExpensesForMonth,
-                    detailsModalVisible, detailsMonthLabel, detailsExpenses,
+                    detailsModalVisible, detailsMonthLabel, detailsExpenses, detailsKfg,
                     handleRegister, handleLogin, loginWithGoogle, logout,
                     searchFriends, sendFriendRequest, acceptFriendRequest, rejectFriendRequest, removeFriend,
                     saveExpenses, addGoal, openAddToGoalModal, closeAddToGoalModal, confirmAddToGoal,
