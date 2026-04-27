@@ -82,6 +82,8 @@
         .success-banner { background: #d1fae5; border-left: 4px solid #10b981; padding: 12px; border-radius: 8px; margin-bottom: 16px; }
         .difference-positive { color: #10b981; font-weight: bold; }
         .difference-negative { color: #ef4444; font-weight: bold; }
+        .avg-kfg-block { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 1rem; padding: 1rem; margin-bottom: 1.5rem; text-align: center; }
+        .avg-kfg-number { font-size: 3rem; font-weight: bold; line-height: 1; }
     </style>
 </head>
 <body class="bg-gray-100">
@@ -204,13 +206,13 @@
                                     <button @click="editIncome" class="text-purple-600 hover:text-purple-800"><i class="fas fa-edit ml-2"></i></button>
                                 </div>
                                 <div class="flex justify-between items-center pb-2 border-b">
-                                    <span class="text-gray-600 text-sm">КФГ (текущий):</span>
-                                    <span class="font-semibold text-purple-600">{{ kfg }}</span>
-                                    <span class="text-xs text-gray-400 ml-2">(на основе текущих расходов)</span>
+                                    <span class="text-gray-600 text-sm">Средний КФГ:</span>
+                                    <span class="font-semibold text-purple-600">{{ averageKFG }} баллов</span>
+                                    <span class="text-xs text-gray-400 ml-2">(за {{ monthlySnapshotsSorted.length }} мес.)</span>
                                 </div>
                                 <div class="flex justify-between items-center pb-2 border-b">
                                     <span class="text-gray-600 text-sm">Рейтинг:</span>
-                                    <span class="font-semibold text-xs px-2 py-1 rounded-full text-white" :class="'rating-' + getUserRatingLevel(currentUser)">{{ getUserRating(currentUser) }}</span>
+                                    <span class="font-semibold text-xs px-2 py-1 rounded-full text-white" :class="'rating-' + getUserRatingLevelByKFG(averageKFG)">{{ getUserRatingByKFG(averageKFG) }}</span>
                                 </div>
                                 <div class="flex justify-between items-center pb-2 border-b">
                                     <span class="text-gray-600 text-sm">Разблокированные аватары:</span>
@@ -233,36 +235,6 @@
                             <button @click="openHistoricalModal" class="gradient-bg text-white px-4 py-2 rounded-lg text-sm"><i class="fas fa-plus-circle mr-1"></i> Добавить данные за прошлый месяц</button>
                         </div>
                         
-                        <!-- ИНФОРМАЦИОННОЕ СООБЩЕНИЕ О РАЗНИЦЕ В КФГ -->
-                        <div v-if="selectedExpenseMonth === currentMonthId && currentMonthSnapshotKfg !== null && currentMonthSnapshotKfg !== kfg" class="warning-banner mb-4">
-                            <div class="flex items-start gap-3">
-                                <i class="fas fa-info-circle text-yellow-600 text-lg mt-0.5"></i>
-                                <div class="flex-1">
-                                    <p class="font-semibold text-yellow-800">⚠️ Расхождения в КФГ</p>
-                                    <p class="text-sm text-yellow-700 mt-1">
-                                        Ваш <strong>актуальный КФГ ({{ kfg }})</strong> отличается от <strong>сохранённого ({{ currentMonthSnapshotKfg }})</strong>.
-                                        Разница составляет <span :class="kfg - currentMonthSnapshotKfg > 0 ? 'difference-positive' : 'difference-negative'">{{ kfg - currentMonthSnapshotKfg > 0 ? '+' : '' }}{{ kfg - currentMonthSnapshotKfg }}</span> баллов.
-                                    </p>
-                                    <p class="text-xs text-yellow-600 mt-2">
-                                        <i class="fas fa-arrow-right mr-1"></i> 
-                                        Вы изменили расходы, но не сохранили их. Нажмите <strong>"Сохранить расходы"</strong>, чтобы обновить сохранённый КФГ.
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div v-if="selectedExpenseMonth === currentMonthId && currentMonthSnapshotKfg !== null && currentMonthSnapshotKfg === kfg" class="success-banner mb-4">
-                            <div class="flex items-start gap-3">
-                                <i class="fas fa-check-circle text-green-600 text-lg mt-0.5"></i>
-                                <div class="flex-1">
-                                    <p class="font-semibold text-green-800">✅ КФГ синхронизирован</p>
-                                    <p class="text-sm text-green-700 mt-1">
-                                        Ваш актуальный КФГ ({{ kfg }}) совпадает с сохранённым.
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-                        
                         <div class="mb-4">
                             <h3 class="text-lg font-semibold mb-3">Расходы за {{ getMonthLabel(selectedExpenseMonth) }}</h3>
                             <div class="expenses-grid">
@@ -279,7 +251,7 @@
                             <div class="overflow-x-auto">
                                 <table class="min-w-full bg-white border rounded-lg">
                                     <thead class="bg-gray-100">
-                                        <tr><th class="px-4 py-2 text-left">Месяц</th><th class="px-4 py-2 text-left">Доход</th><th class="px-4 py-2 text-left">Расходы</th><th class="px-4 py-2 text-left">КФГ (сохранённый)</th><th class="px-4 py-2 text-left">КФГ (актуальный)</th><th class="px-4 py-2 text-left">Динамика</th><th class="px-4 py-2 text-left"></th></tr>
+                                        <tr><th class="px-4 py-2 text-left">Месяц</th><th class="px-4 py-2 text-left">Доход</th><th class="px-4 py-2 text-left">Расходы</th><th class="px-4 py-2 text-left">КФГ</th><th class="px-4 py-2 text-left"></th></tr>
                                     </thead>
                                     <tbody>
                                         <tr v-for="snap in monthlySnapshotsSorted" :key="snap.monthId" class="border-t">
@@ -287,24 +259,6 @@
                                             <td class="px-4 py-2">{{ formatMoney(snap.income) }} ₽</td>
                                             <td class="px-4 py-2">{{ formatMoney(snap.totalExpenses) }} ₽</td>
                                             <td class="px-4 py-2 font-semibold" :class="{'text-green-600': snap.kfg >= 70, 'text-yellow-600': snap.kfg >= 40 && snap.kfg < 70, 'text-red-600': snap.kfg < 40}">{{ snap.kfg }}</td>
-                                            <td class="px-4 py-2">
-                                                <span v-if="snap.monthId === currentMonthId" class="font-semibold text-purple-600">{{ kfg }}</span>
-                                                <span v-else class="text-gray-400">—</span>
-                                            </td>
-                                            <td class="px-4 py-2">
-                                                <span v-if="snap.monthId === currentMonthId && currentMonthSnapshotKfg !== null">
-                                                    <span v-if="kfg > currentMonthSnapshotKfg" class="text-green-600 text-sm">
-                                                        <i class="fas fa-arrow-up"></i> +{{ kfg - currentMonthSnapshotKfg }}
-                                                    </span>
-                                                    <span v-else-if="kfg < currentMonthSnapshotKfg" class="text-red-600 text-sm">
-                                                        <i class="fas fa-arrow-down"></i> {{ kfg - currentMonthSnapshotKfg }}
-                                                    </span>
-                                                    <span v-else class="text-gray-400 text-sm">
-                                                        <i class="fas fa-minus"></i> 0
-                                                    </span>
-                                                </span>
-                                                <span v-else class="text-gray-400">—</span>
-                                            </td>
                                             <td class="px-4 py-2"><button @click="showMonthDetails(snap)" class="text-purple-600 hover:text-purple-800 text-sm">Детали</button></td>
                                         </tr>
                                     </tbody>
@@ -406,7 +360,7 @@
                     <div v-show="currentTab === 'analytics'">
                         <h2 class="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">Аналитика расходов</h2>
                         <div class="bg-gray-50 rounded-xl p-4 mb-6"><label class="block text-gray-700 font-medium mb-2">Месяц для анализа:</label><select v-model="selectedAnalysisMonth" @change="loadExpensesForMonth" class="w-full border rounded-lg px-3 py-2 mb-4"><option v-for="snap in monthlySnapshotsSorted" :value="snap.monthId">{{ snap.monthLabel }}</option></select><div class="h-64"><canvas id="expenseChart"></canvas></div></div>
-                        <div class="bg-gray-50 rounded-xl p-4"><h3 class="text-lg font-semibold mb-3">Динамика расходов</h3><div class="h-64"><canvas id="expenseTrendChart"></canvas></div></div>
+                        <div class="bg-gray-50 rounded-xl p-4"><h3 class="text-lg font-semibold mb-3">Динамика КФГ по месяцам</h3><div class="h-64"><canvas id="kfgTrendChart"></canvas></div></div>
                     </div>
 
                     <!-- ИИ-Ассистент -->
@@ -451,7 +405,7 @@
                     <!-- Друзья и рейтинги -->
                     <div v-show="currentTab === 'friends'">
                         <h2 class="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">Друзья и рейтинги</h2>
-                        <div class="bg-gradient-to-r from-purple-600 to-indigo-600 rounded-lg p-3 sm:p-4 mb-4 text-white"><h3 class="text-base sm:text-lg font-semibold mb-2">🏆 Рейтинг КФГ</h3><div class="space-y-2"><div v-for="(participant, idx) in ratingParticipants.slice(0,5)" :key="idx" class="flex items-center justify-between rounded-lg p-2 text-sm" :class="participant.isCurrentUser ? 'current-user-row' : 'bg-white bg-opacity-20'"><div class="flex items-center space-x-2"><span class="font-bold w-5">{{ idx+1 }}</span><img :src="getAvatarUrl(participant.avatar)" class="w-6 h-6 rounded-full"><span>{{ participant.name }} {{ participant.isCurrentUser ? '(Вы)' : '' }}</span></div><span class="font-bold">{{ participant.kfg }}</span></div></div></div>
+                        <div class="bg-gradient-to-r from-purple-600 to-indigo-600 rounded-lg p-3 sm:p-4 mb-4 text-white"><h3 class="text-base sm:text-lg font-semibold mb-2">🏆 Рейтинг (средний КФГ)</h3><div class="space-y-2"><div v-for="(participant, idx) in ratingParticipants.slice(0,5)" :key="idx" class="flex items-center justify-between rounded-lg p-2 text-sm" :class="participant.isCurrentUser ? 'current-user-row' : 'bg-white bg-opacity-20'"><div class="flex items-center space-x-2"><span class="font-bold w-5">{{ idx+1 }}</span><img :src="getAvatarUrl(participant.avatar)" class="w-6 h-6 rounded-full"><span>{{ participant.name }} {{ participant.isCurrentUser ? '(Вы)' : '' }}</span></div><span class="font-bold">{{ participant.avgKFG }}</span></div></div></div>
                         
                         <div v-if="pendingFriendRequests.length > 0" class="bg-yellow-50 rounded-lg p-3 sm:p-4 mb-4">
                             <h3 class="text-base sm:text-lg font-semibold mb-3">📨 Входящие заявки ({{ pendingFriendRequests.length }})</h3>
@@ -501,7 +455,7 @@
                                     </div>
                                 </div>
                                 <div class="flex items-center space-x-3">
-                                    <span class="text-purple-600 font-bold">{{ friend.kfg }}</span>
+                                    <span class="text-purple-600 font-bold">{{ friend.avgKFG }}</span>
                                     <button @click="removeFriend(friend)" class="text-red-500 hover:text-red-700">🗑️</button>
                                 </div>
                             </div>
@@ -511,15 +465,16 @@
                     <!-- Награды -->
                     <div v-show="currentTab === 'rewards'">
                         <h2 class="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">Награды</h2>
-                        <div class="bg-gray-50 rounded-lg p-4 mb-4">
-                            <h3 class="text-lg font-semibold">Ваш КФГ за текущий месяц: <span class="text-purple-600">{{ kfg }}</span></h3>
-                            <h3 class="text-lg font-semibold">Рейтинг: <span class="px-2 py-1 rounded-full text-white text-sm" :class="'rating-' + getUserRatingLevel(currentUser)">{{ getUserRating(currentUser) }}</span></h3>
+                        <div class="avg-kfg-block mb-4">
+                            <div class="text-sm opacity-90">Ваш средний КФГ</div>
+                            <div class="avg-kfg-number">{{ averageKFG }}</div>
+                            <div class="text-sm mt-1">Рейтинг: <span class="px-2 py-0.5 rounded-full text-white text-xs" :class="'rating-' + getUserRatingLevelByKFG(averageKFG)">{{ getUserRatingByKFG(averageKFG) }}</span></div>
                         </div>
                         <div class="grid grid-cols-3 sm:grid-cols-5 gap-2 sm:gap-4 mb-4">
-                            <div v-for="avatar in avatars" :key="avatar.id" @click="changeAvatar(avatar)" :title="!isAvatarUnlocked(avatar) ? `Требуется КФГ: ${avatar.kfgRequired}` : ''" class="relative cursor-pointer rounded-lg overflow-hidden border-2 p-1" :class="[isAvatarUnlocked(avatar) ? 'hover:border-purple-500' : 'opacity-50 cursor-not-allowed', currentUser.avatar === avatar.id ? 'border-purple-500' : 'border-gray-200']">
+                            <div v-for="avatar in avatars" :key="avatar.id" @click="changeAvatar(avatar)" :title="!isAvatarUnlockedByAvgKFG(avatar) ? `Требуется КФГ: ${avatar.kfgRequired}` : ''" class="relative cursor-pointer rounded-lg overflow-hidden border-2 p-1" :class="[isAvatarUnlockedByAvgKFG(avatar) ? 'hover:border-purple-500' : 'opacity-50 cursor-not-allowed', currentUser.avatar === avatar.id ? 'border-purple-500' : 'border-gray-200']">
                                 <img :src="getAvatarUrl(avatar.id)" class="w-full h-auto">
                                 <div class="text-center text-xs">{{ avatar.name }}</div>
-                                <div v-if="!isAvatarUnlocked(avatar)" class="absolute inset-0 bg-black bg-opacity-20 flex items-center justify-center"><i class="fas fa-lock text-white"></i></div>
+                                <div v-if="!isAvatarUnlockedByAvgKFG(avatar)" class="absolute inset-0 bg-black bg-opacity-20 flex items-center justify-center"><i class="fas fa-lock text-white"></i></div>
                             </div>
                         </div>
                     </div>
@@ -527,28 +482,17 @@
                     <!-- КФГ -->
                     <div v-show="currentTab === 'kfg'">
                         <h2 class="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">Коэффициент финансовой грамотности (КФГ)</h2>
-                        <div class="bg-gray-50 rounded-xl p-4 mb-6">
-                            <div class="flex items-center justify-between mb-3">
-                                <h3 class="text-lg font-semibold">Ваш актуальный КФГ</h3>
-                                <span class="text-3xl font-bold text-purple-600">{{ kfg }}</span>
+                        <div class="avg-kfg-block mb-6">
+                            <div class="text-sm opacity-90">Ваш средний КФГ</div>
+                            <div class="avg-kfg-number">{{ averageKFG }}</div>
+                            <div class="w-full bg-white bg-opacity-30 rounded-full h-2 mt-2">
+                                <div class="bg-white h-2 rounded-full transition-all duration-500" :style="{ width: averageKFG + '%' }"></div>
                             </div>
-                            <div class="w-full bg-gray-200 rounded-full h-4 mb-4">
-                                <div class="bg-purple-600 h-4 rounded-full transition-all duration-500" :style="{ width: kfg + '%' }"></div>
-                            </div>
-                            <p class="text-sm text-gray-600">КФГ рассчитан на основе ваших текущих расходов. После изменения расходов нажмите "Сохранить" в разделе "Расходы".</p>
+                            <p class="text-xs mt-2 opacity-90">Рассчитан на основе {{ monthlySnapshotsSorted.length }} сохранённых месяцев</p>
                         </div>
-                        <div class="bg-gray-50 rounded-xl p-4 mb-6"><h3 class="text-lg font-semibold mb-3">Динамика КФГ по месяцам</h3><div class="h-64"><canvas id="kfgTrendChart"></canvas></div></div>
+                        <div class="bg-gray-50 rounded-xl p-4 mb-6"><h3 class="text-lg font-semibold mb-3">Динамика КФГ по месяцам</h3><div class="h-64"><canvas id="kfgTrendChartPage"></canvas></div></div>
                         <div class="bg-gray-50 rounded-xl p-4 mb-6"><h3 class="text-lg font-semibold mb-2">Как рассчитывается КФГ?</h3><p class="text-sm text-gray-700 mb-2">КФГ = 100 − (Расходы / Доход × 100), но с учётом корректировок:</p><ul class="list-disc list-inside text-sm text-gray-600 space-y-1"><li>Если расходы на развлечения > 30% дохода → −20 баллов</li><li>Если расходы на еду (включая кафе) > 50% дохода → −15 баллов</li><li>Если расходы на подписки > 10% дохода → −10 баллов</li><li>Если есть расходы на образование → +5 баллов</li><li>Если остаток после расходов > 20% дохода → +10 баллов</li></ul><p class="text-sm text-gray-700 mt-2">Итоговое значение ограничивается от 0 до 100.</p></div>
-                        <div class="bg-gray-50 rounded-xl p-4"><h3 class="text-lg font-semibold mb-3">История КФГ по месяцам</h3><div class="overflow-x-auto"><table class="min-w-full bg-white border rounded-lg"><thead class="bg-gray-100"><tr><th class="px-4 py-2 text-left">Месяц</th><th class="px-4 py-2 text-left">Доход</th><th class="px-4 py-2 text-left">Расходы</th><th class="px-4 py-2 text-left">КФГ (сохранённый)</th><th class="px-4 py-2 text-left">КФГ (актуальный)</th></tr></thead><tbody><tr v-for="snap in monthlySnapshotsSorted" :key="snap.monthId" class="border-t"><td class="px-4 py-2">{{ snap.monthLabel }}</td><td class="px-4 py-2">{{ formatMoney(snap.income) }} ₽</td><td class="px-4 py-2">{{ formatMoney(snap.totalExpenses) }} ₽</td><td class="px-4 py-2 font-semibold" :class="{'text-green-600': snap.kfg >= 70, 'text-yellow-600': snap.kfg >= 40 && snap.kfg < 70, 'text-red-600': snap.kfg < 40}">{{ snap.kfg }}</td>
-                                            <td class="px-4 py-2">
-                                                <span v-if="snap.monthId === currentMonthId" class="font-semibold text-purple-600">{{ kfg }}</span>
-                                                <span v-else class="text-gray-400">—</span>
-                                             </td>
-                                         </tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
+                        <div class="bg-gray-50 rounded-xl p-4"><h3 class="text-lg font-semibold mb-3">История КФГ по месяцам</h3><div class="overflow-x-auto"><table class="min-w-full bg-white border rounded-lg"><thead class="bg-gray-100"><tr><th class="px-4 py-2 text-left">Месяц</th><th class="px-4 py-2 text-left">Доход</th><th class="px-4 py-2 text-left">Расходы</th><th class="px-4 py-2 text-left">КФГ</th></tr></thead><tbody><tr v-for="snap in monthlySnapshotsSorted" :key="snap.monthId" class="border-t"><td class="px-4 py-2">{{ snap.monthLabel }}</td><td class="px-4 py-2">{{ formatMoney(snap.income) }} ₽</td><td class="px-4 py-2">{{ formatMoney(snap.totalExpenses) }} ₽</td><td class="px-4 py-2 font-semibold" :class="{'text-green-600': snap.kfg >= 70, 'text-yellow-600': snap.kfg >= 40 && snap.kfg < 70, 'text-red-600': snap.kfg < 40}">{{ snap.kfg }}</td></tr></tbody></table></div></div>
                     </div>
                 </div>
             </div>
@@ -655,17 +599,19 @@
                 
                 const monthlySnapshots = ref({});
                 const selectedAnalysisMonth = ref('');
-                let expenseChart = null, expenseTrendChart = null, kfgTrendChart = null;
+                let expenseChart = null, kfgTrendChart = null, kfgTrendChartPage = null;
                 
                 const currentMonthId = computed(() => {
                     const d = new Date();
                     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
                 });
                 
-                const currentMonthSnapshotKfg = computed(() => {
-                    if (!currentUser.value) return null;
-                    const snap = monthlySnapshots.value[currentMonthId.value];
-                    return snap ? snap.kfg : null;
+                // СРЕДНИЙ КФГ
+                const averageKFG = computed(() => {
+                    const snapshots = Object.values(monthlySnapshots.value);
+                    if (snapshots.length === 0) return 0;
+                    const sum = snapshots.reduce((acc, snap) => acc + snap.kfg, 0);
+                    return Math.round(sum / snapshots.length);
                 });
                 
                 const avatars = [
@@ -711,44 +657,45 @@
                 const balance = computed(() => totalIncome.value - totalExpenses.value);
                 const hasExpenses = computed(() => Object.values(expenses).some(v => v > 0));
 
-                // ОСНОВНАЯ ФУНКЦИЯ РАСЧЕТА КФГ
-                const kfg = computed(() => {
-                    if (!currentUser.value || totalIncome.value === 0) return 0;
-                    if (!hasExpenses.value) return 0;
-                    
-                    let value = 100 - (totalExpenses.value / totalIncome.value * 100);
-                    
-                    const totalFood = (expenses.food || 0) + (expenses.cafe || 0);
-                    const incomeForCalc = totalIncome.value;
-                    
-                    if (expenses.entertainment > incomeForCalc * 0.3) value -= 20;
-                    if (totalFood > incomeForCalc * 0.5) value -= 15;
-                    if (expenses.subscriptions > incomeForCalc * 0.1) value -= 10;
-                    if (expenses.education > 0) value += 5;
-                    if (balance.value > incomeForCalc * 0.2) value += 10;
-                    
+                // Функция расчета КФГ для одного месяца
+                function calculateKFGFloat(incomeVal, expensesObj) {
+                    if (!incomeVal || incomeVal === 0) return 0;
+                    const total = Object.values(expensesObj).reduce((a, b) => a + b, 0);
+                    if (total === 0) return 0;
+                    let value = 100 - (total / incomeVal * 100);
+                    const totalFood = (expensesObj.food || 0) + (expensesObj.cafe || 0);
+                    if ((expensesObj.entertainment || 0) > incomeVal * 0.3) value -= 20;
+                    if (totalFood > incomeVal * 0.5) value -= 15;
+                    if ((expensesObj.subscriptions || 0) > incomeVal * 0.1) value -= 10;
+                    if ((expensesObj.education || 0) > 0) value += 5;
+                    const userBalance = incomeVal - total;
+                    if (userBalance > incomeVal * 0.2) value += 10;
                     return Math.max(0, Math.min(100, Math.round(value)));
-                });
-
-                const currentMonthKfg = computed(() => {
-                    if (!currentUser.value) return 0;
-                    return kfg.value;
-                });
+                }
                 
-                const unlockedAvatars = computed(() => avatars.filter(a => a.id === 1 || kfg.value >= a.kfgRequired).map(a => a.name));
+                const unlockedAvatars = computed(() => avatars.filter(a => a.id === 1 || averageKFG.value >= a.kfgRequired).map(a => a.name));
                 const friendsWithDetails = computed(() => friends.value.map(f => {
                     const fullUser = users.value.find(u => u.login === f.login);
-                    return fullUser ? { ...f, kfg: calculateKFG(fullUser), ratingLevel: getUserRatingLevel(fullUser) } : f;
+                    if (fullUser && fullUser.monthlySnapshots) {
+                        const snapshots = Object.values(fullUser.monthlySnapshots || {});
+                        const avg = snapshots.length ? Math.round(snapshots.reduce((a,b) => a + b.kfg, 0) / snapshots.length) : 0;
+                        return { ...f, avgKFG: avg, ratingLevel: getUserRatingLevelByKFG(avg) };
+                    }
+                    return { ...f, avgKFG: 0 };
                 }));
                 const pendingFriendRequests = computed(() => pendingRequests.value.map(login => users.value.find(u => u.login === login)).filter(Boolean));
                 const ratingParticipants = computed(() => {
                     if (!currentUser.value) return [];
-                    const participants = [{ ...currentUser.value, kfg: kfg.value, isCurrentUser: true }];
+                    const participants = [{ ...currentUser.value, avgKFG: averageKFG.value, isCurrentUser: true }];
                     friends.value.forEach(f => {
                         const fullUser = users.value.find(u => u.login === f.login);
-                        if (fullUser) participants.push({ ...fullUser, kfg: calculateKFG(fullUser), isCurrentUser: false });
+                        if (fullUser) {
+                            const snapshots = Object.values(monthlySnapshots.value);
+                            const avg = snapshots.length ? Math.round(snapshots.reduce((a,b) => a + b.kfg, 0) / snapshots.length) : 0;
+                            participants.push({ ...fullUser, avgKFG: avg, isCurrentUser: false });
+                        }
                     });
-                    return participants.sort((a, b) => b.kfg - a.kfg);
+                    return participants.sort((a, b) => b.avgKFG - a.avgKFG);
                 });
                 const filteredExpensesForMonth = computed(() => {
                     const filtered = {};
@@ -758,37 +705,27 @@
                 const monthlySnapshotsSorted = computed(() => Object.values(monthlySnapshots.value).sort((a, b) => a.monthId.localeCompare(b.monthId)));
 
                 const showMessage = (text, type) => { message.text = text; message.type = type; message.show = true; setTimeout(() => message.show = false, 3000); };
-                function getUserRating(user) { 
-                    const userKFG = user?.kfg !== undefined ? user.kfg : calculateKFG(user); 
-                    if (userKFG >= 90) return 'Гуру'; 
-                    if (userKFG >= 70) return 'Эксперт'; 
-                    if (userKFG >= 50) return 'Инвестор'; 
-                    if (userKFG >= 30) return 'Эконом'; 
+                
+                function getUserRatingByKFG(kfgVal) { 
+                    if (kfgVal >= 90) return 'Гуру'; 
+                    if (kfgVal >= 70) return 'Эксперт'; 
+                    if (kfgVal >= 50) return 'Инвестор'; 
+                    if (kfgVal >= 30) return 'Эконом'; 
                     return 'Новичок'; 
                 }
-                function getUserRatingLevel(user) { 
-                    const userKFG = user?.kfg !== undefined ? user.kfg : calculateKFG(user); 
-                    if (userKFG >= 90) return 5; 
-                    if (userKFG >= 70) return 4; 
-                    if (userKFG >= 50) return 3; 
-                    if (userKFG >= 30) return 2; 
+                function getUserRatingLevelByKFG(kfgVal) { 
+                    if (kfgVal >= 90) return 5; 
+                    if (kfgVal >= 70) return 4; 
+                    if (kfgVal >= 50) return 3; 
+                    if (kfgVal >= 30) return 2; 
                     return 1; 
                 }
-                function calculateKFG(user) { 
-                    if (!user?.income || user.income === 0) return 0; 
-                    const total = Object.values(user.expenses || {}).reduce((a, b) => a + b, 0); 
-                    if (total === 0) return 0; 
-                    let value = 100 - (total / user.income * 100);
-                    const totalFood = (user.expenses?.food || 0) + (user.expenses?.cafe || 0);
-                    if (user.expenses?.entertainment > user.income * 0.3) value -= 20;
-                    if (totalFood > user.income * 0.5) value -= 15;
-                    if (user.expenses?.subscriptions > user.income * 0.1) value -= 10;
-                    if (user.expenses?.education > 0) value += 5;
-                    const userBalance = user.income - total;
-                    if (userBalance > user.income * 0.2) value += 10;
-                    return Math.max(0, Math.min(100, Math.round(value))); 
-                }
-                function isAvatarUnlocked(avatar) { if (!currentUser.value) return false; if (avatar.id === 1) return true; return kfg.value >= avatar.kfgRequired; }
+                // Для совместимости со старыми методами
+                function getUserRating(user) { return getUserRatingByKFG(averageKFG.value); }
+                function getUserRatingLevel(user) { return getUserRatingLevelByKFG(averageKFG.value); }
+                function calculateKFG(user) { return 0; } // не используется
+                
+                function isAvatarUnlockedByAvgKFG(avatar) { if (!currentUser.value) return false; if (avatar.id === 1) return true; return averageKFG.value >= avatar.kfgRequired; }
                 function isAvatarAvailableForRegister(avatar) { return avatar.id === 1; }
                 function selectRegisterAvatar(avatar) { if (isAvatarAvailableForRegister(avatar)) registerForm.avatar = avatar.id; else showMessage('Этот аватар недоступен', 'error'); }
                 function getAvatarUrl(avatarId) { const map = {1:'https://api.dicebear.com/7.x/avataaars/svg?seed=Novice',2:'https://api.dicebear.com/7.x/avataaars/svg?seed=Econom',3:'https://api.dicebear.com/7.x/avataaars/svg?seed=Investor',4:'https://api.dicebear.com/7.x/avataaars/svg?seed=Expert',5:'https://api.dicebear.com/7.x/avataaars/svg?seed=Guru'}; return map[avatarId] || map[1]; }
@@ -801,15 +738,7 @@
                 async function saveMonthlySnapshot(monthId, incomeVal, expensesObj) {
                     if (!currentUser.value) return;
                     const total = Object.values(expensesObj).reduce((a, b) => a + b, 0);
-                    let kfgVal = incomeVal === 0 ? 0 : 100 - (total / incomeVal * 100);
-                    const totalFood = (expensesObj.food || 0) + (expensesObj.cafe || 0);
-                    if (expensesObj.entertainment > incomeVal * 0.3) kfgVal -= 20;
-                    if (totalFood > incomeVal * 0.5) kfgVal -= 15;
-                    if (expensesObj.subscriptions > incomeVal * 0.1) kfgVal -= 10;
-                    if (expensesObj.education > 0) kfgVal += 5;
-                    const userBalance = incomeVal - total;
-                    if (userBalance > incomeVal * 0.2) kfgVal += 10;
-                    kfgVal = Math.max(0, Math.min(100, Math.round(kfgVal)));
+                    const kfgVal = calculateKFGFloat(incomeVal, expensesObj);
                     
                     const snapshot = { income: incomeVal, expenses: { ...expensesObj }, totalExpenses: total, kfg: kfgVal, timestamp: new Date().toISOString() };
                     await db.collection('users').doc(currentUser.value.login).collection('monthly_snapshots').doc(monthId).set(snapshot);
@@ -825,8 +754,6 @@
                         const monthId = doc.id;
                         if (monthId.match(/^\d{4}-\d{2}$/)) monthlySnapshots.value[monthId] = { monthId, monthLabel: formatMonthLabel(monthId), ...data };
                     });
-                    const currentId = getCurrentMonthId();
-                    if (!monthlySnapshots.value[currentId] && currentUser.value.income > 0) await saveMonthlySnapshot(currentId, currentUser.value.income, expenses);
                     const sorted = Object.keys(monthlySnapshots.value).sort();
                     if (sorted.length > 0) { selectedAnalysisMonth.value = sorted[sorted.length - 1]; if (!selectedExpenseMonth.value || !monthlySnapshots.value[selectedExpenseMonth.value]) selectedExpenseMonth.value = sorted[sorted.length - 1]; await loadExpensesForSelectedMonth(); }
                     updateAllCharts();
@@ -857,53 +784,32 @@
                     detailsModalVisible.value = true;
                 }
 
-                function updateAllCharts() { updateKfgTrendChart(); updateExpenseTrendChart(); loadExpensesForMonth(); }
+                function updateAllCharts() { updateKfgTrendChart(); loadExpensesForMonth(); }
                 
                 function updateKfgTrendChart() {
                     const ctx = document.getElementById('kfgTrendChart');
-                    if (!ctx) return;
-                    if (kfgTrendChart) kfgTrendChart.destroy();
+                    const ctx2 = document.getElementById('kfgTrendChartPage');
                     const sorted = monthlySnapshotsSorted.value;
                     if (sorted.length === 0) return;
                     const labels = sorted.map(s => s.monthLabel);
-                    const savedData = sorted.map(s => s.kfg);
-                    const currentData = sorted.map(s => s.monthId === currentMonthId.value ? kfg.value : null);
+                    const data = sorted.map(s => s.kfg);
                     
-                    kfgTrendChart = new Chart(ctx, { 
-                        type: 'line', 
-                        data: { 
-                            labels: labels, 
-                            datasets: [
-                                { 
-                                    label: 'КФГ (сохранённый)', 
-                                    data: savedData, 
-                                    borderColor: '#f59e0b', 
-                                    backgroundColor: 'rgba(245,158,11,0.1)', 
-                                    tension: 0.3, 
-                                    fill: true 
-                                },
-                                { 
-                                    label: 'КФГ (актуальный)', 
-                                    data: currentData, 
-                                    borderColor: '#10b981', 
-                                    backgroundColor: 'rgba(16,185,129,0.1)', 
-                                    tension: 0.3, 
-                                    fill: true,
-                                    borderDash: [5, 5]
-                                }
-                            ] 
-                        }, 
-                        options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, max: 100 } } } 
-                    });
-                }
-                
-                function updateExpenseTrendChart() {
-                    const ctx = document.getElementById('expenseTrendChart');
-                    if (!ctx) return;
-                    if (expenseTrendChart) expenseTrendChart.destroy();
-                    const sorted = monthlySnapshotsSorted.value;
-                    if (sorted.length === 0) return;
-                    expenseTrendChart = new Chart(ctx, { type: 'line', data: { labels: sorted.map(s => s.monthLabel), datasets: [{ label: 'Общие расходы (₽)', data: sorted.map(s => s.totalExpenses), borderColor: '#ef4444', backgroundColor: 'rgba(239,68,68,0.1)', tension: 0.3, fill: true }] }, options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, ticks: { callback: (val) => formatMoney(val) } } } } });
+                    if (ctx) {
+                        if (kfgTrendChart) kfgTrendChart.destroy();
+                        kfgTrendChart = new Chart(ctx, { 
+                            type: 'line', 
+                            data: { labels: labels, datasets: [{ label: 'КФГ', data: data, borderColor: '#667eea', backgroundColor: 'rgba(102,126,234,0.1)', tension: 0.3, fill: true }] }, 
+                            options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, max: 100 } } } 
+                        });
+                    }
+                    if (ctx2) {
+                        if (kfgTrendChartPage) kfgTrendChartPage.destroy();
+                        kfgTrendChartPage = new Chart(ctx2, { 
+                            type: 'line', 
+                            data: { labels: labels, datasets: [{ label: 'КФГ', data: data, borderColor: '#667eea', backgroundColor: 'rgba(102,126,234,0.1)', tension: 0.3, fill: true }] }, 
+                            options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, max: 100 } } } 
+                        });
+                    }
                 }
                 
                 function loadExpensesForMonth() {
@@ -941,10 +847,8 @@
                     const userContext = {
                         name: currentUser.value?.name || 'Пользователь',
                         nickname: currentUser.value?.nickname || '',
-                        kfg: kfg.value,
+                        avgKFG: averageKFG.value,
                         income: currentUser.value?.income || 0,
-                        totalExpenses: totalExpenses.value,
-                        balance: balance.value,
                         goalsCount: goals.value.length,
                         friendsCount: friends.value.length
                     };
@@ -1008,11 +912,18 @@
                 
                 function quickQuestion(q) { chatInput.value = q; sendMessage(); }
 
-                // Функции Firebase (сохранены из оригинала)
+                // Функции Firebase
                 async function loadUsersFromFirestore() {
                     const snapshot = await db.collection('users').get();
                     users.value = [];
-                    snapshot.forEach(doc => users.value.push({ id: doc.id, ...doc.data() }));
+                    for (const doc of snapshot.docs) {
+                        const userData = { id: doc.id, ...doc.data() };
+                        const snaps = await db.collection('users').doc(doc.id).collection('monthly_snapshots').get();
+                        const monthlySnapshotsData = {};
+                        snaps.forEach(s => { monthlySnapshotsData[s.id] = s.data(); });
+                        userData.monthlySnapshots = monthlySnapshotsData;
+                        users.value.push(userData);
+                    }
                 }
 
                 async function ensureFriendFields(userLogin) {
@@ -1144,16 +1055,6 @@
                     finally { loading.value = false; }
                 }
 
-                async function saveExpenses() {
-                    if (!currentUser.value) return;
-                    loading.value = true;
-                    await db.collection('users').doc(currentUser.value.login).update({ expenses: { ...expenses } });
-                    await updateCurrentMonthSnapshot();
-                    showMessage('Расходы сохранены!', 'success');
-                    loading.value = false;
-                }
-                async function updateCurrentMonthSnapshot() { await saveMonthlySnapshot(getCurrentMonthId(), currentUser.value.income, expenses); }
-
                 async function addGoal() {
                     if (!newGoal.name.trim()) { showMessage('Введите название', 'error'); return; }
                     if (newGoal.targetAmount <= 0) { showMessage('Введите сумму', 'error'); return; }
@@ -1196,7 +1097,10 @@
                     loading.value = true;
                     currentUser.value.income = newIncomeValue.value;
                     await db.collection('users').doc(currentUser.value.login).update({ income: newIncomeValue.value });
-                    await updateCurrentMonthSnapshot();
+                    const currentMonth = getCurrentMonthId();
+                    if (monthlySnapshots.value[currentMonth]) {
+                        await saveMonthlySnapshot(currentMonth, newIncomeValue.value, monthlySnapshots.value[currentMonth].expenses);
+                    }
                     showMessage('Доход обновлен!', 'success');
                     closeIncomeModal();
                     loading.value = false;
@@ -1317,7 +1221,7 @@
                 }
 
                 async function changeAvatar(avatar) {
-                    if (!isAvatarUnlocked(avatar)) { showMessage('Аватар недоступен', 'error'); return; }
+                    if (!isAvatarUnlockedByAvgKFG(avatar)) { showMessage('Аватар недоступен', 'error'); return; }
                     loading.value = true;
                     currentUser.value.avatar = avatar.id;
                     await db.collection('users').doc(currentUser.value.login).update({ avatar: avatar.id });
@@ -1366,7 +1270,12 @@
                     setTimeout(() => checkN8nConnection(), 2000);
                 });
                 onUnmounted(() => { if (userUnsubscribe) userUnsubscribe(); });
-                watch(kfg, (newKfg) => { if (currentUser.value) { const currentAvatar = avatars.find(a => a.id === currentUser.value.avatar); if (currentAvatar && !isAvatarUnlocked(currentAvatar)) changeAvatar(avatars[0]); } });
+                watch(averageKFG, (newAvg) => { 
+                    if (currentUser.value) { 
+                        const currentAvatar = avatars.find(a => a.id === currentUser.value.avatar); 
+                        if (currentAvatar && !isAvatarUnlockedByAvgKFG(currentAvatar)) changeAvatar(avatars[0]); 
+                    } 
+                });
                 watch(monthlySnapshotsSorted, () => updateAllCharts());
 
                 return {
@@ -1375,7 +1284,8 @@
                     pendingFriendRequests, friendSearchQuery, searchResults,
                     chatMessages, chatInput, chatContainer, aiLoading, n8nStatus,
                     avatars, tabs, categoryNames, categoryIcons,
-                    totalExpenses, totalIncome, balance, hasExpenses, kfg, currentMonthKfg, currentMonthId, currentMonthSnapshotKfg,
+                    totalExpenses, totalIncome, balance, hasExpenses,
+                    averageKFG, currentMonthId,
                     ratingParticipants, friendsWithDetails, unlockedAvatars,
                     showIncomeModal, newIncomeValue, showAddToGoalModal, selectedGoalName, addToGoalAmount,
                     showRemoveGoalModal, selectedGoalNameForRemove,
@@ -1385,12 +1295,13 @@
                     detailsModalVisible, detailsMonthLabel, detailsExpenses, detailsKfg,
                     handleRegister, handleLogin, loginWithGoogle, logout,
                     searchFriends, sendFriendRequest, acceptFriendRequest, rejectFriendRequest, removeFriend,
-                    saveExpenses, addGoal, openAddToGoalModal, closeAddToGoalModal, confirmAddToGoal,
+                    addGoal, openAddToGoalModal, closeAddToGoalModal, confirmAddToGoal,
                     quickAddToGoal, openRemoveGoalModal, closeRemoveGoalModal, confirmRemoveGoal,
                     sendMessage, resetChatContext, quickQuestion, formatBotMessage, checkN8nConnection,
                     getAvatarUrl, getAvatarName, changeAvatar,
-                    isAvatarUnlocked, isAvatarAvailableForRegister, selectRegisterAvatar,
-                    getUserRating, getUserRatingLevel, calculateKFG, formatMoney,
+                    isAvatarUnlocked: isAvatarUnlockedByAvgKFG, isAvatarAvailableForRegister, selectRegisterAvatar,
+                    getUserRating, getUserRatingLevel, getUserRatingByKFG, getUserRatingLevelByKFG,
+                    formatMoney,
                     editIncome, closeIncomeModal, saveIncome,
                     addHistoricalMonthField, removeHistoricalMonthField,
                     openHistoricalModal, closeHistoricalModal, saveHistoricalData,
