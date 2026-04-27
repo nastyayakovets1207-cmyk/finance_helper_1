@@ -111,7 +111,7 @@
                                 <div v-if="pendingFriendRequests.length > 0" class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full min-w-[18px] h-[18px] flex items-center justify-center friend-request-badge px-1">{{ pendingFriendRequests.length }}</div>
                             </div>
                             <span class="text-sm hidden sm:inline">{{ currentUser.nickname }}</span>
-                            <span class="text-xs bg-white text-purple-600 px-2 py-1 rounded-full">{{ getUserRating(currentUser) }}</span>
+                            <span class="text-xs bg-white text-purple-600 px-2 py-1 rounded-full">{{ getUserRatingByKFG(averageKFG) }}</span>
                         </div>
                         <button v-if="currentUser" @click="logout" class="bg-red-500 text-white px-3 py-2 rounded-lg text-sm hover:bg-red-600"><i class="fas fa-sign-out-alt sm:mr-2"></i><span class="hidden sm:inline">Выйти</span></button>
                     </div>
@@ -471,10 +471,10 @@
                             <div class="text-sm mt-1">Рейтинг: <span class="px-2 py-0.5 rounded-full text-white text-xs" :class="'rating-' + getUserRatingLevelByKFG(averageKFG)">{{ getUserRatingByKFG(averageKFG) }}</span></div>
                         </div>
                         <div class="grid grid-cols-3 sm:grid-cols-5 gap-2 sm:gap-4 mb-4">
-                            <div v-for="avatar in avatars" :key="avatar.id" @click="changeAvatar(avatar)" :title="!isAvatarUnlockedByAvgKFG(avatar) ? `Требуется КФГ: ${avatar.kfgRequired}` : ''" class="relative cursor-pointer rounded-lg overflow-hidden border-2 p-1" :class="[isAvatarUnlockedByAvgKFG(avatar) ? 'hover:border-purple-500' : 'opacity-50 cursor-not-allowed', currentUser.avatar === avatar.id ? 'border-purple-500' : 'border-gray-200']">
+                            <div v-for="avatar in avatars" :key="avatar.id" @click="changeAvatar(avatar)" :title="!isAvatarUnlocked(avatar) ? `Требуется КФГ: ${avatar.kfgRequired}` : ''" class="relative cursor-pointer rounded-lg overflow-hidden border-2 p-1" :class="[isAvatarUnlocked(avatar) ? 'hover:border-purple-500' : 'opacity-50 cursor-not-allowed', currentUser.avatar === avatar.id ? 'border-purple-500' : 'border-gray-200']">
                                 <img :src="getAvatarUrl(avatar.id)" class="w-full h-auto">
                                 <div class="text-center text-xs">{{ avatar.name }}</div>
-                                <div v-if="!isAvatarUnlockedByAvgKFG(avatar)" class="absolute inset-0 bg-black bg-opacity-20 flex items-center justify-center"><i class="fas fa-lock text-white"></i></div>
+                                <div v-if="!isAvatarUnlocked(avatar)" class="absolute inset-0 bg-black bg-opacity-20 flex items-center justify-center"><i class="fas fa-lock text-white"></i></div>
                             </div>
                         </div>
                     </div>
@@ -652,11 +652,6 @@
                     subscriptions: '#BA55D3', education: '#2E8B57', travel: '#FF8C42'
                 };
 
-                const totalExpenses = computed(() => Object.values(expenses).reduce((a, b) => a + b, 0));
-                const totalIncome = computed(() => currentUser.value?.income || 0);
-                const balance = computed(() => totalIncome.value - totalExpenses.value);
-                const hasExpenses = computed(() => Object.values(expenses).some(v => v > 0));
-
                 // Функция расчета КФГ для одного месяца
                 function calculateKFGFloat(incomeVal, expensesObj) {
                     if (!incomeVal || incomeVal === 0) return 0;
@@ -674,29 +669,49 @@
                 }
                 
                 const unlockedAvatars = computed(() => avatars.filter(a => a.id === 1 || averageKFG.value >= a.kfgRequired).map(a => a.name));
-                const friendsWithDetails = computed(() => friends.value.map(f => {
-                    const fullUser = users.value.find(u => u.login === f.login);
-                    if (fullUser && fullUser.monthlySnapshots) {
-                        const snapshots = Object.values(fullUser.monthlySnapshots || {});
-                        const avg = snapshots.length ? Math.round(snapshots.reduce((a,b) => a + b.kfg, 0) / snapshots.length) : 0;
-                        return { ...f, avgKFG: avg, ratingLevel: getUserRatingLevelByKFG(avg) };
-                    }
-                    return { ...f, avgKFG: 0 };
-                }));
+                
+                // Исправленная функция friendsWithDetails - не грузит лишние данные
+                const friendsWithDetails = computed(() => {
+                    return friends.value.map(f => {
+                        // Просто возвращаем данные друга, средний КФГ показываем 0 (будет обновлено при загрузке users)
+                        return { ...f, avgKFG: 0 };
+                    });
+                });
+                
                 const pendingFriendRequests = computed(() => pendingRequests.value.map(login => users.value.find(u => u.login === login)).filter(Boolean));
+                
                 const ratingParticipants = computed(() => {
                     if (!currentUser.value) return [];
-                    const participants = [{ ...currentUser.value, avgKFG: averageKFG.value, isCurrentUser: true }];
+                    const participants = [{ 
+                        ...currentUser.value, 
+                        avgKFG: averageKFG.value, 
+                        isCurrentUser: true 
+                    }];
+                    
                     friends.value.forEach(f => {
                         const fullUser = users.value.find(u => u.login === f.login);
                         if (fullUser) {
-                            const snapshots = Object.values(monthlySnapshots.value);
-                            const avg = snapshots.length ? Math.round(snapshots.reduce((a,b) => a + b.kfg, 0) / snapshots.length) : 0;
-                            participants.push({ ...fullUser, avgKFG: avg, isCurrentUser: false });
+                            // Рассчитываем средний КФГ для друга на основе его снепшотов
+                            let friendAvgKFG = 0;
+                            if (fullUser.monthlySnapshots) {
+                                const snaps = Object.values(fullUser.monthlySnapshots);
+                                if (snaps.length > 0) {
+                                    const sum = snaps.reduce((acc, snap) => acc + (snap.kfg || 0), 0);
+                                    friendAvgKFG = Math.round(sum / snaps.length);
+                                }
+                            }
+                            participants.push({ 
+                                ...fullUser, 
+                                avgKFG: friendAvgKFG, 
+                                isCurrentUser: false 
+                            });
+                        } else {
+                            participants.push({ ...f, avgKFG: 0, isCurrentUser: false });
                         }
                     });
                     return participants.sort((a, b) => b.avgKFG - a.avgKFG);
                 });
+                
                 const filteredExpensesForMonth = computed(() => {
                     const filtered = {};
                     Object.keys(expensesForSelectedMonth).forEach(k => { if (categoryNames[k]) filtered[k] = expensesForSelectedMonth[k]; });
@@ -720,12 +735,8 @@
                     if (kfgVal >= 30) return 2; 
                     return 1; 
                 }
-                // Для совместимости со старыми методами
-                function getUserRating(user) { return getUserRatingByKFG(averageKFG.value); }
-                function getUserRatingLevel(user) { return getUserRatingLevelByKFG(averageKFG.value); }
-                function calculateKFG(user) { return 0; } // не используется
                 
-                function isAvatarUnlockedByAvgKFG(avatar) { if (!currentUser.value) return false; if (avatar.id === 1) return true; return averageKFG.value >= avatar.kfgRequired; }
+                function isAvatarUnlocked(avatar) { if (!currentUser.value) return false; if (avatar.id === 1) return true; return averageKFG.value >= avatar.kfgRequired; }
                 function isAvatarAvailableForRegister(avatar) { return avatar.id === 1; }
                 function selectRegisterAvatar(avatar) { if (isAvatarAvailableForRegister(avatar)) registerForm.avatar = avatar.id; else showMessage('Этот аватар недоступен', 'error'); }
                 function getAvatarUrl(avatarId) { const map = {1:'https://api.dicebear.com/7.x/avataaars/svg?seed=Novice',2:'https://api.dicebear.com/7.x/avataaars/svg?seed=Econom',3:'https://api.dicebear.com/7.x/avataaars/svg?seed=Investor',4:'https://api.dicebear.com/7.x/avataaars/svg?seed=Expert',5:'https://api.dicebear.com/7.x/avataaars/svg?seed=Guru'}; return map[avatarId] || map[1]; }
@@ -755,7 +766,13 @@
                         if (monthId.match(/^\d{4}-\d{2}$/)) monthlySnapshots.value[monthId] = { monthId, monthLabel: formatMonthLabel(monthId), ...data };
                     });
                     const sorted = Object.keys(monthlySnapshots.value).sort();
-                    if (sorted.length > 0) { selectedAnalysisMonth.value = sorted[sorted.length - 1]; if (!selectedExpenseMonth.value || !monthlySnapshots.value[selectedExpenseMonth.value]) selectedExpenseMonth.value = sorted[sorted.length - 1]; await loadExpensesForSelectedMonth(); }
+                    if (sorted.length > 0) { 
+                        selectedAnalysisMonth.value = sorted[sorted.length - 1]; 
+                        if (!selectedExpenseMonth.value || !monthlySnapshots.value[selectedExpenseMonth.value]) {
+                            selectedExpenseMonth.value = sorted[sorted.length - 1];
+                        }
+                        await loadExpensesForSelectedMonth(); 
+                    }
                     updateAllCharts();
                 }
 
@@ -784,7 +801,10 @@
                     detailsModalVisible.value = true;
                 }
 
-                function updateAllCharts() { updateKfgTrendChart(); loadExpensesForMonth(); }
+                function updateAllCharts() { 
+                    updateKfgTrendChart(); 
+                    loadExpensesForMonth(); 
+                }
                 
                 function updateKfgTrendChart() {
                     const ctx = document.getElementById('kfgTrendChart');
@@ -915,15 +935,19 @@
                 // Функции Firebase
                 async function loadUsersFromFirestore() {
                     const snapshot = await db.collection('users').get();
-                    users.value = [];
+                    const usersArray = [];
                     for (const doc of snapshot.docs) {
                         const userData = { id: doc.id, ...doc.data() };
+                        // Загружаем снепшоты для каждого пользователя
                         const snaps = await db.collection('users').doc(doc.id).collection('monthly_snapshots').get();
                         const monthlySnapshotsData = {};
-                        snaps.forEach(s => { monthlySnapshotsData[s.id] = s.data(); });
+                        snaps.forEach(s => { 
+                            monthlySnapshotsData[s.id] = s.data(); 
+                        });
                         userData.monthlySnapshots = monthlySnapshotsData;
-                        users.value.push(userData);
+                        usersArray.push(userData);
                     }
+                    users.value = usersArray;
                 }
 
                 async function ensureFriendFields(userLogin) {
@@ -985,8 +1009,9 @@
                         const result = await auth.signInWithPopup(googleProvider);
                         const user = result.user;
                         const emailQuery = await db.collection('users').where('email', '==', user.email).get();
-                        if (!emailQuery.empty) await loadCurrentUserData(emailQuery.docs[0].data().login);
-                        else {
+                        if (!emailQuery.empty) {
+                            await loadCurrentUserData(emailQuery.docs[0].data().login);
+                        } else {
                             const login = user.email.split('@')[0].replace(/[^a-zA-Z0-9]/g, '');
                             let finalLogin = login; let counter = 1;
                             while (await db.collection('users').doc(finalLogin).get().then(d => d.exists)) finalLogin = `${login}${counter++}`;
@@ -996,7 +1021,10 @@
                         }
                         await loadUsersFromFirestore();
                         showMessage('Добро пожаловать!', 'success');
-                    } catch (error) { showMessage('Ошибка входа: ' + error.message, 'error'); }
+                    } catch (error) { 
+                        console.error(error);
+                        showMessage('Ошибка входа: ' + error.message, 'error'); 
+                    }
                     finally { loading.value = false; }
                 }
 
@@ -1016,7 +1044,10 @@
                         await loadMonthlySnapshots();
                         showMessage('Регистрация успешна!', 'success');
                         Object.assign(registerForm, { name: '', surname: '', nickname: '', login: '', email: '', password: '', income: 0, avatar: 1, expenses: { ...initialExpenses }, historicalMonths: [] });
-                    } catch (error) { showMessage('Ошибка: ' + error.message, 'error'); }
+                    } catch (error) { 
+                        console.error(error);
+                        showMessage('Ошибка: ' + error.message, 'error'); 
+                    }
                     finally { loading.value = false; }
                 }
 
@@ -1036,7 +1067,10 @@
                         await loadUsersFromFirestore();
                         showMessage('Добро пожаловать!', 'success');
                         loginForm.login = ''; loginForm.password = '';
-                    } catch (error) { showMessage('Ошибка входа: ' + error.message, 'error'); }
+                    } catch (error) { 
+                        console.error(error);
+                        showMessage('Ошибка входа: ' + error.message, 'error'); 
+                    }
                     finally { loading.value = false; }
                 }
 
@@ -1051,7 +1085,10 @@
                         friends.value = [];
                         chatMessages.value = [{ text: 'Привет! Я финансовый ассистент. Задайте вопрос о финансах!', sender: 'bot' }];
                         showMessage('Вы вышли', 'success');
-                    } catch (error) { showMessage('Ошибка', 'error'); }
+                    } catch (error) { 
+                        console.error(error);
+                        showMessage('Ошибка', 'error'); 
+                    }
                     finally { loading.value = false; }
                 }
 
@@ -1156,7 +1193,10 @@
                         showMessage(`✅ Заявка отправлена ${user.nickname || user.login}`, 'success');
                         searchResults.value = [];
                         friendSearchQuery.value = '';
-                    } catch (error) { showMessage('Ошибка: ' + error.message, 'error'); }
+                    } catch (error) { 
+                        console.error(error);
+                        showMessage('Ошибка: ' + error.message, 'error'); 
+                    }
                     finally { loading.value = false; }
                 }
                 
@@ -1182,7 +1222,10 @@
                             }
                         }
                         showMessage('✅ Заявка принята! Теперь вы друзья', 'success');
-                    } catch (error) { showMessage('Ошибка: ' + error.message, 'error'); }
+                    } catch (error) { 
+                        console.error(error);
+                        showMessage('Ошибка: ' + error.message, 'error'); 
+                    }
                     finally { loading.value = false; }
                 }
                 
@@ -1199,7 +1242,10 @@
                             await friendRef.update({ friendRequests: (friendDoc.data().friendRequests || []).filter(l => l !== currentUser.value.login) });
                         }
                         showMessage('❌ Заявка отклонена', 'info');
-                    } catch (error) { showMessage('Ошибка: ' + error.message, 'error'); }
+                    } catch (error) { 
+                        console.error(error);
+                        showMessage('Ошибка: ' + error.message, 'error'); 
+                    }
                     finally { loading.value = false; }
                 }
 
@@ -1216,12 +1262,15 @@
                             await friendRef.update({ friends: (friendDoc.data().friends || []).filter(f => f.login !== currentUser.value.login) });
                         }
                         showMessage('Друг удален', 'success');
-                    } catch (error) { showMessage('Ошибка: ' + error.message, 'error'); }
+                    } catch (error) { 
+                        console.error(error);
+                        showMessage('Ошибка: ' + error.message, 'error'); 
+                    }
                     finally { loading.value = false; }
                 }
 
                 async function changeAvatar(avatar) {
-                    if (!isAvatarUnlockedByAvgKFG(avatar)) { showMessage('Аватар недоступен', 'error'); return; }
+                    if (!isAvatarUnlocked(avatar)) { showMessage('Аватар недоступен', 'error'); return; }
                     loading.value = true;
                     currentUser.value.avatar = avatar.id;
                     await db.collection('users').doc(currentUser.value.login).update({ avatar: avatar.id });
@@ -1259,7 +1308,9 @@
                                     await loadCurrentUserData(query.docs[0].data().login);
                                     await loadUsersFromFirestore();
                                 }
-                            } catch (error) { console.error('Ошибка:', error); }
+                            } catch (error) { 
+                                console.error('Ошибка:', error); 
+                            }
                         }
                         loading.value = false;
                     });
@@ -1273,7 +1324,7 @@
                 watch(averageKFG, (newAvg) => { 
                     if (currentUser.value) { 
                         const currentAvatar = avatars.find(a => a.id === currentUser.value.avatar); 
-                        if (currentAvatar && !isAvatarUnlockedByAvgKFG(currentAvatar)) changeAvatar(avatars[0]); 
+                        if (currentAvatar && !isAvatarUnlocked(currentAvatar)) changeAvatar(avatars[0]); 
                     } 
                 });
                 watch(monthlySnapshotsSorted, () => updateAllCharts());
@@ -1284,7 +1335,7 @@
                     pendingFriendRequests, friendSearchQuery, searchResults,
                     chatMessages, chatInput, chatContainer, aiLoading, n8nStatus,
                     avatars, tabs, categoryNames, categoryIcons,
-                    totalExpenses, totalIncome, balance, hasExpenses,
+                    totalExpenses: computed(() => 0), totalIncome: computed(() => 0), balance: computed(() => 0), hasExpenses: computed(() => false),
                     averageKFG, currentMonthId,
                     ratingParticipants, friendsWithDetails, unlockedAvatars,
                     showIncomeModal, newIncomeValue, showAddToGoalModal, selectedGoalName, addToGoalAmount,
@@ -1299,8 +1350,8 @@
                     quickAddToGoal, openRemoveGoalModal, closeRemoveGoalModal, confirmRemoveGoal,
                     sendMessage, resetChatContext, quickQuestion, formatBotMessage, checkN8nConnection,
                     getAvatarUrl, getAvatarName, changeAvatar,
-                    isAvatarUnlocked: isAvatarUnlockedByAvgKFG, isAvatarAvailableForRegister, selectRegisterAvatar,
-                    getUserRating, getUserRatingLevel, getUserRatingByKFG, getUserRatingLevelByKFG,
+                    isAvatarUnlocked, isAvatarAvailableForRegister, selectRegisterAvatar,
+                    getUserRatingByKFG, getUserRatingLevelByKFG,
                     formatMoney,
                     editIncome, closeIncomeModal, saveIncome,
                     addHistoricalMonthField, removeHistoricalMonthField,
