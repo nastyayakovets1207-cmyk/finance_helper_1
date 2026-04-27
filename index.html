@@ -78,6 +78,10 @@
         .expense-category-amount { font-weight: 600; color: #4b5563; }
         .expense-total { background: #f3f4f6; padding: 12px; border-radius: 12px; margin-top: 16px; }
         .detail-category-icon { width: 32px; text-align: center; }
+        .warning-banner { background: #fef3c7; border-left: 4px solid #f59e0b; padding: 12px; border-radius: 8px; margin-bottom: 16px; }
+        .success-banner { background: #d1fae5; border-left: 4px solid #10b981; padding: 12px; border-radius: 8px; margin-bottom: 16px; }
+        .difference-positive { color: #10b981; font-weight: bold; }
+        .difference-negative { color: #ef4444; font-weight: bold; }
     </style>
 </head>
 <body class="bg-gray-100">
@@ -229,12 +233,34 @@
                             <button @click="openHistoricalModal" class="gradient-bg text-white px-4 py-2 rounded-lg text-sm"><i class="fas fa-plus-circle mr-1"></i> Добавить данные за прошлый месяц</button>
                         </div>
                         
-                        <div class="mb-4 p-3 bg-purple-50 rounded-lg" v-if="selectedExpenseMonth === currentMonthId">
-                            <div class="flex items-center justify-between">
-                                <span class="font-medium">📊 Ваш актуальный КФГ за текущий месяц:</span>
-                                <span class="text-2xl font-bold text-purple-600">{{ kfg }}</span>
+                        <!-- ИНФОРМАЦИОННОЕ СООБЩЕНИЕ О РАЗНИЦЕ В КФГ -->
+                        <div v-if="selectedExpenseMonth === currentMonthId && currentMonthSnapshotKfg !== null && currentMonthSnapshotKfg !== kfg" class="warning-banner mb-4">
+                            <div class="flex items-start gap-3">
+                                <i class="fas fa-info-circle text-yellow-600 text-lg mt-0.5"></i>
+                                <div class="flex-1">
+                                    <p class="font-semibold text-yellow-800">⚠️ Расхождения в КФГ</p>
+                                    <p class="text-sm text-yellow-700 mt-1">
+                                        Ваш <strong>актуальный КФГ ({{ kfg }})</strong> отличается от <strong>сохранённого ({{ currentMonthSnapshotKfg }})</strong>.
+                                        Разница составляет <span :class="kfg - currentMonthSnapshotKfg > 0 ? 'difference-positive' : 'difference-negative'">{{ kfg - currentMonthSnapshotKfg > 0 ? '+' : '' }}{{ kfg - currentMonthSnapshotKfg }}</span> баллов.
+                                    </p>
+                                    <p class="text-xs text-yellow-600 mt-2">
+                                        <i class="fas fa-arrow-right mr-1"></i> 
+                                        Вы изменили расходы, но не сохранили их. Нажмите <strong>"Сохранить расходы"</strong>, чтобы обновить сохранённый КФГ.
+                                    </p>
+                                </div>
                             </div>
-                            <p class="text-xs text-gray-500 mt-1">* КФГ рассчитан на основе ваших текущих расходов. Нажмите "Сохранить расходы", чтобы зафиксировать их.</p>
+                        </div>
+                        
+                        <div v-if="selectedExpenseMonth === currentMonthId && currentMonthSnapshotKfg !== null && currentMonthSnapshotKfg === kfg" class="success-banner mb-4">
+                            <div class="flex items-start gap-3">
+                                <i class="fas fa-check-circle text-green-600 text-lg mt-0.5"></i>
+                                <div class="flex-1">
+                                    <p class="font-semibold text-green-800">✅ КФГ синхронизирован</p>
+                                    <p class="text-sm text-green-700 mt-1">
+                                        Ваш актуальный КФГ ({{ kfg }}) совпадает с сохранённым.
+                                    </p>
+                                </div>
+                            </div>
                         </div>
                         
                         <div class="mb-4">
@@ -253,7 +279,7 @@
                             <div class="overflow-x-auto">
                                 <table class="min-w-full bg-white border rounded-lg">
                                     <thead class="bg-gray-100">
-                                        <tr><th class="px-4 py-2 text-left">Месяц</th><th class="px-4 py-2 text-left">Доход</th><th class="px-4 py-2 text-left">Расходы</th><th class="px-4 py-2 text-left">КФГ (сохранённый)</th><th class="px-4 py-2 text-left">КФГ (актуальный)</th><th class="px-4 py-2 text-left"></th></tr>
+                                        <tr><th class="px-4 py-2 text-left">Месяц</th><th class="px-4 py-2 text-left">Доход</th><th class="px-4 py-2 text-left">Расходы</th><th class="px-4 py-2 text-left">КФГ (сохранённый)</th><th class="px-4 py-2 text-left">КФГ (актуальный)</th><th class="px-4 py-2 text-left">Динамика</th><th class="px-4 py-2 text-left"></th></tr>
                                     </thead>
                                     <tbody>
                                         <tr v-for="snap in monthlySnapshotsSorted" :key="snap.monthId" class="border-t">
@@ -265,6 +291,20 @@
                                                 <span v-if="snap.monthId === currentMonthId" class="font-semibold text-purple-600">{{ kfg }}</span>
                                                 <span v-else class="text-gray-400">—</span>
                                             </td>
+                                            <td class="px-4 py-2">
+                                                <span v-if="snap.monthId === currentMonthId && currentMonthSnapshotKfg !== null">
+                                                    <span v-if="kfg > currentMonthSnapshotKfg" class="text-green-600 text-sm">
+                                                        <i class="fas fa-arrow-up"></i> +{{ kfg - currentMonthSnapshotKfg }}
+                                                    </span>
+                                                    <span v-else-if="kfg < currentMonthSnapshotKfg" class="text-red-600 text-sm">
+                                                        <i class="fas fa-arrow-down"></i> {{ kfg - currentMonthSnapshotKfg }}
+                                                    </span>
+                                                    <span v-else class="text-gray-400 text-sm">
+                                                        <i class="fas fa-minus"></i> 0
+                                                    </span>
+                                                </span>
+                                                <span v-else class="text-gray-400">—</span>
+                                            </td>
                                             <td class="px-4 py-2"><button @click="showMonthDetails(snap)" class="text-purple-600 hover:text-purple-800 text-sm">Детали</button></td>
                                         </tr>
                                     </tbody>
@@ -272,7 +312,7 @@
                             </div>
                         </div>
                         
-                        <!-- Модальное окно деталей расходов - ИСПРАВЛЕНО -->
+                        <!-- Модальное окно деталей расходов -->
                         <div v-if="detailsModalVisible" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
                             <div class="bg-white rounded-xl p-4 sm:p-6 max-w-lg w-full max-h-[85vh] overflow-y-auto">
                                 <div class="flex justify-between items-center mb-4 pb-2 border-b">
@@ -503,8 +543,8 @@
                                             <td class="px-4 py-2">
                                                 <span v-if="snap.monthId === currentMonthId" class="font-semibold text-purple-600">{{ kfg }}</span>
                                                 <span v-else class="text-gray-400">—</span>
-                                            </td>
-                                        </tr>
+                                             </td>
+                                         </tr>
                                     </tbody>
                                 </table>
                             </div>
@@ -620,6 +660,12 @@
                 const currentMonthId = computed(() => {
                     const d = new Date();
                     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+                });
+                
+                const currentMonthSnapshotKfg = computed(() => {
+                    if (!currentUser.value) return null;
+                    const snap = monthlySnapshots.value[currentMonthId.value];
+                    return snap ? snap.kfg : null;
                 });
                 
                 const avatars = [
@@ -802,7 +848,6 @@
                     loading.value = false;
                 }
 
-                // ИСПРАВЛЕННАЯ ФУНКЦИЯ ПОКАЗА ДЕТАЛЕЙ
                 function showMonthDetails(snap) {
                     detailsMonthLabel.value = snap.monthLabel;
                     const expensesData = snap.expenses || {};
@@ -1330,7 +1375,7 @@
                     pendingFriendRequests, friendSearchQuery, searchResults,
                     chatMessages, chatInput, chatContainer, aiLoading, n8nStatus,
                     avatars, tabs, categoryNames, categoryIcons,
-                    totalExpenses, totalIncome, balance, hasExpenses, kfg, currentMonthKfg, currentMonthId,
+                    totalExpenses, totalIncome, balance, hasExpenses, kfg, currentMonthKfg, currentMonthId, currentMonthSnapshotKfg,
                     ratingParticipants, friendsWithDetails, unlockedAvatars,
                     showIncomeModal, newIncomeValue, showAddToGoalModal, selectedGoalName, addToGoalAmount,
                     showRemoveGoalModal, selectedGoalNameForRemove,
