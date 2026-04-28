@@ -118,7 +118,7 @@
                             </div>
                             <span class="text-sm hidden sm:inline">{{ currentUser.nickname }}</span>
                             <span class="text-xs bg-white text-purple-600 px-2 py-1 rounded-full">{{ getUserRatingByKFG(averageKFG) }}</span>
-                            <!-- Бонусы в шапке (добавлено) -->
+                            <!-- Бонусы в шапке -->
                             <span class="text-xs bg-yellow-400 text-gray-800 px-2 py-1 rounded-full"><i class="fas fa-coins mr-1"></i>{{ bonusPoints }} бон.</span>
                         </div>
                         <button v-if="currentUser" @click="logout" class="bg-red-500 text-white px-3 py-2 rounded-lg text-sm hover:bg-red-600"><i class="fas fa-sign-out-alt sm:mr-2"></i><span class="hidden sm:inline">Выйти</span></button>
@@ -132,7 +132,7 @@
             {{ message.text }}
         </div>
 
-        <!-- Форма входа / регистрации (без изменений, но добавлена реферальная подсказка) -->
+        <!-- Форма входа / регистрации -->
         <div v-if="!currentUser" class="container mx-auto px-4 py-4 sm:py-8">
             <div class="max-w-4xl mx-auto">
                 <div class="bg-white rounded-xl shadow-lg overflow-hidden">
@@ -187,7 +187,7 @@
                 </div>
 
                 <div class="p-4 sm:p-6 tab-content">
-                    <!-- Профиль (добавлена строка с бонусами) -->
+                    <!-- Профиль -->
                     <div v-show="currentTab === 'profile'">
                         <h2 class="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">Мой профиль</h2>
                         <div class="bg-gray-50 rounded-xl p-4 sm:p-6 max-w-2xl">
@@ -224,7 +224,6 @@
                                     <span class="text-gray-600 text-sm">Рейтинг:</span>
                                     <span class="font-semibold text-xs px-2 py-1 rounded-full text-white" :class="'rating-' + getUserRatingLevelByKFG(averageKFG)">{{ getUserRatingByKFG(averageKFG) }}</span>
                                 </div>
-                                <!-- Бонусы в профиле -->
                                 <div class="flex justify-between items-center pb-2 border-b">
                                     <span class="text-gray-600 text-sm">Бонусные баллы:</span>
                                     <span class="font-semibold text-yellow-600 text-lg">{{ bonusPoints }}</span>
@@ -237,7 +236,7 @@
                         </div>
                     </div>
 
-                    <!-- Расходы (без изменений) -->
+                    <!-- Расходы -->
                     <div v-show="currentTab === 'expenses'">
                         <h2 class="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">Управление расходами</h2>
                         <div class="bg-gray-50 rounded-lg p-4 mb-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
@@ -343,7 +342,7 @@
                         </div>
                     </div>
 
-                    <!-- Цели (добавлена кнопка пополнения из бонусов) -->
+                    <!-- Цели -->
                     <div v-show="currentTab === 'goals'">
                         <h2 class="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">Финансовые цели</h2>
                         <div class="bg-gray-50 rounded-lg p-4 sm:p-6 mb-4 sm:mb-6">
@@ -371,7 +370,6 @@
                                     <button @click="addToGoal(index, 5000)" class="text-xs bg-gray-200 hover:bg-gray-300 px-3 py-1.5 rounded">+5 000 ₽</button>
                                     <button @click="addToGoal(index, 10000)" class="text-xs bg-gray-200 hover:bg-gray-300 px-3 py-1.5 rounded">+10 000 ₽</button>
                                     <button @click="openCustomAmountModal(index)" class="text-xs bg-purple-600 hover:bg-purple-700 text-white px-3 py-1.5 rounded custom-amount-btn"><i class="fas fa-pen-alt mr-1"></i>Своя сумма</button>
-                                    <!-- Кнопка пополнения из бонусов -->
                                     <button @click="openBonusToGoalModal(index)" v-if="bonusPoints >= 100" class="text-xs bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1.5 rounded"><i class="fas fa-coins mr-1"></i>Из бонусов ({{ bonusPoints }})</button>
                                     <span v-if="goal.currentAmount >= goal.targetAmount" class="text-xs bg-green-100 text-green-700 px-3 py-1.5 rounded ml-auto"><i class="fas fa-check-circle mr-1"></i>Достигнута!</span>
                                 </div>
@@ -379,14 +377,14 @@
                         </div>
                     </div>
 
-                    <!-- Аналитика (без изменений) -->
+                    <!-- Аналитика -->
                     <div v-show="currentTab === 'analytics'">
                         <h2 class="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">Аналитика расходов</h2>
                         <div class="bg-gray-50 rounded-xl p-4 mb-6"><label class="block text-gray-700 font-medium mb-2">Месяц для анализа:</label><select v-model="selectedAnalysisMonth" @change="loadExpensesForMonth" class="w-full border rounded-lg px-3 py-2 mb-4"><option v-for="snap in monthlySnapshotsSorted" :value="snap.monthId">{{ snap.monthLabel }}</option></select><div class="h-64"><canvas id="expenseChart"></canvas></div></div>
                         <div class="bg-gray-50 rounded-xl p-4"><h3 class="text-lg font-semibold mb-3">Динамика КФГ по месяцам</h3><div class="h-64"><canvas id="kfgTrendChart"></canvas></div></div>
                     </div>
 
-                    <!-- ИИ-Ассистент (без изменений) -->
+                    <!-- ИИ-Ассистент -->
                     <div v-show="currentTab === 'chat'">
                         <h2 class="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">ИИ-Ассистент</h2>
                         <div class="bg-gray-50 rounded-lg p-3 sm:p-4">
@@ -425,7 +423,7 @@
                         </div>
                     </div>
 
-                    <!-- Друзья и рейтинги (без изменений) -->
+                    <!-- Друзья и рейтинги -->
                     <div v-show="currentTab === 'friends'">
                         <h2 class="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">Друзья и рейтинги</h2>
                         <div class="bg-gradient-to-r from-purple-600 to-indigo-600 rounded-lg p-3 sm:p-4 mb-4 text-white"><h3 class="text-base sm:text-lg font-semibold mb-2">🏆 Рейтинг (средний КФГ)</h3><div class="space-y-2"><div v-for="(participant, idx) in ratingParticipants.slice(0,5)" :key="idx" class="flex items-center justify-between rounded-lg p-2 text-sm" :class="participant.isCurrentUser ? 'current-user-row' : 'bg-white bg-opacity-20'"><div class="flex items-center space-x-2"><span class="font-bold w-5">{{ idx+1 }}</span><img :src="getAvatarUrl(participant.avatar)" class="w-6 h-6 rounded-full"><span>{{ participant.name }} {{ participant.isCurrentUser ? '(Вы)' : '' }}</span></div><span class="font-bold">{{ participant.avgKFG }}</span></div></div></div>
@@ -485,7 +483,7 @@
                         </div>
                     </div>
 
-                    <!-- Награды (без изменений) -->
+                    <!-- Награды -->
                     <div v-show="currentTab === 'rewards'">
                         <h2 class="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">Награды</h2>
                         <div class="avg-kfg-block mb-4">
@@ -502,10 +500,9 @@
                         </div>
                     </div>
 
-                    <!-- НОВЫЙ РАЗДЕЛ: Партнёры (с обновлённым email) -->
+                    <!-- Партнёры (email изменён на workacc587@gmail.com) -->
                     <div v-show="currentTab === 'partners'">
                         <h2 class="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">Партнёрские предложения</h2>
-                        <!-- Блок с балансом бонусов и реферальной ссылкой -->
                         <div class="bg-yellow-50 rounded-lg p-4 mb-6 flex justify-between items-center flex-wrap gap-3">
                             <div>
                                 <i class="fas fa-coins text-yellow-600 text-2xl mr-2"></i>
@@ -518,7 +515,6 @@
                                 <button @click="copyReferralLink" class="ml-2 text-purple-600"><i class="fas fa-copy"></i></button>
                             </div>
                         </div>
-                        <!-- Список партнёрских предложений -->
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div v-for="offer in offers" :key="offer.id" class="offer-card bg-white rounded-xl shadow-md overflow-hidden border border-gray-200">
                                 <div class="p-4">
@@ -541,7 +537,7 @@
                                 </div>
                             </div>
                         </div>
-                        <!-- НОВЫЙ БЛОК: обратная связь для потенциальных партнёров (email заменён) -->
+                        <!-- Блок обратной связи с новым email -->
                         <div class="bg-gray-50 rounded-lg p-4 mt-6 text-center">
                             <i class="fas fa-handshake text-2xl text-purple-600 mb-2"></i>
                             <p class="text-gray-700 font-medium mb-3">Хотите стать нашим партнёром?</p>
@@ -552,7 +548,7 @@
                         </div>
                     </div>
 
-                    <!-- КФГ (без изменений) -->
+                    <!-- КФГ -->
                     <div v-show="currentTab === 'kfg'">
                         <h2 class="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">Коэффициент финансовой грамотности (КФГ)</h2>
                         <div class="avg-kfg-block mb-6">
@@ -571,7 +567,7 @@
             </div>
         </div>
 
-        <!-- Футер (без изменений) -->
+        <!-- Футер -->
         <footer class="footer" v-if="currentUser">
             <div class="container mx-auto px-4">
                 <div class="mb-3"><p class="text-gray-700 text-sm mb-2 font-semibold">Разработчики:</p><div class="developer-group"><a href="https://vk.ru/id875641672" target="_blank" class="vk-link"><i class="fab fa-vk"></i> <span>Яковец А.</span></a><a href="https://vk.ru/novkkkkk" target="_blank" class="vk-link"><i class="fab fa-vk"></i> <span>Новосельская К.Д</span></a><a href="https://vk.ru/mvikirriaa" target="_blank" class="vk-link"><i class="fab fa-vk"></i> <span>Молостова В.А.</span></a></div></div>
@@ -580,7 +576,7 @@
             </div>
         </footer>
 
-        <!-- Модальные окна (добавлено окно для пополнения бонусами) -->
+        <!-- Модальные окна -->
         <div v-if="showIncomeModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"><div class="bg-white rounded-xl p-4 sm:p-6 max-w-md w-full"><h3 class="text-lg font-bold mb-4">Изменить доход</h3><input v-model.number="newIncomeValue" type="number" class="w-full px-4 py-2 border rounded-lg mb-4"><div class="flex space-x-2"><button @click="saveIncome" class="gradient-bg text-white px-6 py-2 rounded-lg flex-1">Сохранить</button><button @click="closeIncomeModal" class="bg-gray-300 px-6 py-2 rounded-lg flex-1">Отмена</button></div></div></div>
         <div v-if="showAddToGoalModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"><div class="bg-white rounded-xl p-4 sm:p-6 max-w-md w-full"><h3 class="text-lg font-bold mb-4">Добавить к "{{ selectedGoalName }}"</h3><input v-model.number="addToGoalAmount" type="number" class="w-full px-4 py-2 border rounded-lg mb-4"><div class="flex space-x-2"><button @click="confirmAddToGoal" class="gradient-bg text-white px-6 py-2 rounded-lg flex-1">Добавить</button><button @click="closeAddToGoalModal" class="bg-gray-300 px-6 py-2 rounded-lg flex-1">Отмена</button></div></div></div>
         <div v-if="showRemoveGoalModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"><div class="bg-white rounded-xl p-4 sm:p-6 max-w-md w-full"><h3 class="text-lg font-bold mb-4">Удалить цель</h3><p class="mb-4">Удалить "{{ selectedGoalNameForRemove }}"?</p><div class="flex space-x-2"><button @click="confirmRemoveGoal" class="bg-red-500 text-white px-6 py-2 rounded-lg flex-1">Удалить</button><button @click="closeRemoveGoalModal" class="bg-gray-300 px-6 py-2 rounded-lg flex-1">Отмена</button></div></div></div>
@@ -595,7 +591,6 @@
                 </div>
             </div>
         </div>
-        <!-- Новое модальное окно для пополнения бонусами -->
         <div v-if="showBonusToGoalModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
             <div class="bg-white rounded-xl p-4 sm:p-6 max-w-md w-full">
                 <h3 class="text-lg font-bold mb-4">Пополнить цель "{{ bonusToGoalName }}" бонусами</h3>
