@@ -502,7 +502,7 @@
                         </div>
                     </div>
 
-                    <!-- НОВЫЙ РАЗДЕЛ: Партнёры -->
+                    <!-- НОВЫЙ РАЗДЕЛ: Партнёры (с добавленным блоком обратной связи) -->
                     <div v-show="currentTab === 'partners'">
                         <h2 class="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">Партнёрские предложения</h2>
                         <!-- Блок с балансом бонусов и реферальной ссылкой -->
@@ -541,6 +541,15 @@
                                 </div>
                             </div>
                         </div>
+                        <!-- НОВЫЙ БЛОК: обратная связь для потенциальных партнёров -->
+                        <div class="bg-gray-50 rounded-lg p-4 mt-6 text-center">
+                            <i class="fas fa-handshake text-2xl text-purple-600 mb-2"></i>
+                            <p class="text-gray-700 font-medium mb-3">Хотите стать нашим партнёром?</p>
+                            <button onclick="alert('Спасибо за интерес! Отправьте заявку на partners@fingrade.ru, и мы свяжемся с вами.')" class="gradient-bg text-white px-6 py-2 rounded-lg">
+                                <i class="fas fa-envelope mr-2"></i>Оставить заявку
+                            </button>
+                            <p class="text-xs text-gray-500 mt-2">Или напишите нам: partners@fingrade.ru</p>
+                        </div>
                     </div>
 
                     <!-- КФГ (без изменений) -->
@@ -556,12 +565,7 @@
                         </div>
                         <div class="bg-gray-50 rounded-xl p-4 mb-6"><h3 class="text-lg font-semibold mb-3">Динамика КФГ по месяцам</h3><div class="h-64"><canvas id="kfgTrendChartPage"></canvas></div></div>
                         <div class="bg-gray-50 rounded-xl p-4 mb-6"><h3 class="text-lg font-semibold mb-2">Как рассчитывается КФГ?</h3><p class="text-sm text-gray-700 mb-2">КФГ = 100 − (Расходы / Доход × 100), но с учётом корректировок:</p><ul class="list-disc list-inside text-sm text-gray-600 space-y-1"><li>Если расходы на развлечения > 30% дохода → −20 баллов</li><li>Если расходы на еду (включая кафе) > 50% дохода → −15 баллов</li><li>Если расходы на подписки > 10% дохода → −10 баллов</li><li>Если есть расходы на образование → +5 баллов</li><li>Если остаток после расходов > 20% дохода → +10 баллов</li></ul><p class="text-sm text-gray-700 mt-2">Итоговое значение ограничивается от 0 до 100.</p></div>
-                        <div class="bg-gray-50 rounded-xl p-4"><h3 class="text-lg font-semibold mb-3">История КФГ по месяцам</h3><div class="overflow-x-auto"><table class="min-w-full bg-white border rounded-lg"><thead class="bg-gray-100"><tr><th class="px-4 py-2 text-left">Месяц</th><th class="px-4 py-2 text-left">Доход</th><th class="px-4 py-2 text-left">Расходы</th><th class="px-4 py-2 text-left">КФГ</th></tr></thead><tbody><tr v-for="snap in monthlySnapshotsSorted" :key="snap.monthId" class="border-t"><td class="px-4 py-2">{{ snap.monthLabel }}</td><td class="px-4 py-2">{{ formatMoney(snap.income) }} ₽</td><td class="px-4 py-2">{{ formatMoney(snap.totalExpenses) }} ₽</td><td class="px-4 py-2 font-semibold" :class="{'text-green-600': snap.kfg >= 70, 'text-yellow-600': snap.kfg >= 40 && snap.kfg < 70, 'text-red-600': snap.kfg < 40}">{{ snap.kfg }}</td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
+                        <div class="bg-gray-50 rounded-xl p-4"><h3 class="text-lg font-semibold mb-3">История КФГ по месяцам</h3><div class="overflow-x-auto"><table class="min-w-full bg-white border rounded-lg"><thead class="bg-gray-100"><tr><th class="px-4 py-2 text-left">Месяц</th><th class="px-4 py-2 text-left">Доход</th><th class="px-4 py-2 text-left">Расходы</th><th class="px-4 py-2 text-left">КФГ</th></tr></thead><tbody><tr v-for="snap in monthlySnapshotsSorted" :key="snap.monthId" class="border-t"><td class="px-4 py-2">{{ snap.monthLabel }}</td><td class="px-4 py-2">{{ formatMoney(snap.income) }} ₽</td><td class="px-4 py-2">{{ formatMoney(snap.totalExpenses) }} ₽</td><td class="px-4 py-2 font-semibold" :class="{'text-green-600': snap.kfg >= 70, 'text-yellow-600': snap.kfg >= 40 && snap.kfg < 70, 'text-red-600': snap.kfg < 40}">{{ snap.kfg }}</td></tr></tbody></table></div></div>
                     </div>
                 </div>
             </div>
@@ -665,7 +669,6 @@
                 const customAmountGoalName = ref('');
                 const customAmountValue = ref(1000);
                 
-                // НОВЫЕ ПЕРЕМЕННЫЕ ДЛЯ ПАРТНЁРСКОГО РАЗДЕЛА
                 const bonusPoints = ref(0);
                 const claimedOffers = ref([]);
                 const offers = ref([
@@ -733,7 +736,6 @@
                     { id: 5, name: 'Гуру', kfgRequired: 100 }
                 ];
                 
-                // ДОБАВЛЕНА НОВАЯ ВКЛАДКА
                 const tabs = [
                     { id: 'profile', name: 'Профиль', icon: 'fas fa-user' },
                     { id: 'expenses', name: 'Расходы', icon: 'fas fa-chart-line' },
@@ -953,7 +955,6 @@
                     }
                 }
 
-                // ОСНОВНАЯ ФУНКЦИЯ ДОБАВЛЕНИЯ К ЦЕЛИ (без изменений)
                 async function addToGoal(index, amount) {
                     if (!currentUser.value) return;
                     if (amount <= 0) {
@@ -1005,7 +1006,6 @@
                     customAmountValue.value = 1000;
                 }
 
-                // НОВЫЕ ФУНКЦИИ ДЛЯ ПАРТНЁРСКОГО РАЗДЕЛА
                 async function loadUserBonusData() {
                     if (!currentUser.value) return;
                     const userDoc = await db.collection('users').doc(currentUser.value.login).get();
@@ -1062,7 +1062,6 @@
                     showMessage('Ссылка скопирована!', 'success'); 
                 }
 
-                // ИНТЕГРАЦИЯ С n8n (без изменений)
                 const N8N_WEBHOOK_URL = 'http://localhost:5678/webhook/finchat';
 
                 async function checkN8nConnection() {
@@ -1150,7 +1149,6 @@
                 
                 function quickQuestion(q) { chatInput.value = q; sendMessage(); }
 
-                // Функции Firebase (добавлена инициализация полей для бонусов)
                 async function loadUsersFromFirestore() {
                     const snapshot = await db.collection('users').get();
                     const usersArray = [];
@@ -1199,7 +1197,6 @@
                             pendingRequests.value = data.pendingRequests || [];
                             if (data.expenses) Object.assign(expenses, data.expenses);
                             goals.value = data.goals || [];
-                            // Обновляем бонусы
                             bonusPoints.value = data.bonusPoints || 0;
                             claimedOffers.value = data.claimedOffers || [];
                         }
@@ -1251,7 +1248,6 @@
                     finally { loading.value = false; }
                 }
 
-                // Реферальная функция
                 async function applyReferralBonus(newUserLogin, referrerLogin) {
                     if (!referrerLogin) return;
                     const referrerRef = db.collection('users').doc(referrerLogin);
@@ -1261,7 +1257,6 @@
                         let referredFriends = referrerDoc.data().referredFriends || [];
                         if (!referredFriends.includes(newUserLogin)) {
                             await referrerRef.update({ bonusPoints: referrerBonus + 200, referredFriends: [...referredFriends, newUserLogin] });
-                            // Не показываем сообщение здесь, так как это фоновый процесс
                         }
                     }
                     const newUserRef = db.collection('users').doc(newUserLogin);
@@ -1284,7 +1279,6 @@
                         await saveMonthlySnapshot(getCurrentMonthId(), registerForm.income, registerForm.expenses);
                         for (const hist of registerForm.historicalMonths) if (hist.month && hist.income !== undefined) await saveMonthlySnapshot(hist.month, hist.income, hist.expenses);
                         await loadMonthlySnapshots();
-                        // Реферальный бонус
                         const referrer = getReferralFromUrl();
                         if (referrer && referrer !== registerForm.login) await applyReferralBonus(registerForm.login, referrer);
                         showMessage('Регистрация успешна!', 'success');
@@ -1589,7 +1583,6 @@
                     selectedExpenseMonth, expensesForSelectedMonth, filteredExpensesForMonth,
                     detailsModalVisible, detailsMonthLabel, detailsExpenses, detailsKfg,
                     showCustomAmountModal, customAmountGoalName, customAmountValue,
-                    // Возвращаем новые переменные
                     bonusPoints, offers, claimedOffers, showBonusToGoalModal, bonusToGoalName, bonusToGoalAmount, referralCode, referralLink,
                     handleRegister, handleLogin, loginWithGoogle, logout,
                     searchFriends, sendFriendRequest, acceptFriendRequest, rejectFriendRequest, removeFriend,
@@ -1606,7 +1599,6 @@
                     openHistoricalModal, closeHistoricalModal, saveHistoricalData,
                     loadExpensesForMonth, loadExpensesForSelectedMonth, saveExpensesForSelectedMonth,
                     showMonthDetails, getMonthLabel,
-                    // Новые методы
                     claimOffer, openBonusToGoalModal, closeBonusToGoalModal, confirmBonusToGoal, copyReferralLink
                 };
             }
