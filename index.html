@@ -86,7 +86,6 @@
         .avg-kfg-number { font-size: 3rem; font-weight: bold; line-height: 1; }
         .custom-amount-btn { background-color: #6b7280; }
         .custom-amount-btn:hover { background-color: #4b5563; }
-        /* Стили для партнёрского раздела */
         .offer-card { transition: transform 0.2s, box-shadow 0.2s; cursor: pointer; }
         .offer-card:hover { transform: translateY(-4px); box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
     </style>
@@ -490,7 +489,7 @@
                         </div>
                     </div>
 
-                    <!-- Партнёрский раздел (без бонусов и рефералок) -->
+                    <!-- Партнёрский раздел (без бонусов и рефералок, email исправлен) -->
                     <div v-show="currentTab === 'partners'">
                         <h2 class="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">Партнёрские предложения</h2>
                         <p class="text-gray-600 mb-4">Специальные условия для пользователей FinGrade от проверенных партнёров</p>
@@ -518,10 +517,10 @@
                         <div class="bg-gray-50 rounded-lg p-4 mt-6 text-center">
                             <i class="fas fa-handshake text-2xl text-purple-600 mb-2"></i>
                             <p class="text-gray-700 font-medium mb-3">Хотите стать нашим партнёром?</p>
-                            <button onclick="alert('Спасибо за интерес! Отправьте заявку на partners@fingrade.ru, и мы свяжемся с вами.')" class="gradient-bg text-white px-6 py-2 rounded-lg">
+                            <button onclick="alert('Спасибо за интерес! Отправьте заявку на workacc587@gmail.com, и мы свяжемся с вами.')" class="gradient-bg text-white px-6 py-2 rounded-lg">
                                 <i class="fas fa-envelope mr-2"></i>Предложить сотрудничество
                             </button>
-                            <p class="text-xs text-gray-500 mt-2">Email для связи: partners@fingrade.ru</p>
+                            <p class="text-xs text-gray-500 mt-2">Email для связи: workacc587@gmail.com</p>
                         </div>
                     </div>
 
@@ -630,7 +629,6 @@
                 const customAmountGoalName = ref('');
                 const customAmountValue = ref(1000);
                 
-                // Новые партнёры, связанные с темой финансовой грамотности, без бонусов
                 const offers = ref([
                     { id: 'zenmoney', title: 'ZenMoney', description: 'Приложение для учёта доходов и расходов. 30 дней Premium бесплатно', icon: 'fas fa-wallet', color: 'text-green-600', category: 'Учёт финансов', url: 'https://zenmoney.ru/' },
                     { id: 'smartlab', title: 'Smart-Lab', description: 'Обучение инвестициям: бесплатный курс "Азбука инвестора"', icon: 'fas fa-chart-line', color: 'text-blue-600', category: 'Образование', url: 'https://smartlab.ru/' },
