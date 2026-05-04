@@ -500,12 +500,7 @@
                         </div>
                         <div class="bg-gray-50 rounded-xl p-4 mb-6"><h3 class="text-lg font-semibold mb-3">Динамика КФГ по месяцам</h3><div class="h-64"><canvas id="kfgTrendChartPage"></canvas></div></div>
                         <div class="bg-gray-50 rounded-xl p-4 mb-6"><h3 class="text-lg font-semibold mb-2">Как рассчитывается КФГ?</h3><p class="text-sm text-gray-700 mb-2">КФГ = 100 − (Расходы / Доход × 100), но с учётом корректировок:</p><ul class="list-disc list-inside text-sm text-gray-600 space-y-1"><li>Если расходы на развлечения > 30% дохода → −20 баллов</li><li>Если расходы на еду (включая кафе) > 50% дохода → −15 баллов</li><li>Если расходы на подписки > 10% дохода → −10 баллов</li><li>Если есть расходы на образование → +5 баллов</li><li>Если остаток после расходов > 20% дохода → +10 баллов</li></ul><p class="text-sm text-gray-700 mt-2">Итоговое значение ограничивается от 0 до 100.</p></div>
-                        <div class="bg-gray-50 rounded-xl p-4"><h3 class="text-lg font-semibold mb-3">История КФГ по месяцам</h3><div class="overflow-x-auto"><table class="min-w-full bg-white border rounded-lg"><thead class="bg-gray-100"><tr><th class="px-4 py-2 text-left">Месяц</th><th class="px-4 py-2 text-left">Доход</th><th class="px-4 py-2 text-left">Расходы</th><th class="px-4 py-2 text-left">КФГ</th></tr></thead><tbody><tr v-for="snap in monthlySnapshotsSorted" :key="snap.monthId" class="border-t"><td class="px-4 py-2">{{ snap.monthLabel }}</td><td class="px-4 py-2">{{ formatMoney(snap.income) }} ₽</td><td class="px-4 py-2">{{ formatMoney(snap.totalExpenses) }} ₽</td><td class="px-4 py-2 font-semibold" :class="{'text-green-600': snap.kfg >= 70, 'text-yellow-600': snap.kfg >= 40 && snap.kfg < 70, 'text-red-600': snap.kfg < 40}">{{ snap.kfg }}</td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
+                        <div class="bg-gray-50 rounded-xl p-4"><h3 class="text-lg font-semibold mb-3">История КФГ по месяцам</h3><div class="overflow-x-auto"><table class="min-w-full bg-white border rounded-lg"><thead class="bg-gray-100"><tr><th class="px-4 py-2 text-left">Месяц</th><th class="px-4 py-2 text-left">Доход</th><th class="px-4 py-2 text-left">Расходы</th><th class="px-4 py-2 text-left">КФГ</th></tr></thead><tbody><tr v-for="snap in monthlySnapshotsSorted" :key="snap.monthId" class="border-t"><td class="px-4 py-2">{{ snap.monthLabel }}</td><td class="px-4 py-2">{{ formatMoney(snap.income) }} ₽</td><td class="px-4 py-2">{{ formatMoney(snap.totalExpenses) }} ₽</td><td class="px-4 py-2 font-semibold" :class="{'text-green-600': snap.kfg >= 70, 'text-yellow-600': snap.kfg >= 40 && snap.kfg < 70, 'text-red-600': snap.kfg < 40}">{{ snap.kfg }}</td></tr></tbody></table></div></div>
                     </div>
                 </div>
             </div>
@@ -525,8 +520,6 @@
         <div v-if="showAddToGoalModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"><div class="bg-white rounded-xl p-4 sm:p-6 max-w-md w-full"><h3 class="text-lg font-bold mb-4">Добавить к "{{ selectedGoalName }}"</h3><input v-model.number="addToGoalAmount" type="number" class="w-full px-4 py-2 border rounded-lg mb-4"><div class="flex space-x-2"><button @click="confirmAddToGoal" class="gradient-bg text-white px-6 py-2 rounded-lg flex-1">Добавить</button><button @click="closeAddToGoalModal" class="bg-gray-300 px-6 py-2 rounded-lg flex-1">Отмена</button></div></div></div>
         <div v-if="showRemoveGoalModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"><div class="bg-white rounded-xl p-4 sm:p-6 max-w-md w-full"><h3 class="text-lg font-bold mb-4">Удалить цель</h3><p class="mb-4">Удалить "{{ selectedGoalNameForRemove }}"?</p><div class="flex space-x-2"><button @click="confirmRemoveGoal" class="bg-red-500 text-white px-6 py-2 rounded-lg flex-1">Удалить</button><button @click="closeRemoveGoalModal" class="bg-gray-300 px-6 py-2 rounded-lg flex-1">Отмена</button></div></div></div>
         <div v-if="showHistoricalModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"><div class="bg-white rounded-xl p-4 sm:p-6 max-w-md w-full max-h-[90vh] overflow-y-auto"><h3 class="text-lg font-bold mb-4">Добавить данные за прошлый месяц</h3><div class="space-y-3"><div><label class="block text-gray-700 font-medium mb-1">Месяц</label><input type="month" v-model="historicalMonth" class="w-full border rounded-lg px-3 py-2"></div><div><label class="block text-gray-700 font-medium mb-1">Доход за этот месяц</label><input type="number" v-model.number="historicalIncome" class="w-full border rounded-lg px-3 py-2"></div><div><label class="block text-gray-700 font-medium mb-2">Расходы по категориям</label><div class="grid grid-cols-2 gap-2"><div v-for="(value, cat) in historicalExpenses" :key="cat"><label class="text-xs text-gray-600">{{ categoryNames[cat] }}</label><input v-model.number="historicalExpenses[cat]" type="number" min="0" class="w-full border rounded px-2 py-1 text-sm"></div></div></div><button @click="saveHistoricalData" class="gradient-bg text-white w-full py-2 rounded-lg mt-2">Сохранить</button><button @click="closeHistoricalModal" class="bg-gray-300 w-full py-2 rounded-lg">Отмена</button></div></div></div>
-        
-        <!-- Модальное окно для произвольной суммы -->
         <div v-if="showCustomAmountModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
             <div class="bg-white rounded-xl p-4 sm:p-6 max-w-md w-full">
                 <h3 class="text-lg font-bold mb-4">Внести сумму к "{{ customAmountGoalName }}"</h3>
@@ -594,7 +587,6 @@
                 const historicalIncome = ref(0);
                 const historicalExpenses = ref({ ...initialExpenses });
                 
-                // Модальное окно для произвольной суммы
                 const showCustomAmountModal = ref(false);
                 const customAmountGoalIndex = ref(null);
                 const customAmountGoalName = ref('');
@@ -637,7 +629,6 @@
                     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
                 });
                 
-                // СРЕДНИЙ КФГ
                 const averageKFG = computed(() => {
                     const snapshots = Object.values(monthlySnapshots.value);
                     if (snapshots.length === 0) return 0;
@@ -683,7 +674,6 @@
                     subscriptions: '#BA55D3', education: '#2E8B57', travel: '#FF8C42'
                 };
 
-                // Функция расчета КФГ для одного месяца
                 function calculateKFGFloat(incomeVal, expensesObj) {
                     if (!incomeVal || incomeVal === 0) return 0;
                     const total = Object.values(expensesObj).reduce((a, b) => a + b, 0);
@@ -872,7 +862,6 @@
                     }
                 }
 
-                // ОСНОВНАЯ ФУНКЦИЯ ДОБАВЛЕНИЯ К ЦЕЛИ С ПЕРЕСЧЕТОМ КФГ
                 async function addToGoal(index, amount) {
                     if (!currentUser.value) return;
                     if (amount <= 0) {
@@ -882,11 +871,9 @@
                     
                     loading.value = true;
                     try {
-                        // Обновляем сумму цели
                         goals.value[index].currentAmount += amount;
                         await db.collection('users').doc(currentUser.value.login).update({ goals: goals.value });
                         
-                        // Обновляем КФГ за текущий месяц
                         const currentMonth = getCurrentMonthId();
                         if (monthlySnapshots.value[currentMonth]) {
                             const currentExpenses = monthlySnapshots.value[currentMonth].expenses;
@@ -903,7 +890,6 @@
                     }
                 }
                 
-                // Открыть модальное окно для произвольной суммы
                 function openCustomAmountModal(index) {
                     customAmountGoalIndex.value = index;
                     customAmountGoalName.value = goals.value[index].name;
@@ -911,7 +897,6 @@
                     showCustomAmountModal.value = true;
                 }
                 
-                // Подтвердить произвольную сумму
                 async function confirmCustomAmount() {
                     if (customAmountValue.value <= 0) {
                         showMessage('Введите корректную сумму', 'error');
@@ -928,7 +913,6 @@
                     customAmountValue.value = 1000;
                 }
 
-                // ИНТЕГРАЦИЯ С n8n
                 const N8N_WEBHOOK_URL = 'http://localhost:5678/webhook/finchat';
 
                 async function checkN8nConnection() {
@@ -1016,7 +1000,6 @@
                 
                 function quickQuestion(q) { chatInput.value = q; sendMessage(); }
 
-                // Функции Firebase
                 async function loadUsersFromFirestore() {
                     const snapshot = await db.collection('users').get();
                     const usersArray = [];
@@ -1042,8 +1025,6 @@
                         if (data.friends === undefined) updates.friends = [];
                         if (data.friendRequests === undefined) updates.friendRequests = [];
                         if (data.pendingRequests === undefined) updates.pendingRequests = [];
-                        if (data.bonusPoints === undefined) updates.bonusPoints = 0;
-                        if (data.referredFriends === undefined) updates.referredFriends = [];
                         if (Object.keys(updates).length > 0) await userRef.update(updates);
                     }
                 }
@@ -1098,7 +1079,7 @@
                             const login = user.email.split('@')[0].replace(/[^a-zA-Z0-9]/g, '');
                             let finalLogin = login; let counter = 1;
                             while (await db.collection('users').doc(finalLogin).get().then(d => d.exists)) finalLogin = `${login}${counter++}`;
-                            const newUser = { name: user.displayName?.split(' ')[0] || 'Пользователь', surname: user.displayName?.split(' ').slice(1).join(' ') || '', nickname: '@' + finalLogin, login: finalLogin, email: user.email, income: 0, avatar: 1, expenses: { ...initialExpenses }, goals: [], friends: [], friendRequests: [], pendingRequests: [], bonusPoints: 0, referredFriends: [], uid: user.uid };
+                            const newUser = { name: user.displayName?.split(' ')[0] || 'Пользователь', surname: user.displayName?.split(' ').slice(1).join(' ') || '', nickname: '@' + finalLogin, login: finalLogin, email: user.email, income: 0, avatar: 1, expenses: { ...initialExpenses }, goals: [], friends: [], friendRequests: [], pendingRequests: [], uid: user.uid };
                             await db.collection('users').doc(finalLogin).set(newUser);
                             await loadCurrentUserData(finalLogin);
                         }
@@ -1119,7 +1100,7 @@
                         if (!(await db.collection('users').where('nickname', '==', registerForm.nickname).get()).empty) { showMessage('Никнейм занят', 'error'); loading.value = false; return; }
                         if (!(await db.collection('users').where('email', '==', registerForm.email).get()).empty) { showMessage('Email занят', 'error'); loading.value = false; return; }
                         const userCred = await auth.createUserWithEmailAndPassword(registerForm.email, registerForm.password);
-                        const newUser = { name: registerForm.name, surname: registerForm.surname, nickname: registerForm.nickname, login: registerForm.login, email: registerForm.email, income: Number(registerForm.income), avatar: registerForm.avatar, expenses: { ...registerForm.expenses }, goals: [], friends: [], friendRequests: [], pendingRequests: [], bonusPoints: 0, referredFriends: [], uid: userCred.user.uid };
+                        const newUser = { name: registerForm.name, surname: registerForm.surname, nickname: registerForm.nickname, login: registerForm.login, email: registerForm.email, income: Number(registerForm.income), avatar: registerForm.avatar, expenses: { ...registerForm.expenses }, goals: [], friends: [], friendRequests: [], pendingRequests: [], uid: userCred.user.uid };
                         await db.collection('users').doc(registerForm.login).set(newUser);
                         await loadCurrentUserData(registerForm.login);
                         await saveMonthlySnapshot(getCurrentMonthId(), registerForm.income, registerForm.expenses);
@@ -1186,7 +1167,6 @@
                     loading.value = false;
                 }
                 
-                // Удаляем старые quickAddToGoal, используем addToGoal
                 function quickAddToGoal(index, amount) { addToGoal(index, amount); }
                 
                 async function confirmAddToGoal() {
@@ -1420,7 +1400,6 @@
                     monthlySnapshotsSorted, selectedAnalysisMonth,
                     selectedExpenseMonth, expensesForSelectedMonth, filteredExpensesForMonth,
                     detailsModalVisible, detailsMonthLabel, detailsExpenses, detailsKfg,
-                    // Новые переменные для произвольной суммы
                     showCustomAmountModal, customAmountGoalName, customAmountValue,
                     handleRegister, handleLogin, loginWithGoogle, logout,
                     searchFriends, sendFriendRequest, acceptFriendRequest, rejectFriendRequest, removeFriend,
