@@ -489,7 +489,7 @@
                         </div>
                     </div>
 
-                    <!-- Партнёрский раздел (без бонусов и рефералок, email исправлен) -->
+                    <!-- Партнёрский раздел -->
                     <div v-show="currentTab === 'partners'">
                         <h2 class="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">Партнёрские предложения</h2>
                         <p class="text-gray-600 mb-4">Специальные условия для пользователей FinGrade от проверенных партнёров</p>
@@ -972,6 +972,7 @@
                     customAmountValue.value = 1000;
                 }
 
+                // ИСПРАВЛЕННЫЙ URL - измените на ваш реальный адрес n8n
                 const N8N_WEBHOOK_URL = 'http://localhost:5678/webhook/finchat';
 
                 async function checkN8nConnection() {
@@ -990,15 +991,35 @@
                     }
                 }
 
+                // ИСПРАВЛЕННАЯ ФУНКЦИЯ - теперь передаёт все необходимые данные пользователя
                 async function sendMessageToN8N(userMessage) {
+                    // Получаем данные текущего месяца для расчётов
+                    const currentMonth = getCurrentMonthId();
+                    const currentSnapshot = monthlySnapshots.value[currentMonth];
+                    
+                    let totalExpenses = 0;
+                    if (currentSnapshot?.expenses) {
+                        totalExpenses = Object.values(currentSnapshot.expenses).reduce((a, b) => a + b, 0);
+                    } else {
+                        totalExpenses = Object.values(expenses).reduce((a, b) => a + b, 0);
+                    }
+                    
+                    const userIncome = currentUser.value?.income || 0;
+                    const balance = userIncome - totalExpenses;
+
                     const userContext = {
                         name: currentUser.value?.name || 'Пользователь',
                         nickname: currentUser.value?.nickname || '',
                         avgKFG: averageKFG.value,
-                        income: currentUser.value?.income || 0,
+                        kfg: averageKFG.value,
+                        income: userIncome,
+                        totalExpenses: totalExpenses,
+                        balance: Math.max(0, balance),
                         goalsCount: goals.value.length,
                         friendsCount: friends.value.length
                     };
+
+                    console.log('📤 Отправка данных в ИИ:', userContext);
 
                     const controller = new AbortController();
                     const timeoutId = setTimeout(() => controller.abort(), 30000);
@@ -1007,7 +1028,11 @@
                         const response = await fetch(N8N_WEBHOOK_URL, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ message: userMessage, userContext: userContext, timestamp: new Date().toISOString() }),
+                            body: JSON.stringify({ 
+                                message: userMessage, 
+                                userContext: userContext, 
+                                timestamp: new Date().toISOString() 
+                            }),
                             signal: controller.signal
                         });
                         clearTimeout(timeoutId);
@@ -1022,7 +1047,8 @@
                         } catch(e) { return aiResponse; }
                     } catch (error) {
                         clearTimeout(timeoutId);
-                        throw new Error('Не удаётся подключиться к серверу.');
+                        console.error('❌ Ошибка при запросе к ИИ:', error);
+                        throw new Error('Не удаётся подключиться к серверу ассистента.');
                     }
                 }
 
